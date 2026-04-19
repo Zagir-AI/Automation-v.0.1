@@ -53,9 +53,12 @@ def _build_spec_items(project: dict) -> dict:
             pb = panel.get("breaker", {})
             pc = panel.get("cable", {})
             bus_a = pb.get("rating", 63)
+            pname = panel["name"]
+            if not pname.lower().startswith("щит"):
+                pname = f"Щит {pname}"
             panels.append({
                 "id": panel["id"],
-                "name": f"Щит {panel['name']}",
+                "name": pname,
                 "note": f"Iн шины={bus_a}А,",
             })
             add_breaker(pb)

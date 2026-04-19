@@ -346,8 +346,12 @@ def calc_vru(vru: dict) -> dict:
     # Вводной кабель ВРУ: I_доп ≥ I_ном_автомата (ПУЭ 3.1.4)
     vru_cable_cfg = dict(vru.get("incoming_cable", {}))
     vru_cable_cfg.setdefault("cos_phi", cos_phi_v)
-    i_cable_min = max(i_vru, vru_breaker.get("rating", i_vru))
-    vru_cable_result = select_cable_for_current(vru_cable_cfg, i_cable_min)
+    if i_vru > 0:
+        i_cable_min = max(i_vru, vru_breaker.get("rating", i_vru))
+        vru_cable_result = select_cable_for_current(vru_cable_cfg, i_cable_min)
+    else:
+        vru_cable_result = {**vru_cable_cfg, "section_mm2": None, "i_calc": 0,
+                            "i_allowed": 0, "ok": False, "auto_selected": True}
 
     return {
         "id": vru["id"],
