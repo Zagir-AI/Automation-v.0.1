@@ -1,0 +1,41 @@
+{
+  "project": {
+    "name": "Тестовая школа",
+    "code": "ТЕСТ-2025-001",
+    "object_type": "Общественное здание",
+    "stage": "Р",
+    "voltage_kv": 0.4,
+    "system": "TN-S",
+    "frequency": 50,
+    "city": "",
+    "designer": "",
+    "checker": "",
+    "norm_head": "",
+    "revision": 0,
+    "date": "2026-04-18",
+    "notes": ""
+  },
+  "vru": {
+    "id": "ВРУ-1",
+    "name": "ВРУ-1",
+    "bus_current_a": 250,
+    "isc_ka": 10,
+    "incoming_cable": {
+      "mark": "ВВГнг-LS",
+      "cores": 4,
+      "section_mm2": null,
+      "length_m": 30,
+      "install": "лоток",
+      "ambient_t": 25,
+      "parallel": 1
+    },
+    "feeders": []
+  },
+  "changes": [],
+  "_meta": {
+    "schema_version": "1.0",
+    "created": "2026-04-18",
+    "last_modified": "2026-04-18",
+    "calc_done": false
+  }
+}
