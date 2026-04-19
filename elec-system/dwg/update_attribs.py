@@ -80,7 +80,7 @@ def update_attribs(project: dict, dxf_path: str) -> int:
     updated = 0
 
     for insert in msp.query("INSERT"):
-        if not insert.is_attrib_block:
+        if not insert.attribs_follow:
             continue
         attribs = {a.dxf.tag.upper(): a for a in insert.attribs}
         block_id = attribs.get("ID_TAG")
