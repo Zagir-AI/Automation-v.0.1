@@ -1,26 +1,27 @@
 """
 parsers/parse_dwg_assignment.py — импорт потребителей из DXF-плана смежников.
 
-Читает блоки оборудования на плане (планы ТХ, ОВ, ВК и др.) и возвращает
-список потребителей в формате project.json для добавления в consumers[].
+Читает блоки оборудования на плане (ТХ, ОВ, ВК, КВ и др.) и возвращает
+список потребителей в формате project.json.
 
 Поддерживаемые атрибуты блоков (любой регистр):
-  Обозначение: TAG, ID, POS, ПОЗИЦИЯ, ОБОЗНАЧЕНИЕ
-  Наименование: NAME, НАИМЕНОВАНИЕ, DESC
-  Тип:         TYPE, ТИП, EQUIP_TYPE
-  Мощность:    POWER, P_KW, МОЩНОСТЬ, P_INST
-  cosφ:        COS_PHI, COSPHI, КПД (fallback — по типу)
-  КПД:         ETA, КПД_ДВ
-  Фазность:    PHASES, ФАЗЫ
-  Напряжение:  VOLTAGE, VOLTAGE_CLASS, НАПРЯЖЕНИЕ
+  TAG, ID, POS, ПОЗИЦИЯ, ОБОЗНАЧЕНИЕ  — позиционное обозначение
+  NAME, НАИМЕНОВАНИЕ, DESC            — наименование
+  TYPE, ТИП, EQUIP_TYPE              — тип оборудования
+  POWER, P_KW, МОЩНОСТЬ, P_INST      — мощность, кВт
+  COS_PHI, COSPHI, PF                — коэффициент мощности
+  ETA, КПД_ДВ, EFFICIENCY            — КПД
+  PHASES, ФАЗЫ                        — количество фаз
+  VOLTAGE, VOLTAGE_CLASS, НАПРЯЖЕНИЕ  — класс напряжения
+  CATEGORY, КАТ, КАТЕГОРИЯ           — категория ПУЭ (переопределение)
 
-Зависимость: ezdxf (pip install ezdxf)
+Зависимость: ezdxf
 """
 
 from pathlib import Path
 
 
-# ── Типы оборудования → параметры по умолчанию ──────────────────────────────
+# ── Параметры по умолчанию для типов оборудования ────────────────────────────
 _TYPE_DEFAULTS = {
     "motor":    {"cos_phi": 0.85, "eta": 0.92, "phases": 3, "demand_factor": 0.75},
     "pump":     {"cos_phi": 0.85, "eta": 0.92, "phases": 3, "demand_factor": 0.75},
@@ -32,14 +33,48 @@ _TYPE_DEFAULTS = {
     "other":    {"cos_phi": 0.85, "eta": 1.00, "phases": 3, "demand_factor": 0.70},
 }
 
-# Ключевые слова для определения типа по имени/тегу блока
+# Ключевые слова для автоопределения типа оборудования
 _TYPE_KEYWORDS = {
-    "motor":    ["насос", "pump", "двигател", "motor", "электродвиг"],
-    "fan":      ["вентилят", "fan", "дутьев", "exhaust"],
-    "hvac":     ["кондицион", "чиллер", "вру", "ahu", "hvac", "fan coil"],
+    "pump":     ["насос", "pump"],
+    "motor":    ["двигател", "motor", "электродвиг", "станок", "конвейер"],
+    "fan":      ["вентилят", "fan", "дутьев", "exhaust", "приточн", "вытяжн"],
+    "hvac":     ["кондицион", "чиллер", "ahu", "hvac", "fan coil", "фанкойл"],
     "lighting": ["светильн", "light", "люстр", "прожект"],
     "socket":   ["розетк", "socket", "outlet"],
     "welder":   ["сварк", "weld"],
+}
+
+# ── Правила категории ПУЭ по разделу и типу/наименованию ─────────────────────
+# Ключевые слова → категория 1
+_CAT1_KEYWORDS = [
+    "пожар", "пожаротуш", "пс", "пожарн",   # насосы пожаротушения
+    "дымоудал", "дымовой", "противодым",      # системы дымоудаления
+    "аварийн",                                # аварийные системы
+]
+# Ключевые слова → категория 2
+_CAT2_KEYWORDS = [
+    "отоплен", "теплоснабж", "подпитк",      # отопление
+    "вентил", "приточн", "вытяжн",            # вентиляция (не аварийная)
+]
+
+# Щит по умолчанию для раздела
+_SECTION_PANEL = {
+    "ОВ":  "ЩОВ-1",
+    "ВК":  "ЩВК-1",
+    "КВ":  "ЩКВ-1",
+    "ТХ":  "ЩТХ-1",
+    "ЭОМ": "ЩС-1",
+    "ЭН":  "ШУНО-1",
+}
+
+# Категория по умолчанию для раздела
+_SECTION_DEFAULT_CATEGORY = {
+    "ОВ": 2,
+    "ВК": 2,
+    "КВ": 3,
+    "ТХ": 3,
+    "ЭОМ": 3,
+    "ЭН": 3,
 }
 
 
@@ -51,21 +86,88 @@ def _detect_type(name: str, block_name: str) -> str:
     return "other"
 
 
+def _determine_category(name: str, eq_type: str, section: str,
+                         attr_category: str | None) -> int:
+    """Определяет категорию ПУЭ потребителя."""
+    # Явное указание в атрибуте блока — приоритет
+    if attr_category:
+        try:
+            return int(attr_category.strip())
+        except ValueError:
+            pass
+
+    text = name.lower()
+
+    # Категория 1 по ключевым словам
+    if any(kw in text for kw in _CAT1_KEYWORDS):
+        return 1
+
+    # Котельное оборудование в ОВ → категория 1
+    if section == "ОВ" and any(kw in text for kw in ["котёл", "котел", "boiler"]):
+        return 1
+
+    # Категория 2 по ключевым словам
+    if any(kw in text for kw in _CAT2_KEYWORDS):
+        return 2
+
+    # Насосы в ОВ → категория 2
+    if section == "ОВ" and eq_type == "pump":
+        return 2
+
+    # Вентиляторы в ВК → категория 2
+    if section == "ВК" and eq_type == "fan":
+        return 2
+
+    # Кондиционеры → категория 3
+    if eq_type == "hvac":
+        return 3
+
+    return _SECTION_DEFAULT_CATEGORY.get(section, 3)
+
+
+def _determine_panel(name: str, eq_type: str, section: str, category: int) -> str:
+    """Определяет щит для потребителя."""
+    text = name.lower()
+
+    # Насосы пожаротушения → всегда ЩПС
+    if any(kw in text for kw in ["пожар", "пожаротуш", "пс"]) and eq_type == "pump":
+        return "ЩПС-1"
+
+    # Категория 1 в ВК → ЩПС
+    if section == "ВК" and category == 1:
+        return "ЩПС-1"
+
+    return _SECTION_PANEL.get(section, "ЩТХ-1")
+
+
+def _determine_reserve(name: str, eq_type: str, section: str, category: int) -> str | None:
+    """Определяет схему резервирования."""
+    text = name.lower()
+    # Насосы с резервом: подпитка, пожаротушение, основные насосы ОВ/ВК
+    if eq_type == "pump" and section in ("ОВ", "ВК"):
+        return "1+1"
+    if eq_type == "pump" and any(kw in text for kw in ["пожар", "подпитк", "рабоч", "резерв"]):
+        return "1+1"
+    return None
+
+
 # ── Сопоставление имён атрибутов ─────────────────────────────────────────────
-_ATTR_ID      = {"TAG", "ID", "POS", "ПОЗИЦИЯ", "ОБОЗНАЧЕНИЕ", "ID_TAG"}
-_ATTR_NAME    = {"NAME", "НАИМЕНОВАНИЕ", "DESC", "DESCR", "TITLE"}
-_ATTR_TYPE    = {"TYPE", "ТИП", "EQUIP_TYPE", "EQUIPMENT_TYPE"}
-_ATTR_POWER   = {"POWER", "P_KW", "МОЩНОСТЬ", "P_INST", "P_UST", "KW"}
-_ATTR_COS     = {"COS_PHI", "COSPHI", "COS", "COSFI", "PF"}
-_ATTR_ETA     = {"ETA", "КПД_ДВ", "EFFICIENCY"}
-_ATTR_PHASES  = {"PHASES", "ФАЗЫ", "PHASE"}
-_ATTR_VOLTAGE = {"VOLTAGE", "VOLTAGE_CLASS", "НАПРЯЖЕНИЕ", "UN", "U_NOM"}
+_ATTR_ID       = {"TAG", "ID", "POS", "ПОЗИЦИЯ", "ОБОЗНАЧЕНИЕ", "ID_TAG"}
+_ATTR_NAME     = {"NAME", "НАИМЕНОВАНИЕ", "DESC", "DESCR", "TITLE"}
+_ATTR_TYPE     = {"TYPE", "ТИП", "EQUIP_TYPE", "EQUIPMENT_TYPE"}
+_ATTR_POWER    = {"POWER", "P_KW", "МОЩНОСТЬ", "P_INST", "P_UST", "KW"}
+_ATTR_COS      = {"COS_PHI", "COSPHI", "COS", "COSFI", "PF"}
+_ATTR_ETA      = {"ETA", "КПД_ДВ", "EFFICIENCY"}
+_ATTR_PHASES   = {"PHASES", "ФАЗЫ", "PHASE"}
+_ATTR_VOLTAGE  = {"VOLTAGE", "VOLTAGE_CLASS", "НАПРЯЖЕНИЕ", "UN", "U_NOM"}
+_ATTR_CATEGORY = {"CATEGORY", "КАТ", "КАТЕГОРИЯ", "CAT"}
 
 
 def _get_attr(attribs: dict, keys: set) -> str | None:
     for key in keys:
         if key in attribs:
-            return attribs[key].strip()
+            val = attribs[key].strip()
+            return val if val else None
     return None
 
 
@@ -81,68 +183,70 @@ def _parse_float(s: str | None) -> float | None:
 
 
 def _block_to_consumer(block_name: str, attribs: dict, source_file: str,
-                        position: tuple) -> dict | None:
+                        position: tuple, section: str) -> dict | None:
     """Преобразует атрибуты блока в словарь потребителя."""
-    # Мощность обязательна
-    power_raw = _get_attr(attribs, _ATTR_POWER)
-    power_kw = _parse_float(power_raw)
+    power_kw = _parse_float(_get_attr(attribs, _ATTR_POWER))
     if power_kw is None or power_kw <= 0:
         return None
 
-    # Обозначение
-    tag = _get_attr(attribs, _ATTR_ID) or ""
+    tag  = _get_attr(attribs, _ATTR_ID) or ""
     name = _get_attr(attribs, _ATTR_NAME) or tag or block_name
 
-    # Тип оборудования
-    type_raw = _get_attr(attribs, _ATTR_TYPE) or ""
-    eq_type = type_raw.lower() if type_raw.lower() in _TYPE_DEFAULTS else _detect_type(name, block_name)
+    type_raw = (_get_attr(attribs, _ATTR_TYPE) or "").lower()
+    eq_type  = type_raw if type_raw in _TYPE_DEFAULTS else _detect_type(name, block_name)
 
     defaults = _TYPE_DEFAULTS.get(eq_type, _TYPE_DEFAULTS["other"])
 
     cos_phi = _parse_float(_get_attr(attribs, _ATTR_COS)) or defaults["cos_phi"]
-    eta     = _parse_float(_get_attr(attribs, _ATTR_ETA))  or defaults["eta"]
+    eta     = _parse_float(_get_attr(attribs, _ATTR_ETA)) or defaults["eta"]
     phases  = int(_parse_float(_get_attr(attribs, _ATTR_PHASES)) or defaults["phases"])
+    voltage = _get_attr(attribs, _ATTR_VOLTAGE) or "0.4kV"
 
-    voltage_raw = _get_attr(attribs, _ATTR_VOLTAGE) or "0.4kV"
-    voltage_class = voltage_raw if voltage_raw else "0.4kV"
+    category = _determine_category(name, eq_type, section,
+                                    _get_attr(attribs, _ATTR_CATEGORY))
+    panel_id = _determine_panel(name, eq_type, section, category)
+    reserve  = _determine_reserve(name, eq_type, section, category)
 
-    consumer = {
-        "id":            tag or f"{block_name}-{int(position[0])}",
-        "name":          name,
-        "type":          eq_type,
-        "power_kw":      round(power_kw, 2),
-        "demand_factor": defaults["demand_factor"],
-        "cos_phi":       round(cos_phi, 3),
-        "eta":           round(eta, 3),
-        "phases":        phases,
-        "voltage_class": voltage_class,
-        "source":        "dwg",
-        "source_file":   source_file,
-        "position":      {"x": round(position[0], 2), "y": round(position[1], 2)},
+    consumer_id = tag or f"{section}-{block_name}-{int(position[0])}"
+
+    return {
+        "id":             consumer_id,
+        "name":           name,
+        "type":           eq_type,
+        "section":        section,
+        "power_kw":       round(power_kw, 2),
+        "demand_factor":  defaults["demand_factor"],
+        "cos_phi":        round(cos_phi, 3),
+        "eta":            round(eta, 3),
+        "phases":         phases,
+        "voltage_class":  voltage,
+        "category_pue":   category,
+        "reserve_scheme": reserve,
+        "panel_id":       panel_id,
+        "source":         "dwg",
+        "source_file":    source_file,
+        "position":       {"x": round(position[0], 2), "y": round(position[1], 2)},
         "cable": {
-            "mark":       "ВВГнг-LS",
-            "install":    "лоток",
-            "length_m":   10,
-            "section_mm2": None
+            "mark":        "ВВГнг-LS",
+            "install":     "лоток",
+            "length_m":    10,
+            "section_mm2": None,
         },
-        "breaker": {}
+        "breaker": {},
     }
-    return consumer
 
 
-def parse_dwg_assignment(dxf_path: str) -> list[dict]:
+def parse_dwg_assignment(dxf_path: str, section_code: str = "ТХ") -> list[dict]:
     """
-    Читает DXF-план смежников и возвращает список потребителей
-    в формате project.json (consumers[]).
-
-    Извлекает только блоки с атрибутом мощности (POWER/P_KW/МОЩНОСТЬ).
-    Блоки без мощности пропускаются.
+    Читает DXF-план смежников и возвращает список потребителей.
 
     Args:
-        dxf_path: путь к DXF-файлу
+        dxf_path:     путь к DXF-файлу
+        section_code: код раздела смежника (ОВ, ВК, КВ, ТХ и др.)
 
     Returns:
-        list[dict] — потребители, готовые для вставки в consumers[]
+        list[dict] — потребители в формате consumers[] с полями
+                     category_pue, reserve_scheme, panel_id, section
     """
     try:
         import ezdxf
@@ -157,29 +261,28 @@ def parse_dwg_assignment(dxf_path: str) -> list[dict]:
     msp = doc.modelspace()
 
     consumers = []
-    seen_ids = set()
+    seen_ids: set[str] = set()
 
     for insert in msp.query("INSERT"):
         if not insert.attribs_follow:
             continue
 
-        # Собираем атрибуты в словарь {TAG.upper(): text}
         raw_attribs = {a.dxf.tag.upper(): a.dxf.text for a in insert.attribs}
         if not raw_attribs:
             continue
 
         block_name = insert.dxf.name or ""
-        pos = insert.dxf.insert  # Vec3
+        pos = insert.dxf.insert
         position = (float(pos.x), float(pos.y))
 
-        consumer = _block_to_consumer(block_name, raw_attribs, path.name, position)
+        consumer = _block_to_consumer(block_name, raw_attribs, path.name,
+                                       position, section_code)
         if consumer is None:
             continue
 
-        # Уникальность по id
+        # Гарантируем уникальность id
         base_id = consumer["id"]
-        uid = base_id
-        counter = 1
+        uid, counter = base_id, 1
         while uid in seen_ids:
             uid = f"{base_id}-{counter}"
             counter += 1
@@ -192,16 +295,18 @@ def parse_dwg_assignment(dxf_path: str) -> list[dict]:
 
 
 def print_parsed_consumers(consumers: list) -> None:
-    """Вывод извлечённых потребителей в консоль."""
+    """Вывод потребителей в консоль."""
     if not consumers:
         print("Потребители не найдены (нет блоков с атрибутом мощности)")
         return
     print(f"\nНайдено потребителей: {len(consumers)}\n")
-    fmt = f"{'ID':<12} {'Наименование':<30} {'Тип':<10} {'P,кВт':<8} {'cosφ':<6} {'фаз':<4}"
-    print(fmt)
-    print("-" * 75)
+    header = f"{'ID':<12} {'Наименование':<28} {'Тип':<8} {'P,кВт':<7} {'cosφ':<6} {'Кат':<4} {'Щит':<10} {'Резерв'}"
+    print(header)
+    print("-" * 85)
     for c in consumers:
         print(
-            f"{c['id']:<12} {c['name'][:30]:<30} {c['type']:<10} "
-            f"{c['power_kw']:<8.2f} {c['cos_phi']:<6.3f} {c['phases']:<4}"
+            f"{c['id']:<12} {c['name'][:28]:<28} {c['type']:<8} "
+            f"{c['power_kw']:<7.2f} {c['cos_phi']:<6.3f} "
+            f"{c['category_pue']:<4} {c['panel_id']:<10} "
+            f"{c['reserve_scheme'] or '-'}"
         )
