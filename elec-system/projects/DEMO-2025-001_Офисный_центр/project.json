@@ -218,13 +218,13 @@
   },
   "changes": [],
   "_meta": {
-    "schema_version": "1.0",
+    "schema_version": "1.1",
     "created": "2025-04-18",
     "last_modified": "2026-04-26",
     "calc_done": true
   },
   "_results": {
-    "calculated_at": "2026-04-26T13:34:14.179089",
+    "calculated_at": "2026-04-26T13:46:42.673304",
     "vru": {
       "id": "ВРУ-1",
       "name": "ВРУ-1",
@@ -643,5 +643,36 @@
         "auto_selected": true
       }
     }
+  },
+  "compensation": {
+    "required": true,
+    "tg_phi_fact": 0.609,
+    "tg_phi_target": 0.33,
+    "q_comp_kvar": 5.86,
+    "selected_krm": {
+      "power_kvar": 10,
+      "model": "КРМ-0.4-10",
+      "voltage_kv": 0.4,
+      "note": "Автоматическая батарея конденсаторов"
+    }
+  },
+  "outdoor_networks": [],
+  "imports": [],
+  "cable_numbering": {
+    "ОС-01": "КЛ-ЩО1-01",
+    "ОС-02": "КЛ-ЩО1-02",
+    "РЗ-01": "КЛ-ЩС1-01",
+    "РЗ-02": "КЛ-ЩС1-02",
+    "ИТ-01": "КЛ-ЩС1-03",
+    "КД-01": "КЛ-ЩК1-01"
+  },
+  "_building": {
+    "category_pue": 3,
+    "vru_scheme": "single_input",
+    "vru_description": "Один ввод",
+    "has_avr": false,
+    "compliance_ok": true,
+    "violations": 0,
+    "last_check": "2026-04-26"
   }
 }
