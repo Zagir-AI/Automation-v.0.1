@@ -190,7 +190,7 @@ def cmd_validate(args):
     # ВРУ
     vru = project.get("vru", {})
     if not vru.get("feeders"):
-        warnings.append("vru.feeders — пустой список, добавь фидеры")
+        warnings.append("vru.feeders — пустой список, добавь группы")
 
     # Проверяем потребителей
     for feeder in vru.get("feeders", []):
@@ -256,7 +256,7 @@ def cmd_calc(args):
 
     print()
 
-    # Детализация по фидерам
+    # Детализация по группам
     for feeder in vru.get("feeders", []):
         print(f"  {C.CYAN}{feeder['id']} {feeder['name']}{C.RESET}  "
               f"Pр={feeder['p_calc_kw']:.2f}кВт  Iр={feeder['i_calc_a']:.1f}А")
