@@ -3,13 +3,17 @@
 cli.py — главная точка входа в систему.
 
 Использование:
-  python cli.py new <код_объекта> "<название>"     — создать новый проект
-  python cli.py calc <путь_к_папке_проекта>        — рассчитать
-  python cli.py calc .                             — рассчитать текущую папку
-  python cli.py summary <путь>                    — краткая сводка результатов
-  python cli.py docs <путь>                       — сгенерировать все документы
-  python cli.py validate <путь>                   — проверить корректность JSON
-  python cli.py list                              — список всех проектов
+  python cli.py new <код_объекта> "<название>"         — создать новый проект
+  python cli.py calc <путь>                            — рассчитать нагрузки ВРУ
+  python cli.py calc-outdoor <путь>                   — рассчитать наружные сети
+  python cli.py summary <путь>                         — краткая сводка
+  python cli.py docs <путь> [--type spec|cable|load|pnr]  — документы
+  python cli.py plan <путь> [--section ОВ]            — DXF-план
+  python cli.py check-selectivity <путь>              — проверить селективность
+  python cli.py check-compensation <путь>             — проверить КРМ
+  python cli.py import <путь> dwg|table <файл>        — импорт из DXF или Excel
+  python cli.py validate <путь>                        — проверить JSON
+  python cli.py list                                   — список проектов
 """
 
 import sys
@@ -63,12 +67,20 @@ def find_project_dir(arg: str) -> Path:
     p = Path(arg)
     if p.exists():
         return p
-    # Поиск по коду в папке projects
     for d in PROJECTS_DIR.iterdir():
         if d.is_dir() and arg.upper() in d.name.upper():
             return d
     print(err(f"Проект не найден: {arg}"))
     sys.exit(1)
+
+def _ensure_calc(project: dict, proj_dir: Path) -> dict:
+    """Если расчёт не выполнен — запускает автоматически."""
+    if not project.get("_results"):
+        print(info("Запускаю расчёт автоматически..."))
+        from calc.engine import calculate_project
+        project = calculate_project(project)
+        save_project(project, proj_dir)
+    return project
 
 
 # ── КОМАНДЫ ───────────────────────────────────────────────────────────
@@ -106,11 +118,9 @@ def cmd_list(args):
 
 def cmd_new(args):
     """Создать новый проект из шаблона."""
-    import shutil
     code = args.code.upper()
     name = args.name
 
-    # Транслитерация для имени папки
     folder_name = f"{code}_{name[:30].replace(' ','_').replace('/','_')}"
     target = PROJECTS_DIR / folder_name
 
@@ -120,7 +130,6 @@ def cmd_new(args):
 
     target.mkdir()
 
-    # Базовый project.json
     template = {
         "project": {
             "name": name,
@@ -154,9 +163,10 @@ def cmd_new(args):
             },
             "feeders": []
         },
+        "outdoor_networks": [],
         "changes": [],
         "_meta": {
-            "schema_version": "1.0",
+            "schema_version": "1.1",
             "created": str(__import__("datetime").date.today()),
             "last_modified": str(__import__("datetime").date.today()),
             "calc_done": False
@@ -166,7 +176,6 @@ def cmd_new(args):
     with open(target / "project.json", "w", encoding="utf-8") as f:
         json.dump(template, f, ensure_ascii=False, indent=2)
 
-    # Создаём подпапки
     for sub in ["docs", "dwg", "templates"]:
         (target / sub).mkdir()
 
@@ -182,17 +191,14 @@ def cmd_validate(args):
     errors = []
     warnings = []
 
-    # Обязательные поля
     for field in ["name", "code", "stage"]:
         if not project.get("project", {}).get(field):
             errors.append(f"project.{field} — не заполнено")
 
-    # ВРУ
     vru = project.get("vru", {})
     if not vru.get("feeders"):
         warnings.append("vru.feeders — пустой список, добавь группы")
 
-    # Проверяем потребителей
     for feeder in vru.get("feeders", []):
         for panel in feeder.get("panels", []):
             for c in panel.get("consumers", []):
@@ -222,7 +228,7 @@ def cmd_validate(args):
 
 
 def cmd_calc(args):
-    """Полный расчёт проекта."""
+    """Полный расчёт ВРУ."""
     from calc.engine import calculate_project
 
     proj_dir = find_project_dir(args.path)
@@ -234,8 +240,7 @@ def cmd_calc(args):
     result = calculate_project(project)
     save_project(result, proj_dir)
 
-    # Вывод сводки
-    s = result["_results"]["summary"]
+    s   = result["_results"]["summary"]
     vru = result["_results"]["vru"]
 
     print(ok("Расчёт завершён"))
@@ -255,14 +260,12 @@ def cmd_calc(args):
         print(f"  {'Вводной автомат':<30} АВ {breaker['rating']}А хар.{breaker['char']}")
 
     print()
-
-    # Детализация по группам
     for feeder in vru.get("feeders", []):
         print(f"  {C.CYAN}{feeder['id']} {feeder['name']}{C.RESET}  "
               f"Pр={feeder['p_calc_kw']:.2f}кВт  Iр={feeder['i_calc_a']:.1f}А")
         for panel in feeder.get("panels", []):
-            cb = panel.get("cable", {})
-            br = panel.get("breaker", {})
+            cb  = panel.get("cable", {})
+            br  = panel.get("breaker", {})
             sec = cb.get("section_mm2", "?")
             rat = br.get("rating", "?")
             du  = cb.get("voltage_drop_pct", 0)
@@ -276,17 +279,39 @@ def cmd_calc(args):
     print(info(f"Результаты сохранены: {proj_dir / 'project.json'}"))
 
 
+def cmd_calc_outdoor(args):
+    """Расчёт наружных сетей освещения."""
+    from outdoor.calc_outdoor import calc_all_outdoor, print_outdoor_report
+
+    proj_dir = find_project_dir(args.path)
+    project  = load_project(proj_dir)
+
+    p_name = project.get("project", {}).get("name", "")
+    print(hdr(f"Расчёт наружных сетей: {p_name}"))
+
+    if not project.get("outdoor_networks"):
+        print(warn("outdoor_networks не заданы в project.json"))
+        return
+
+    result = calc_all_outdoor(project)
+    save_project(result, proj_dir)
+
+    print_outdoor_report(result)
+    print()
+    print(info(f"Результаты сохранены: {proj_dir / 'project.json'}"))
+
+
 def cmd_summary(args):
     """Краткая сводка по рассчитанному проекту."""
     proj_dir = find_project_dir(args.path)
-    project = load_project(proj_dir)
+    project  = load_project(proj_dir)
 
     if not project.get("_results"):
         print(warn("Проект ещё не рассчитан. Запусти: python cli.py calc " + args.path))
         return
 
-    s = project["_results"]["summary"]
-    p = project["project"]
+    s   = project["_results"]["summary"]
+    p   = project["project"]
     vru = project["_results"]["vru"]
 
     print(hdr(f"{p['code']} — {p['name']}"))
@@ -303,7 +328,6 @@ def cmd_summary(args):
     if cable.get("section_mm2"):
         print(f"  Вводной кабель:    {cable['mark']} {cable['cores']}×{cable['section_mm2']} мм²")
 
-    # Предупреждения
     print()
     warnings_found = 0
     for feeder in vru.get("feeders", []):
@@ -325,53 +349,191 @@ def cmd_summary(args):
 
 
 def cmd_docs(args):
-    """Генерация всех документов."""
+    """Генерация документов."""
     proj_dir = find_project_dir(args.path)
-    project = load_project(proj_dir)
+    project  = load_project(proj_dir)
+    project  = _ensure_calc(project, proj_dir)
 
-    if not project.get("_results"):
-        print(warn("Нет результатов расчёта. Сначала запусти: python cli.py calc " + args.path))
-        print(info("Запускаю расчёт автоматически..."))
-        from calc.engine import calculate_project
-        project = calculate_project(project)
-        save_project(project, proj_dir)
-
-    print(hdr(f"Генерация документов: {project['project']['name']}"))
+    doc_type = getattr(args, "type", None)
+    p_name   = project["project"]["name"]
+    print(hdr(f"Генерация документов: {p_name}"))
 
     docs_dir = proj_dir / "docs"
     docs_dir.mkdir(exist_ok=True)
 
-    # Импортируем генераторы
-    try:
-        from docs.gen_spec import generate_spec
-        path = generate_spec(project, docs_dir)
-        print(ok(f"Спецификация: {path.name}"))
-    except ImportError:
-        print(info("docs/gen_spec.py — будет создан на этапе 3"))
+    def _try_gen(import_path: str, func_name: str, label: str):
+        try:
+            mod = __import__(import_path, fromlist=[func_name])
+            fn  = getattr(mod, func_name)
+            path = fn(project, docs_dir)
+            print(ok(f"{label}: {path.name}"))
+        except ImportError as e:
+            print(info(f"{label} — модуль не найден ({e})"))
+        except Exception as e:
+            print(err(f"{label} — ошибка: {e}"))
 
-    try:
-        from docs.gen_cable_journal import generate_cable_journal
-        path = generate_cable_journal(project, docs_dir)
-        print(ok(f"Кабельный журнал: {path.name}"))
-    except ImportError:
-        print(info("docs/gen_cable_journal.py — будет создан на этапе 3"))
-
-    try:
-        from docs.gen_work_list import generate_work_list
-        path = generate_work_list(project, docs_dir)
-        print(ok(f"Ведомость работ: {path.name}"))
-    except ImportError:
-        print(info("docs/gen_work_list.py — будет создан на этапе 3"))
-
-    try:
-        from docs.gen_pnr import generate_pnr
-        path = generate_pnr(project, docs_dir)
-        print(ok(f"Программа ПНР: {path.name}"))
-    except ImportError:
-        print(info("docs/gen_pnr.py — будет создан на этапе 3"))
+    if doc_type in (None, "spec"):
+        _try_gen("docs.gen_spec",         "generate_spec",         "Спецификация")
+    if doc_type in (None, "cable"):
+        _try_gen("docs.gen_cable_journal","generate_cable_journal","Кабельный журнал")
+    if doc_type in (None, "load"):
+        from docs.gen_load_tables import generate_all_load_tables
+        files = generate_all_load_tables(project, docs_dir)
+        for f in files:
+            print(ok(f"Ведомость нагрузок: {f.name}"))
+    if doc_type in (None, "work"):
+        _try_gen("docs.gen_work_list",    "generate_work_list",   "Ведомость работ")
+    if doc_type in (None, "pnr"):
+        _try_gen("docs.gen_pnr",          "generate_pnr",         "Программа ПНР")
 
     print()
     print(info(f"Документы: {docs_dir}"))
+
+
+def cmd_plan(args):
+    """Генерация DXF-плана."""
+    from dwg.gen_plans import generate_section_plan, generate_summary_plan
+
+    proj_dir = find_project_dir(args.path)
+    project  = load_project(proj_dir)
+    project  = _ensure_calc(project, proj_dir)
+
+    section  = getattr(args, "section", None)
+    p_name   = project["project"]["name"]
+    print(hdr(f"Генерация плана: {p_name}"))
+
+    dwg_dir  = proj_dir / "dwg"
+    dwg_dir.mkdir(exist_ok=True)
+
+    summary = generate_summary_plan(project, dwg_dir)
+    print(ok(f"Сводный план: {summary.name}"))
+
+    section_f = generate_section_plan(project, dwg_dir, section)
+    label = f"Раздел {section}" if section else "Полный план"
+    print(ok(f"{label}: {section_f.name}"))
+
+    print()
+    print(info(f"Чертежи: {dwg_dir}"))
+
+
+def cmd_check_selectivity(args):
+    """Проверка селективности автоматов."""
+    from rules.selectivity import check_selectivity, print_selectivity_report
+
+    proj_dir = find_project_dir(args.path)
+    project  = load_project(proj_dir)
+    project  = _ensure_calc(project, proj_dir)
+
+    p_name = project["project"]["name"]
+    print(hdr(f"Селективность: {p_name}"))
+
+    results = check_selectivity(project)
+    print_selectivity_report(results)
+
+    violations = [r for r in results if not r["ok"]]
+    errors_    = [r for r in violations if r["severity"] == "error"]
+    if errors_:
+        sys.exit(1)
+
+
+def cmd_check_compensation(args):
+    """Проверка необходимости КРМ."""
+    from calc.compensation import check_compensation_needed, print_compensation_report, update_compensation
+
+    proj_dir = find_project_dir(args.path)
+    project  = load_project(proj_dir)
+    project  = _ensure_calc(project, proj_dir)
+
+    p_name = project["project"]["name"]
+    print(hdr(f"КРМ: {p_name}"))
+
+    result  = check_compensation_needed(project)
+    print_compensation_report(result)
+
+    # Сохраняем результат КРМ в project
+    project = update_compensation(project)
+    save_project(project, proj_dir)
+
+
+def cmd_import(args):
+    """Импорт потребителей из DXF или таблицы Excel."""
+    proj_dir = find_project_dir(args.path)
+    project  = load_project(proj_dir)
+
+    source     = args.source       # "dwg" или "table"
+    file_path  = Path(args.file)
+    section    = getattr(args, "section", "ТХ")
+
+    p_name = project["project"]["name"]
+    print(hdr(f"Импорт ({source}): {p_name}"))
+
+    if not file_path.exists():
+        print(err(f"Файл не найден: {file_path}"))
+        sys.exit(1)
+
+    # 1. Парсинг
+    if source == "dwg":
+        from parsers.parse_dwg_assignment import parse_dwg_assignment
+        new_consumers = parse_dwg_assignment(file_path, section_code=section)
+    elif source == "table":
+        from parsers.parse_load_table import parse_load_table
+        new_consumers = parse_load_table(file_path, section_code=section)
+    else:
+        print(err(f"Неизвестный тип источника: {source}. Используй 'dwg' или 'table'"))
+        sys.exit(1)
+
+    if not new_consumers:
+        print(warn("Потребители не найдены в файле"))
+        return
+
+    print(info(f"Найдено {len(new_consumers)} потребителей в разделе {section}"))
+
+    # 2. Показываем что нашли
+    for c in new_consumers[:10]:
+        reserve_mark = " [резерв]" if c.get("reserve") else ""
+        print(f"  {c['id']:<10} {c['name'][:35]:<35} "
+              f"P={c.get('power_kw',0):.2f}кВт  кат.{c.get('category_pue',3)}{reserve_mark}")
+    if len(new_consumers) > 10:
+        print(f"  ... и ещё {len(new_consumers)-10} потребителей")
+
+    # 3. Формируем щиты
+    from panels.auto_panels import auto_assign_panels
+
+    # Существующие щиты из первого фидера (или создаём фидер)
+    vru = project.setdefault("vru", {})
+    feeders = vru.setdefault("feeders", [])
+
+    # Ищем фидер с нужным разделом или создаём
+    target_feeder = None
+    for f in feeders:
+        if f.get("section") == section:
+            target_feeder = f
+            break
+    if target_feeder is None:
+        target_feeder = {
+            "id":      f"Ф-{section}",
+            "name":    f"Группа {section}",
+            "section": section,
+            "panels":  []
+        }
+        feeders.append(target_feeder)
+
+    existing_panels = target_feeder.get("panels", [])
+    updated_panels  = auto_assign_panels(new_consumers, existing_panels)
+
+    # Подсчёт новых
+    existing_ids = {c["id"] for p in existing_panels for c in p.get("consumers", [])}
+    new_count    = sum(1 for p in updated_panels
+                       for c in p.get("consumers", []) if c["id"] not in existing_ids)
+
+    target_feeder["panels"] = updated_panels
+
+    save_project(project, proj_dir)
+
+    print()
+    print(ok(f"Добавлено новых потребителей: {new_count}"))
+    print(ok(f"Щитов сформировано: {len(updated_panels)}"))
+    print(info(f"Запусти расчёт: python cli.py calc {args.path}"))
 
 
 # ── ТОЧКА ВХОДА ───────────────────────────────────────────────────────
@@ -392,8 +554,12 @@ def main():
     p_new.add_argument("name", help="Название объекта")
 
     # calc
-    p_calc = sub.add_parser("calc", help="Рассчитать проект")
+    p_calc = sub.add_parser("calc", help="Рассчитать нагрузки ВРУ")
     p_calc.add_argument("path", help="Путь к папке проекта или код")
+
+    # calc-outdoor
+    p_co = sub.add_parser("calc-outdoor", help="Рассчитать наружные сети")
+    p_co.add_argument("path", help="Путь к папке проекта или код")
 
     # summary
     p_sum = sub.add_parser("summary", help="Краткая сводка результатов")
@@ -404,18 +570,47 @@ def main():
     p_val.add_argument("path", help="Путь к папке проекта или код")
 
     # docs
-    p_docs = sub.add_parser("docs", help="Сгенерировать все документы")
+    p_docs = sub.add_parser("docs", help="Сгенерировать документы")
     p_docs.add_argument("path", help="Путь к папке проекта или код")
+    p_docs.add_argument("--type", choices=["spec","cable","load","work","pnr"],
+                         help="Тип документа (по умолчанию — все)")
+
+    # plan
+    p_plan = sub.add_parser("plan", help="Сгенерировать DXF-план")
+    p_plan.add_argument("path", help="Путь к папке проекта или код")
+    p_plan.add_argument("--section", help="Раздел: ОВ, ВК, ТХ, ДУ, ПС, ЭОМ, ЭН")
+
+    # check-selectivity
+    p_sel = sub.add_parser("check-selectivity", help="Проверить селективность АВ")
+    p_sel.add_argument("path", help="Путь к папке проекта или код")
+
+    # check-compensation
+    p_comp = sub.add_parser("check-compensation", help="Проверить необходимость КРМ")
+    p_comp.add_argument("path", help="Путь к папке проекта или код")
+
+    # import
+    p_imp = sub.add_parser("import", help="Импортировать потребителей из файла")
+    p_imp.add_argument("path",    help="Путь к папке проекта или код")
+    p_imp.add_argument("source",  choices=["dwg","table"],
+                        help="Источник: dwg (DXF-чертёж) или table (Excel/CSV)")
+    p_imp.add_argument("file",    help="Путь к файлу")
+    p_imp.add_argument("--section", default="ТХ",
+                        help="Код раздела (ОВ, ВК, ТХ, ...) [по умолчанию: ТХ]")
 
     args = parser.parse_args()
 
     commands = {
-        "list":     cmd_list,
-        "new":      cmd_new,
-        "calc":     cmd_calc,
-        "summary":  cmd_summary,
-        "validate": cmd_validate,
-        "docs":     cmd_docs,
+        "list":               cmd_list,
+        "new":                cmd_new,
+        "calc":               cmd_calc,
+        "calc-outdoor":       cmd_calc_outdoor,
+        "summary":            cmd_summary,
+        "validate":           cmd_validate,
+        "docs":               cmd_docs,
+        "plan":               cmd_plan,
+        "check-selectivity":  cmd_check_selectivity,
+        "check-compensation": cmd_check_compensation,
+        "import":             cmd_import,
     }
 
     if args.command in commands:
