@@ -129,11 +129,15 @@ def _determine_panel(name: str, eq_type: str, section: str, category: int) -> st
     """Определяет щит для потребителя."""
     text = name.lower()
 
-    # Насосы пожаротушения → всегда ЩПС
-    if any(kw in text for kw in ["пожар", "пожаротуш", "пс"]) and eq_type == "pump":
+    # Системы дымоудаления → ЩДУ-1 (отдельный щит, кат.1)
+    if any(kw in text for kw in ["дымоудал", "дымовой", "противодым"]):
+        return "ЩДУ-1"
+
+    # Насосы пожаротушения → ЩПС-1
+    if any(kw in text for kw in ["пожар", "пожаротуш"]) and eq_type == "pump":
         return "ЩПС-1"
 
-    # Категория 1 в ВК → ЩПС
+    # Прочие кат.1 в ВК → ЩПС-1
     if section == "ВК" and category == 1:
         return "ЩПС-1"
 
@@ -151,16 +155,20 @@ def _determine_reserve(name: str, eq_type: str, section: str, category: int) -> 
     return None
 
 
-# ── Сопоставление имён атрибутов ─────────────────────────────────────────────
-_ATTR_ID       = {"TAG", "ID", "POS", "ПОЗИЦИЯ", "ОБОЗНАЧЕНИЕ", "ID_TAG"}
-_ATTR_NAME     = {"NAME", "НАИМЕНОВАНИЕ", "DESC", "DESCR", "TITLE"}
-_ATTR_TYPE     = {"TYPE", "ТИП", "EQUIP_TYPE", "EQUIPMENT_TYPE"}
-_ATTR_POWER    = {"POWER", "P_KW", "МОЩНОСТЬ", "P_INST", "P_UST", "KW"}
-_ATTR_COS      = {"COS_PHI", "COSPHI", "COS", "COSFI", "PF"}
-_ATTR_ETA      = {"ETA", "КПД_ДВ", "EFFICIENCY"}
-_ATTR_PHASES   = {"PHASES", "ФАЗЫ", "PHASE"}
-_ATTR_VOLTAGE  = {"VOLTAGE", "VOLTAGE_CLASS", "НАПРЯЖЕНИЕ", "UN", "U_NOM"}
-_ATTR_CATEGORY = {"CATEGORY", "КАТ", "КАТЕГОРИЯ", "CAT"}
+# ── Сопоставление имён атрибутов (новый стандарт + обратная совместимость) ───
+# Порядок важен — первое совпадение побеждает
+_ATTR_ID       = ["ID_TAG", "TAG", "ID", "POS", "ПОЗИЦИЯ", "ОБОЗНАЧЕНИЕ"]
+_ATTR_NAME     = ["NAME", "НАИМЕНОВАНИЕ", "DESC", "DESCR", "TITLE"]
+_ATTR_TYPE     = ["TYPE", "ТИП", "EQUIP_TYPE", "EQUIPMENT_TYPE"]
+_ATTR_POWER    = ["POWER_KW", "POWER", "P_KW", "МОЩНОСТЬ", "P_INST", "P_UST", "KW"]
+_ATTR_COS      = ["COS_PHI", "COSPHI", "COS", "COSFI", "PF"]
+_ATTR_ETA      = ["ETA", "КПД_ДВ", "EFFICIENCY"]
+_ATTR_PHASES   = ["PHASES", "ФАЗЫ", "PHASE"]
+_ATTR_VOLTAGE  = ["VOLTAGE", "VOLTAGE_CLASS", "НАПРЯЖЕНИЕ", "UN", "U_NOM"]
+_ATTR_CATEGORY = ["CATEGORY", "КАТ", "КАТЕГОРИЯ", "CAT"]
+_ATTR_RESERVE  = ["RESERVE", "РЕЗЕРВ", "RESERVE_UNIT"]          # новый стандарт
+_ATTR_SECTION  = ["SECTION_TAG", "SECTION", "РАЗДЕЛ"]           # новый стандарт
+_ATTR_CABLE_OV = ["CABLE_MARK_OVERRIDE", "CABLE_MARK", "МАРКА"] # новый стандарт
 
 
 def _get_attr(attribs: dict, keys: set) -> str | None:
@@ -192,6 +200,11 @@ def _block_to_consumer(block_name: str, attribs: dict, source_file: str,
     tag  = _get_attr(attribs, _ATTR_ID) or ""
     name = _get_attr(attribs, _ATTR_NAME) or tag or block_name
 
+    # SECTION_TAG в блоке переопределяет параметр section_code
+    section_override = _get_attr(attribs, _ATTR_SECTION)
+    if section_override:
+        section = section_override.upper()
+
     type_raw = (_get_attr(attribs, _ATTR_TYPE) or "").lower()
     eq_type  = type_raw if type_raw in _TYPE_DEFAULTS else _detect_type(name, block_name)
 
@@ -205,29 +218,38 @@ def _block_to_consumer(block_name: str, attribs: dict, source_file: str,
     category = _determine_category(name, eq_type, section,
                                     _get_attr(attribs, _ATTR_CATEGORY))
     panel_id = _determine_panel(name, eq_type, section, category)
-    reserve  = _determine_reserve(name, eq_type, section, category)
+    reserve_scheme = _determine_reserve(name, eq_type, section, category)
+
+    # RESERVE="1" или "true" → резервный агрегат (не суммируется в нагрузку)
+    reserve_raw = (_get_attr(attribs, _ATTR_RESERVE) or "").lower()
+    is_reserve = reserve_raw in ("1", "true", "да", "yes", "резерв")
+
+    # CABLE_MARK_OVERRIDE переопределяет автовыбор марки кабеля
+    cable_mark_override = _get_attr(attribs, _ATTR_CABLE_OV)
 
     consumer_id = tag or f"{section}-{block_name}-{int(position[0])}"
 
     return {
-        "id":             consumer_id,
-        "name":           name,
-        "type":           eq_type,
-        "section":        section,
-        "power_kw":       round(power_kw, 2),
-        "demand_factor":  defaults["demand_factor"],
-        "cos_phi":        round(cos_phi, 3),
-        "eta":            round(eta, 3),
-        "phases":         phases,
-        "voltage_class":  voltage,
-        "category_pue":   category,
-        "reserve_scheme": reserve,
-        "panel_id":       panel_id,
-        "source":         "dwg",
-        "source_file":    source_file,
-        "position":       {"x": round(position[0], 2), "y": round(position[1], 2)},
+        "id":                  consumer_id,
+        "name":                name,
+        "type":                eq_type,
+        "section":             section,
+        "power_kw":            round(power_kw, 2),
+        "demand_factor":       defaults["demand_factor"],
+        "cos_phi":             round(cos_phi, 3),
+        "eta":                 round(eta, 3),
+        "phases":              phases,
+        "voltage_class":       voltage,
+        "category_pue":        category,
+        "reserve":             is_reserve,
+        "reserve_scheme":      reserve_scheme,
+        "panel_id":            panel_id,
+        "cable_mark_override": cable_mark_override,
+        "source":              "dwg",
+        "source_file":         source_file,
+        "position":            {"x": round(position[0], 2), "y": round(position[1], 2)},
         "cable": {
-            "mark":        "ВВГнг-LS",
+            "mark":        cable_mark_override or "ВВГнг-LS",
             "install":     "лоток",
             "length_m":    10,
             "section_mm2": None,
