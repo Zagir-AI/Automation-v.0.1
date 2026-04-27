@@ -213,6 +213,211 @@
             ]
           }
         ]
+      },
+      {
+        "id": "Ф4",
+        "name": "Группа ЩОВ-1 (ОВ)",
+        "section": "ОВ",
+        "panels": [
+          {
+            "id": "ЩОВ-1",
+            "name": "Щит отопления №1",
+            "type": "heating",
+            "floor": "1",
+            "category_pue": 2,
+            "has_avr": false,
+            "cable": {
+              "mark": "ВВГнг-LS",
+              "cores": 4,
+              "section_mm2": null,
+              "length_m": 30,
+              "install": "лоток",
+              "ambient_t": 25,
+              "parallel": 1
+            },
+            "breaker": {},
+            "consumers": [
+              {
+                "id": "НО-01",
+                "name": "Насос отопления основной",
+                "type": "pump",
+                "section": "ОВ",
+                "power_kw": 3.0,
+                "demand_factor": 0.8,
+                "cos_phi": 0.85,
+                "phases": 3,
+                "start_factor": 5.0,
+                "category_pue": 2,
+                "reserve": false,
+                "cable": {
+                  "mark": "ВВГнг-LS",
+                  "cores": 4,
+                  "section_mm2": null,
+                  "length_m": 20,
+                  "install": "лоток",
+                  "ambient_t": 25,
+                  "parallel": 1
+                }
+              },
+              {
+                "id": "НО-02",
+                "name": "Насос отопления резервный",
+                "type": "pump",
+                "section": "ОВ",
+                "power_kw": 3.0,
+                "demand_factor": 0.8,
+                "cos_phi": 0.85,
+                "phases": 3,
+                "start_factor": 5.0,
+                "category_pue": 2,
+                "reserve": true,
+                "reserve_scheme": "avr",
+                "cable": {
+                  "mark": "ВВГнг-LS",
+                  "cores": 4,
+                  "section_mm2": null,
+                  "length_m": 20,
+                  "install": "лоток",
+                  "ambient_t": 25,
+                  "parallel": 1
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ф5",
+        "name": "Группа ЩВК-1 (ВК)",
+        "section": "ВК",
+        "panels": [
+          {
+            "id": "ЩВК-1",
+            "name": "Щит вентиляции №1",
+            "type": "ventilation",
+            "floor": "1",
+            "category_pue": 2,
+            "has_avr": false,
+            "cable": {
+              "mark": "ВВГнг-LS",
+              "cores": 4,
+              "section_mm2": null,
+              "length_m": 35,
+              "install": "лоток",
+              "ambient_t": 25,
+              "parallel": 1
+            },
+            "breaker": {},
+            "consumers": [
+              {
+                "id": "ПВ-01",
+                "name": "Приточная вентустановка",
+                "type": "ventilation_unit",
+                "section": "ВК",
+                "power_kw": 5.5,
+                "demand_factor": 0.8,
+                "cos_phi": 0.85,
+                "phases": 3,
+                "start_factor": 4.0,
+                "category_pue": 2,
+                "cable": {
+                  "mark": "ВВГнг-LS",
+                  "cores": 4,
+                  "section_mm2": null,
+                  "length_m": 25,
+                  "install": "лоток",
+                  "ambient_t": 25,
+                  "parallel": 1
+                }
+              },
+              {
+                "id": "ВВ-01",
+                "name": "Вытяжная вентустановка",
+                "type": "ventilation_unit",
+                "section": "ВК",
+                "power_kw": 4.0,
+                "demand_factor": 0.8,
+                "cos_phi": 0.85,
+                "phases": 3,
+                "start_factor": 4.0,
+                "category_pue": 2,
+                "cable": {
+                  "mark": "ВВГнг-LS",
+                  "cores": 4,
+                  "section_mm2": null,
+                  "length_m": 30,
+                  "install": "лоток",
+                  "ambient_t": 25,
+                  "parallel": 1
+                }
+              }
+            ]
+          },
+          {
+            "id": "ЩДУ-1",
+            "name": "Щит дымоудаления №1",
+            "type": "smoke_exhaust",
+            "floor": "1",
+            "category_pue": 1,
+            "has_avr": true,
+            "cable": {
+              "mark": "ВВГнг-FRLS",
+              "cores": 4,
+              "section_mm2": null,
+              "length_m": 40,
+              "install": "лоток",
+              "ambient_t": 25,
+              "parallel": 1
+            },
+            "breaker": {},
+            "consumers": [
+              {
+                "id": "ВДУ-01",
+                "name": "Вентилятор дымоудаления",
+                "type": "smoke_fan",
+                "section": "ВК",
+                "power_kw": 7.5,
+                "demand_factor": 1.0,
+                "cos_phi": 0.85,
+                "phases": 3,
+                "start_factor": 6.0,
+                "category_pue": 1,
+                "cable": {
+                  "mark": "ВВГнг-FRLS",
+                  "cores": 4,
+                  "section_mm2": null,
+                  "length_m": 35,
+                  "install": "лоток",
+                  "ambient_t": 25,
+                  "parallel": 1
+                }
+              },
+              {
+                "id": "ВДУ-02",
+                "name": "Вентилятор дымоудаления резервный",
+                "type": "smoke_fan",
+                "section": "ВК",
+                "power_kw": 7.5,
+                "demand_factor": 1.0,
+                "cos_phi": 0.85,
+                "phases": 3,
+                "start_factor": 6.0,
+                "category_pue": 1,
+                "reserve": true,
+                "reserve_scheme": "avr",
+                "cable": {
+                  "mark": "ВВГнг-FRLS",
+                  "cores": 4,
+                  "section_mm2": null,
+                  "length_m": 35,
+                  "install": "лоток",
+                  "ambient_t": 25,
+                  "parallel": 1
+                }
+              }
+            ]
+          }
+        ]
       }
     ]
   },
@@ -224,7 +429,7 @@
     "calc_done": true
   },
   "_results": {
-    "calculated_at": "2026-04-26T13:46:42.673304",
+    "calculated_at": "2026-04-26T13:47:32.862699",
     "vru": {
       "id": "ВРУ-1",
       "name": "ВРУ-1",
@@ -588,75 +793,503 @@
           "cos_phi": 0.85,
           "ku": 1.0,
           "i_calc_a": 14.3
+        },
+        {
+          "id": "Ф4",
+          "name": "Группа ЩОВ-1 (ОВ)",
+          "section": "ОВ",
+          "panels": [
+            {
+              "id": "ЩОВ-1",
+              "name": "Щит отопления №1",
+              "floor": "1",
+              "consumers": [
+                {
+                  "id": "НО-01",
+                  "name": "Насос отопления основной",
+                  "type": "pump",
+                  "power_kw": 3.0,
+                  "demand_factor": 0.8,
+                  "p_calc_kw": 2.4,
+                  "phases": 3,
+                  "i_calc_a": 4.29,
+                  "i_start_a": 21.45,
+                  "cable": {
+                    "mark": "ВВГнг-LS",
+                    "cores": 4,
+                    "section_mm2": 1.5,
+                    "length_m": 20,
+                    "install": "лоток",
+                    "ambient_t": 25,
+                    "parallel": 1,
+                    "cos_phi": 0.85,
+                    "i_calc": 4.29,
+                    "i_allowed": 17.0,
+                    "ok": true,
+                    "install_key": "tray",
+                    "k_temp": 1.0,
+                    "auto_selected": true,
+                    "voltage_drop_pct": 0.44
+                  },
+                  "breaker": {
+                    "rating": 6,
+                    "char": "D",
+                    "poles": 3,
+                    "type": "АВ 6А хар.D 3П",
+                    "i_calc": 4.29
+                  }
+                },
+                {
+                  "id": "НО-02",
+                  "name": "Насос отопления резервный",
+                  "type": "pump",
+                  "power_kw": 3.0,
+                  "demand_factor": 0.8,
+                  "p_calc_kw": 2.4,
+                  "phases": 3,
+                  "i_calc_a": 4.29,
+                  "i_start_a": 21.45,
+                  "cable": {
+                    "mark": "ВВГнг-LS",
+                    "cores": 4,
+                    "section_mm2": 1.5,
+                    "length_m": 20,
+                    "install": "лоток",
+                    "ambient_t": 25,
+                    "parallel": 1,
+                    "cos_phi": 0.85,
+                    "i_calc": 4.29,
+                    "i_allowed": 17.0,
+                    "ok": true,
+                    "install_key": "tray",
+                    "k_temp": 1.0,
+                    "auto_selected": true,
+                    "voltage_drop_pct": 0.44
+                  },
+                  "breaker": {
+                    "rating": 6,
+                    "char": "D",
+                    "poles": 3,
+                    "type": "АВ 6А хар.D 3П",
+                    "i_calc": 4.29
+                  }
+                }
+              ],
+              "n_consumers": 2,
+              "p_installed_kw": 6.0,
+              "p_calc_kw": 4.8,
+              "s_calc_kva": 5.647,
+              "cos_phi": 0.85,
+              "ku": 1.0,
+              "i_calc_a": 8.58,
+              "cable": {
+                "mark": "ВВГнг-LS",
+                "cores": 4,
+                "section_mm2": 1.5,
+                "length_m": 30,
+                "install": "лоток",
+                "ambient_t": 25,
+                "parallel": 1,
+                "cos_phi": 0.85,
+                "i_calc": 8.58,
+                "i_allowed": 17.0,
+                "ok": true,
+                "install_key": "tray",
+                "k_temp": 1.0,
+                "auto_selected": true,
+                "voltage_drop_pct": 1.33
+              },
+              "breaker": {
+                "rating": 10,
+                "char": "C",
+                "poles": 3,
+                "type": "АВ 10А хар.C 3П",
+                "i_calc": 8.58
+              }
+            }
+          ],
+          "p_calc_kw": 4.8,
+          "s_calc_kva": 5.647,
+          "cos_phi": 0.85,
+          "ku": 1.0,
+          "i_calc_a": 8.58
+        },
+        {
+          "id": "Ф5",
+          "name": "Группа ЩВК-1 (ВК)",
+          "section": "ВК",
+          "panels": [
+            {
+              "id": "ЩВК-1",
+              "name": "Щит вентиляции №1",
+              "floor": "1",
+              "consumers": [
+                {
+                  "id": "ПВ-01",
+                  "name": "Приточная вентустановка",
+                  "type": "ventilation_unit",
+                  "power_kw": 5.5,
+                  "demand_factor": 0.8,
+                  "p_calc_kw": 4.4,
+                  "phases": 3,
+                  "i_calc_a": 7.865,
+                  "i_start_a": 31.46,
+                  "cable": {
+                    "mark": "ВВГнг-LS",
+                    "cores": 4,
+                    "section_mm2": 1.5,
+                    "length_m": 25,
+                    "install": "лоток",
+                    "ambient_t": 25,
+                    "parallel": 1,
+                    "cos_phi": 0.85,
+                    "i_calc": 7.87,
+                    "i_allowed": 17.0,
+                    "ok": true,
+                    "install_key": "tray",
+                    "k_temp": 1.0,
+                    "auto_selected": true,
+                    "voltage_drop_pct": 1.02
+                  },
+                  "breaker": {
+                    "rating": 10,
+                    "char": "D",
+                    "poles": 3,
+                    "type": "АВ 10А хар.D 3П",
+                    "i_calc": 7.87
+                  }
+                },
+                {
+                  "id": "ВВ-01",
+                  "name": "Вытяжная вентустановка",
+                  "type": "ventilation_unit",
+                  "power_kw": 4.0,
+                  "demand_factor": 0.8,
+                  "p_calc_kw": 3.2,
+                  "phases": 3,
+                  "i_calc_a": 5.72,
+                  "i_start_a": 22.88,
+                  "cable": {
+                    "mark": "ВВГнг-LS",
+                    "cores": 4,
+                    "section_mm2": 1.5,
+                    "length_m": 30,
+                    "install": "лоток",
+                    "ambient_t": 25,
+                    "parallel": 1,
+                    "cos_phi": 0.85,
+                    "i_calc": 5.72,
+                    "i_allowed": 17.0,
+                    "ok": true,
+                    "install_key": "tray",
+                    "k_temp": 1.0,
+                    "auto_selected": true,
+                    "voltage_drop_pct": 0.89
+                  },
+                  "breaker": {
+                    "rating": 10,
+                    "char": "D",
+                    "poles": 3,
+                    "type": "АВ 10А хар.D 3П",
+                    "i_calc": 5.72
+                  }
+                }
+              ],
+              "n_consumers": 2,
+              "p_installed_kw": 9.5,
+              "p_calc_kw": 7.6,
+              "s_calc_kva": 8.941,
+              "cos_phi": 0.85,
+              "ku": 1.0,
+              "i_calc_a": 13.58,
+              "cable": {
+                "mark": "ВВГнг-LS",
+                "cores": 4,
+                "section_mm2": 1.5,
+                "length_m": 35,
+                "install": "лоток",
+                "ambient_t": 25,
+                "parallel": 1,
+                "cos_phi": 0.8500000000000001,
+                "i_calc": 13.58,
+                "i_allowed": 17.0,
+                "ok": true,
+                "install_key": "tray",
+                "k_temp": 1.0,
+                "auto_selected": true,
+                "voltage_drop_pct": 2.46
+              },
+              "breaker": {
+                "rating": 16,
+                "char": "C",
+                "poles": 3,
+                "type": "АВ 16А хар.C 3П",
+                "i_calc": 13.58
+              }
+            },
+            {
+              "id": "ЩДУ-1",
+              "name": "Щит дымоудаления №1",
+              "floor": "1",
+              "consumers": [
+                {
+                  "id": "ВДУ-01",
+                  "name": "Вентилятор дымоудаления",
+                  "type": "smoke_fan",
+                  "power_kw": 7.5,
+                  "demand_factor": 1.0,
+                  "p_calc_kw": 7.5,
+                  "phases": 3,
+                  "i_calc_a": 13.406,
+                  "i_start_a": 80.44,
+                  "cable": {
+                    "mark": "ВВГнг-FRLS",
+                    "cores": 4,
+                    "section_mm2": 1.5,
+                    "length_m": 35,
+                    "install": "лоток",
+                    "ambient_t": 25,
+                    "parallel": 1,
+                    "cos_phi": 0.85,
+                    "i_calc": 13.41,
+                    "i_allowed": 17.0,
+                    "ok": true,
+                    "install_key": "tray",
+                    "k_temp": 1.0,
+                    "auto_selected": true,
+                    "voltage_drop_pct": 2.43
+                  },
+                  "breaker": {
+                    "rating": 16,
+                    "char": "D",
+                    "poles": 3,
+                    "type": "АВ 16А хар.D 3П",
+                    "i_calc": 13.41
+                  }
+                },
+                {
+                  "id": "ВДУ-02",
+                  "name": "Вентилятор дымоудаления резервный",
+                  "type": "smoke_fan",
+                  "power_kw": 7.5,
+                  "demand_factor": 1.0,
+                  "p_calc_kw": 7.5,
+                  "phases": 3,
+                  "i_calc_a": 13.406,
+                  "i_start_a": 80.44,
+                  "cable": {
+                    "mark": "ВВГнг-FRLS",
+                    "cores": 4,
+                    "section_mm2": 1.5,
+                    "length_m": 35,
+                    "install": "лоток",
+                    "ambient_t": 25,
+                    "parallel": 1,
+                    "cos_phi": 0.85,
+                    "i_calc": 13.41,
+                    "i_allowed": 17.0,
+                    "ok": true,
+                    "install_key": "tray",
+                    "k_temp": 1.0,
+                    "auto_selected": true,
+                    "voltage_drop_pct": 2.43
+                  },
+                  "breaker": {
+                    "rating": 16,
+                    "char": "D",
+                    "poles": 3,
+                    "type": "АВ 16А хар.D 3П",
+                    "i_calc": 13.41
+                  }
+                }
+              ],
+              "n_consumers": 2,
+              "p_installed_kw": 15.0,
+              "p_calc_kw": 15.0,
+              "s_calc_kva": 17.647,
+              "cos_phi": 0.85,
+              "ku": 1.0,
+              "i_calc_a": 26.81,
+              "cable": {
+                "mark": "ВВГнг-FRLS",
+                "cores": 4,
+                "section_mm2": 4,
+                "length_m": 40,
+                "install": "лоток",
+                "ambient_t": 25,
+                "parallel": 1,
+                "cos_phi": 0.85,
+                "i_calc": 26.81,
+                "i_allowed": 32.0,
+                "ok": true,
+                "install_key": "tray",
+                "k_temp": 1.0,
+                "auto_selected": true,
+                "voltage_drop_pct": 2.1
+              },
+              "breaker": {
+                "rating": 32,
+                "char": "C",
+                "poles": 3,
+                "type": "АВ 32А хар.C 3П",
+                "i_calc": 26.81
+              }
+            }
+          ],
+          "p_calc_kw": 22.6,
+          "s_calc_kva": 26.588,
+          "cos_phi": 0.85,
+          "ku": 1.0,
+          "i_calc_a": 40.4
         }
       ],
-      "p_installed_kw": 28.0,
-      "p_calc_kw": 21.0,
-      "s_calc_kva": 24.6,
-      "cos_phi": 0.854,
+      "p_installed_kw": 58.5,
+      "p_calc_kw": 48.4,
+      "s_calc_kva": 56.835,
+      "cos_phi": 0.852,
       "ku": 1.0,
-      "i_calc_a": 37.38,
+      "i_calc_a": 86.35,
       "incoming_cable": {
         "mark": "ВВГнг-LS",
         "cores": 4,
-        "section_mm2": 10,
+        "section_mm2": 35,
         "length_m": 30,
         "install": "лоток",
         "ambient_t": 25,
         "parallel": 1,
-        "cos_phi": 0.8536668635180745,
-        "i_calc": 50,
-        "i_allowed": 55.0,
+        "cos_phi": 0.8515922409712627,
+        "i_calc": 100,
+        "i_allowed": 105.0,
         "ok": true,
         "install_key": "tray",
         "k_temp": 1.0,
         "auto_selected": true
       },
       "breaker": {
-        "rating": 50,
+        "rating": 100,
         "char": "C",
         "poles": 3,
-        "type": "АВ 50А хар.C 3П",
-        "i_calc": 37.38
+        "type": "АВ 100А хар.C 3П",
+        "i_calc": 86.35
       }
     },
     "summary": {
-      "p_installed_kw": 28.0,
-      "p_calc_kw": 21.0,
-      "s_calc_kva": 24.6,
-      "cos_phi": 0.854,
-      "i_vru_a": 37.38,
+      "p_installed_kw": 58.5,
+      "p_calc_kw": 48.4,
+      "s_calc_kva": 56.835,
+      "cos_phi": 0.852,
+      "i_vru_a": 86.35,
       "incoming_cable": {
         "mark": "ВВГнг-LS",
         "cores": 4,
-        "section_mm2": 10,
+        "section_mm2": 35,
         "length_m": 30,
         "install": "лоток",
         "ambient_t": 25,
         "parallel": 1,
-        "cos_phi": 0.8536668635180745,
-        "i_calc": 50,
-        "i_allowed": 55.0,
+        "cos_phi": 0.8515922409712627,
+        "i_calc": 100,
+        "i_allowed": 105.0,
         "ok": true,
         "install_key": "tray",
         "k_temp": 1.0,
         "auto_selected": true
       }
-    }
+    },
+    "outdoor_networks": [
+      {
+        "id": "ОН-1",
+        "name": "Наружное освещение паркинга",
+        "voltage_kv": 0.4,
+        "p_installed_kw": 1.2,
+        "p_calc_kw": 1.2,
+        "cos_phi": 0.95,
+        "i_calc_a": 1.823,
+        "cable": {
+          "mark": "ВВГнг-LS",
+          "cores": 4,
+          "section_mm2": 1.5,
+          "length_m": 80,
+          "install": "земля",
+          "install_key": "ground",
+          "i_calc": 1.82,
+          "i_allowed": 22.0,
+          "ambient_t": 15,
+          "k_temp": 1.0,
+          "voltage_drop_pct": 0.8,
+          "du_limit_pct": 5.0,
+          "ok": true,
+          "auto_selected": true
+        },
+        "breaker": {
+          "rating": 6,
+          "char": "C",
+          "poles": 3,
+          "type": "АВ 6А хар.C 3П",
+          "i_calc": 2.01
+        },
+        "consumers": [
+          {
+            "id": "НО-СВ-01",
+            "name": "Светильник LED 150Вт",
+            "power_kw": 0.15,
+            "n_units": 8,
+            "demand_factor": 1.0,
+            "cos_phi": 0.95,
+            "p_calc_kw": 1.2,
+            "i_calc_a": 1.823,
+            "category_pue": 3,
+            "breaker": {
+              "rating": 6,
+              "char": "C",
+              "poles": 3,
+              "type": "АВ 6А хар.C 3П",
+              "i_calc": 2.01
+            }
+          }
+        ]
+      }
+    ]
   },
   "compensation": {
     "required": true,
-    "tg_phi_fact": 0.609,
+    "tg_phi_fact": 0.614,
     "tg_phi_target": 0.33,
-    "q_comp_kvar": 5.86,
+    "q_comp_kvar": 13.77,
     "selected_krm": {
-      "power_kvar": 10,
-      "model": "КРМ-0.4-10",
+      "power_kvar": 15,
+      "model": "КРМ-0.4-15",
       "voltage_kv": 0.4,
       "note": "Автоматическая батарея конденсаторов"
     }
   },
-  "outdoor_networks": [],
+  "outdoor_networks": [
+    {
+      "id": "ОН-1",
+      "name": "Наружное освещение паркинга",
+      "voltage_kv": 0.4,
+      "phases": 3,
+      "cable": {
+        "mark": "ВВГнг-LS",
+        "cores": 4,
+        "length_m": 80,
+        "section_mm2": null,
+        "install": "земля",
+        "ambient_t": 15
+      },
+      "consumers": [
+        {
+          "id": "НО-СВ-01",
+          "name": "Светильник LED 150Вт",
+          "power_kw": 0.15,
+          "cos_phi": 0.95,
+          "n_units": 8,
+          "demand_factor": 1.0,
+          "category_pue": 3
+        }
+      ]
+    }
+  ],
   "imports": [],
   "cable_numbering": {
     "ОС-01": "КЛ-ЩО1-01",
