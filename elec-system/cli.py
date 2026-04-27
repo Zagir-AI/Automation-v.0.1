@@ -116,8 +116,41 @@ def cmd_list(args):
             print(f"  {d.name} — ошибка чтения")
 
 
+def _prompt(label: str, default: str = "", required: bool = False) -> str:
+    """Интерактивный ввод одного поля штампа. Enter = оставить default."""
+    suffix = f" [{default}]" if default else ""
+    while True:
+        val = input(f"  {label}{suffix}: ").strip()
+        if not val:
+            val = default
+        if val or not required:
+            return val
+        print(f"  {C.RED}Обязательное поле — введи значение{C.RESET}")
+
+
+def _input_stamp(current: dict | None = None) -> dict:
+    """
+    Интерактивный ввод штампа проекта.
+    current — текущие значения (для режима редактирования).
+    """
+    c = current or {}
+    print(f"\n{C.CYAN}Заполни штамп проекта (Enter — оставить текущее):{C.RESET}")
+    return {
+        "designer":   _prompt("Разработал (ФИО)",      c.get("designer", "")),
+        "checker":    _prompt("Проверил (ФИО)",         c.get("checker", "")),
+        "norm_head":  _prompt("Н.контроль (ФИО)",       c.get("norm_head", "")),
+        "gip":        _prompt("ГИП (ФИО)",              c.get("gip", "")),
+        "gap":        _prompt("ГАП (ФИО, необяз.)",     c.get("gap", "")),
+        "org":        _prompt("Организация",             c.get("org", "")),
+        "city":       _prompt("Город",                   c.get("city", "")),
+        "stage":      _prompt("Стадия [Р]",              c.get("stage", "Р")) or "Р",
+        "object_type":_prompt("Тип объекта",             c.get("object_type","Общественное здание")),
+        "system":     _prompt("Система заземления [TN-S]",c.get("system","TN-S")) or "TN-S",
+    }
+
+
 def cmd_new(args):
-    """Создать новый проект из шаблона."""
+    """Создать новый проект из шаблона (с интерактивным вводом штампа)."""
     code = args.code.upper()
     name = args.name
 
@@ -130,47 +163,60 @@ def cmd_new(args):
 
     target.mkdir()
 
+    stamp = _input_stamp()
+    today = str(__import__("datetime").date.today())
+
     template = {
         "project": {
-            "name": name,
-            "code": code,
-            "object_type": "Общественное здание",
-            "stage": "Р",
-            "voltage_kv": 0.4,
-            "system": "TN-S",
-            "frequency": 50,
-            "city": "",
-            "designer": "",
-            "checker": "",
-            "norm_head": "",
-            "revision": 0,
-            "date": str(__import__("datetime").date.today()),
-            "notes": ""
+            "name":        name,
+            "code":        code,
+            "object_type": stamp["object_type"],
+            "stage":       stamp["stage"],
+            "voltage_kv":  0.4,
+            "system":      stamp["system"],
+            "frequency":   50,
+            "city":        stamp["city"],
+            "designer":    stamp["designer"],
+            "checker":     stamp["checker"],
+            "norm_head":   stamp["norm_head"],
+            "gip":         stamp["gip"],
+            "gap":         stamp["gap"],
+            "org":         stamp["org"],
+            "revision":    0,
+            "date":        today,
+            "notes":       "",
+            "breaker_series": "IEK",
+        },
+        "building": {
+            "floor_height_m": 3.0,
+            "floors":         1,
         },
         "vru": {
-            "id": "ВРУ-1",
+            "id":   "ВРУ-1",
             "name": "ВРУ-1",
             "bus_current_a": 250,
             "isc_ka": 10,
             "incoming_cable": {
-                "mark": "ВВГнг-LS",
-                "cores": 4,
-                "section_mm2": None,
-                "length_m": 30,
-                "install": "лоток",
-                "ambient_t": 25,
-                "parallel": 1
+                "mark":       "ВВГнг-LS",
+                "cores":      4,
+                "section_mm2":None,
+                "length_m":   30,
+                "install":    "лоток",
+                "ambient_t":  25,
+                "parallel":   1,
+                "cable_routing": {"mode": "reserve_only", "reserve_pct": 20},
             },
-            "feeders": []
+            "feeders": [],
         },
         "outdoor_networks": [],
-        "changes": [],
+        "extra_items":      [],
+        "changes":          [],
         "_meta": {
             "schema_version": "1.1",
-            "created": str(__import__("datetime").date.today()),
-            "last_modified": str(__import__("datetime").date.today()),
-            "calc_done": False
-        }
+            "created":        today,
+            "last_modified":  today,
+            "calc_done":      False,
+        },
     }
 
     with open(target / "project.json", "w", encoding="utf-8") as f:
@@ -346,6 +392,49 @@ def cmd_summary(args):
 
     if warnings_found == 0:
         print(ok("Предупреждений нет"))
+
+
+def cmd_stamp(args):
+    """Редактирование штампа проекта с автопересборкой документов."""
+    proj_dir = find_project_dir(args.path)
+    project  = load_project(proj_dir)
+    proj     = project["project"]
+
+    p_name = proj.get("name", "")
+    print(hdr(f"Штамп: {p_name}"))
+
+    if args.field and args.value:
+        # Одно поле через флаги
+        proj[args.field] = args.value
+        print(ok(f"{args.field} = {args.value}"))
+    else:
+        # Интерактивный ввод — текущие значения как дефолт
+        stamp = _input_stamp({
+            "designer":    proj.get("designer", ""),
+            "checker":     proj.get("checker", ""),
+            "norm_head":   proj.get("norm_head", ""),
+            "gip":         proj.get("gip", ""),
+            "gap":         proj.get("gap", ""),
+            "org":         proj.get("org", ""),
+            "city":        proj.get("city", ""),
+            "stage":       proj.get("stage", "Р"),
+            "object_type": proj.get("object_type", ""),
+            "system":      proj.get("system", "TN-S"),
+        })
+        for k, v in stamp.items():
+            proj[k] = v
+
+    project["project"] = proj
+    save_project(project, proj_dir)
+    print(ok("Штамп сохранён"))
+
+    # Автоматически пересоздаём документы если они были сгенерированы ранее
+    docs_dir = proj_dir / "docs"
+    if docs_dir.exists() and any(docs_dir.iterdir()):
+        print(info("Пересоздаю документы..."))
+        project = _ensure_calc(project, proj_dir)
+        fake_args = type("A", (), {"path": str(proj_dir), "type": None})()
+        cmd_docs(fake_args)
 
 
 def cmd_docs(args):
@@ -597,6 +686,12 @@ def main():
     p_imp.add_argument("--section", default="ТХ",
                         help="Код раздела (ОВ, ВК, ТХ, ...) [по умолчанию: ТХ]")
 
+    # stamp
+    p_stamp = sub.add_parser("stamp", help="Редактировать штамп проекта")
+    p_stamp.add_argument("path",    help="Путь к папке проекта или код")
+    p_stamp.add_argument("--field", help="Поле для изменения (designer, checker, ...)")
+    p_stamp.add_argument("--value", help="Новое значение поля")
+
     args = parser.parse_args()
 
     commands = {
@@ -611,6 +706,7 @@ def main():
         "check-selectivity":  cmd_check_selectivity,
         "check-compensation": cmd_check_compensation,
         "import":             cmd_import,
+        "stamp":              cmd_stamp,
     }
 
     if args.command in commands:

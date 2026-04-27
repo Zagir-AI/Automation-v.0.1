@@ -35,6 +35,60 @@ from data.demand_factors.sp256_factors import (
 U_PHASE = 220.0   # В — фазное напряжение
 U_LINE  = 380.0   # В — линейное напряжение
 
+# Запасы по умолчанию (%)
+CABLE_RESERVE_INDOOR  = 20.0
+CABLE_RESERVE_OUTDOOR = 20.0
+
+
+def effective_cable_length(cable_cfg: dict, building: dict | None = None) -> float:
+    """
+    Расчётная длина кабеля с учётом cable_routing.
+
+    Три режима (cable_routing.mode):
+      reserve_only  — L = length_m × (1 + reserve_pct/100)
+      floor_height  — L = (length_m + этажи × H_этажа + extra_m) × (1 + reserve_pct/100)
+      manual        — L = manual_length_m (запас не добавляется)
+
+    building: {"floor_height_m": 3.0, ...}  — берётся из project["building"]
+    """
+    routing     = cable_cfg.get("cable_routing") or {}
+    mode        = routing.get("mode", "reserve_only")
+    reserve_pct = routing.get("reserve_pct", CABLE_RESERVE_INDOOR)
+
+    if mode == "manual":
+        return float(routing.get("manual_length_m", cable_cfg.get("length_m", 0)))
+
+    base = float(cable_cfg.get("length_m", 0))
+
+    if mode == "floor_height":
+        fh      = (building or {}).get("floor_height_m", 3.0)
+        up      = routing.get("floors_up",   0)
+        down    = routing.get("floors_down",  0)
+        extra   = routing.get("extra_m",      2.0)
+        base   += (up + down) * fh + extra
+
+    return round(base * (1 + reserve_pct / 100), 1)
+
+
+def routing_note(cable_cfg: dict, building: dict | None = None) -> str:
+    """Текстовое пояснение как посчитана длина (для примечания в спецификации)."""
+    routing = cable_cfg.get("cable_routing") or {}
+    mode    = routing.get("mode", "reserve_only")
+    l_plan  = cable_cfg.get("length_m", 0)
+
+    if mode == "manual":
+        return "ручной ввод"
+    if mode == "floor_height":
+        fh   = (building or {}).get("floor_height_m", 3.0)
+        up   = routing.get("floors_up",  0)
+        down = routing.get("floors_down", 0)
+        ex   = routing.get("extra_m",    2.0)
+        pct  = routing.get("reserve_pct", CABLE_RESERVE_INDOOR)
+        return (f"план {l_plan}м + стояк {up+down}эт.×{fh}м + "
+                f"запас {ex}м + {pct:.0f}%")
+    pct = routing.get("reserve_pct", CABLE_RESERVE_INDOOR)
+    return f"план {l_plan}м + запас {pct:.0f}%"
+
 
 # ─────────────────────────────────────────────
 #  УРОВЕНЬ 1: ПОТРЕБИТЕЛЬ
@@ -177,10 +231,12 @@ def calc_voltage_drop(cable_result: dict, i_calc: float, phases: int) -> float:
 #  УРОВЕНЬ 2: ЩИТ
 # ─────────────────────────────────────────────
 
-def calc_panel(panel: dict) -> dict:
+def calc_panel(panel: dict, building: dict | None = None) -> dict:
     """
     Расчёт щита: нагрузки, кабели, автоматы всех потребителей.
-    Возвращает dict с результатами.
+
+    building: project["building"] — для расчёта длин кабелей по floor_height.
+    reserve=True потребители: кабель и автомат подбираются, но НЕ суммируются в нагрузку.
     """
     consumers = panel.get("consumers", [])
     results_consumers = []
@@ -189,13 +245,20 @@ def calc_panel(panel: dict) -> dict:
     q_calc_total = 0.0
 
     for c in consumers:
-        i_calc = calc_consumer_current(c)
+        is_reserve = c.get("reserve", False)
+        i_calc  = calc_consumer_current(c)
         i_start = i_calc * c.get("start_factor", 1.0)
 
-        # Кабель потребителя
+        # Кабель: учитываем cable_routing для расчётной длины
         cable_cfg = dict(c.get("cable", {}))
         cable_cfg["cos_phi"] = c.get("cos_phi", 0.85)
-        cable_result = select_cable_for_current(cable_cfg, i_calc, i_start)
+        # Расчётная длина (с запасом / стояком)
+        eff_len = effective_cable_length(cable_cfg, building)
+        cable_cfg_calc = {**cable_cfg, "length_m": eff_len}
+        cable_result = select_cable_for_current(cable_cfg_calc, i_calc, i_start)
+        cable_result["length_m_plan"]   = cable_cfg.get("length_m", 0)
+        cable_result["length_m_calc"]   = eff_len
+        cable_result["routing_note"]    = routing_note(cable_cfg, building)
 
         # Потеря напряжения
         du = calc_voltage_drop(cable_result, i_calc, c.get("phases", 3))
@@ -204,27 +267,34 @@ def calc_panel(panel: dict) -> dict:
         # Автомат потребителя
         breaker_result = select_breaker_for_consumer(c, i_calc)
 
-        # Вклад в суммарную мощность щита
-        p_kw = c["power_kw"] * c.get("demand_factor",
-               DEFAULT_DEMAND_FACTORS.get(c.get("type","default"), 0.70))
-        cos_phi = c.get("cos_phi", 0.85)
-        sin_phi = math.sqrt(1 - cos_phi**2)
-        p_calc_total += p_kw
-        q_calc_total += p_kw * sin_phi / cos_phi  # Q = P × tg φ
+        # Суммируем только не-резервных потребителей
+        if not is_reserve:
+            p_kw    = c["power_kw"] * c.get("demand_factor",
+                      DEFAULT_DEMAND_FACTORS.get(c.get("type","default"), 0.70))
+            cos_phi = c.get("cos_phi", 0.85)
+            sin_phi = math.sqrt(max(0, 1 - cos_phi**2))
+            p_calc_total += p_kw
+            q_calc_total += p_kw * sin_phi / cos_phi
+        else:
+            p_kw = 0.0
 
         results_consumers.append({
-            "id": c["id"],
-            "name": c["name"],
-            "type": c.get("type", ""),
-            "power_kw": c["power_kw"],
-            "demand_factor": c.get("demand_factor",
-                DEFAULT_DEMAND_FACTORS.get(c.get("type","default"), 0.70)),
-            "p_calc_kw": round(p_kw, 3),
-            "phases": c.get("phases", 3),
-            "i_calc_a": i_calc,
-            "i_start_a": round(i_calc * c.get("start_factor", 1.0), 2),
-            "cable": cable_result,
-            "breaker": breaker_result,
+            "id":           c["id"],
+            "name":         c["name"],
+            "type":         c.get("type", ""),
+            "section":      c.get("section", ""),
+            "power_kw":     c["power_kw"],
+            "reserve":      is_reserve,
+            "demand_factor":c.get("demand_factor",
+                            DEFAULT_DEMAND_FACTORS.get(c.get("type","default"), 0.70)),
+            "p_calc_kw":    round(p_kw, 3),
+            "phases":       c.get("phases", 3),
+            "cos_phi":      c.get("cos_phi", 0.85),
+            "i_calc_a":     i_calc,
+            "i_start_a":    round(i_calc * c.get("start_factor", 1.0), 2),
+            "cable":        cable_result,
+            "breaker":      breaker_result,
+            "category_pue": c.get("category_pue", panel.get("category_pue", 3)),
         })
 
     # Суммарный расчётный ток щита
@@ -270,14 +340,14 @@ def calc_panel(panel: dict) -> dict:
 #  УРОВЕНЬ 3: ФИДЕР
 # ─────────────────────────────────────────────
 
-def calc_feeder(feeder: dict) -> dict:
+def calc_feeder(feeder: dict, building: dict | None = None) -> dict:
     """Расчёт фидера: суммирует щиты."""
     panels_results = []
     p_total = 0.0
     q_total = 0.0
 
     for panel in feeder.get("panels", []):
-        pr = calc_panel(panel)
+        pr = calc_panel(panel, building)
         panels_results.append(pr)
         cos_phi = pr["cos_phi"]
         sin_phi = math.sqrt(max(0, 1 - cos_phi**2))
@@ -308,14 +378,14 @@ def calc_feeder(feeder: dict) -> dict:
 #  УРОВЕНЬ 4: ВРУ
 # ─────────────────────────────────────────────
 
-def calc_vru(vru: dict) -> dict:
+def calc_vru(vru: dict, building: dict | None = None) -> dict:
     """Расчёт ВРУ: суммирует фидеры."""
     feeders_results = []
     p_total = 0.0
     q_total = 0.0
 
     for feeder in vru.get("feeders", []):
-        fr = calc_feeder(feeder)
+        fr = calc_feeder(feeder, building)
         feeders_results.append(fr)
         cos_phi = fr["cos_phi"]
         sin_phi = math.sqrt(max(0, 1 - cos_phi**2))
@@ -383,7 +453,8 @@ def calculate_project(project: dict) -> dict:
 
     result = copy.deepcopy(project)
 
-    vru_result = calc_vru(project["vru"])
+    building   = project.get("building", {})
+    vru_result = calc_vru(project["vru"], building)
 
     result["_results"] = {
         "calculated_at": datetime.datetime.now().isoformat(),

@@ -1,257 +1,537 @@
 """
-docs/gen_spec.py — генерация спецификации оборудования, изделий и материалов.
+docs/gen_spec.py — спецификация оборудования, изделий и материалов.
 
 Формат: ГОСТ 21.110-2013, форма 3 (А4, альбомная).
-Разделы: Щиты и шкафы управления | Аппараты защиты | Кабели и провода
+Разделы:
+  1. Щиты и шкафы управления
+  2. Аппараты защиты
+  3. Кабели и провода
+  4. Электроустановочные изделия и оборудование
+  5. Прочие материалы
+
+Длины кабелей берутся из cable["length_m_calc"] (уже с запасом и вертикальными участками).
+Обозначения АВ — из get_breaker_designation() по серии производителя.
+Шаблонные позиции щита — из get_template_items() по типу щита.
 """
 
+from __future__ import annotations
+
+import sys
 from pathlib import Path
 from collections import defaultdict
 
+# ── Вспомогательные импорты ───────────────────────────────────────────────────
 
-def _build_spec_items(project: dict) -> dict:
+def _import_breaker_tables():
+    here = Path(__file__).resolve().parent.parent
+    if str(here) not in sys.path:
+        sys.path.insert(0, str(here))
+    try:
+        from data.breakers.breaker_tables import get_breaker_designation
+        return get_breaker_designation
+    except ImportError:
+        return None
+
+
+def _import_spec_templates():
+    here = Path(__file__).resolve().parent.parent
+    if str(here) not in sys.path:
+        sys.path.insert(0, str(here))
+    try:
+        from data.spec_templates import get_template_items
+        return get_template_items
+    except ImportError:
+        return None
+
+
+# ── Эффективная длина кабеля ──────────────────────────────────────────────────
+
+def _effective_length(cable: dict) -> float:
+    """Возвращает расчётную длину кабеля (уже с запасом если есть)."""
+    calc = cable.get("length_m_calc")
+    if calc is not None:
+        return float(calc)
+    return float(cable.get("length_m", 0))
+
+
+# ── Сбор данных спецификации ──────────────────────────────────────────────────
+
+def _build_spec_data(project: dict) -> dict:
     """
-    Обходит _results и собирает позиции спецификации по разделам.
-    Возвращает: {"panels": [...], "breakers": {...}, "cables": {...}}
+    Обходит _results и собирает все позиции спецификации.
+
+    Returns:
+        {
+          "panels":   [{"id", "name", "note", "has_avr"}],
+          "breakers": {(rating, char, poles, series): {"count", "mark", "name", "gost"}},
+          "cables":   {(mark, cores, section): {"length_m", "routing_notes": set}},
+          "hardware": [{"name", "mark", "unit", "qty", "note", "section"}],
+          "extra":    list from project["extra_items"],
+          "series":   str brand,
+        }
     """
-    vru = project["_results"]["vru"]
-    proj = project["project"]
+    get_breaker_designation = _import_breaker_tables()
+    get_template_items      = _import_spec_templates()
 
-    panels = []
-    breaker_counts = defaultdict(int)   # {(rating, char, poles): count}
-    cable_lengths  = defaultdict(float) # {(mark, cores, section): meters}
+    vru_result = project.get("_results", {}).get("vru", {})
+    proj       = project.get("project", {})
+    series_brand = proj.get("breaker_series", "IEK")
 
-    def add_breaker(br: dict, count: int = 1):
+    panels   = []
+    breakers: dict[tuple, dict] = {}
+    cables:   dict[tuple, dict] = {}
+    hardware: list[dict]        = []
+
+    # ── helpers ──────────────────────────────────────────────────────────────
+
+    def _br_key(br: dict) -> tuple:
+        return (br["rating"], br.get("char", "C"), br.get("poles", 3), series_brand)
+
+    def _add_breaker(br: dict, count: int = 1):
         if not br or not br.get("rating"):
             return
-        key = (br["rating"], br.get("char", "C"), br.get("poles", 3))
-        breaker_counts[key] += count
+        key = _br_key(br)
+        if key not in breakers:
+            if get_breaker_designation:
+                desig = get_breaker_designation(br["rating"], br.get("char", "C"),
+                                                br.get("poles", 3), series_brand)
+            else:
+                desig = {
+                    "mark": f"АВ {br['rating']}А {br.get('char','C')}",
+                    "name": (f"Выключатель автоматический {br.get('poles',3)}П "
+                             f"{br['rating']}А хар.{br.get('char','C')}"),
+                    "gost": "ГОСТ IEC 60898-1",
+                }
+            breakers[key] = {"count": 0, **desig}
+        breakers[key]["count"] += count
 
-    def add_cable(cb: dict, count: int = 1):
+    def _add_cable(cb: dict):
         if not cb or not cb.get("section_mm2"):
             return
-        mark = cb.get("mark", "ВВГнг-LS")
-        cores = cb.get("cores", 4)
+        mark    = cb.get("mark", "ВВГнг-LS")
+        cores   = cb.get("cores", 4)
         section = cb.get("section_mm2")
-        length = cb.get("length_m", 0) * count
-        cable_lengths[(mark, cores, section)] += length
+        length  = _effective_length(cb)
+        note    = cb.get("routing_note", "")
+        key = (mark, cores, section)
+        if key not in cables:
+            cables[key] = {"length_m": 0.0, "routing_notes": set()}
+        cables[key]["length_m"]    += length
+        if note:
+            cables[key]["routing_notes"].add(note)
 
-    # ВРУ как щит
-    vru_br = vru.get("breaker", {})
-    vru_cb = vru.get("incoming_cable", {})
+    # ── ВРУ ──────────────────────────────────────────────────────────────────
+
+    vru_src = project.get("vru", {})
+    vru_br  = vru_result.get("breaker", {})
+    vru_cb  = vru_result.get("incoming_cable", {})
+
     panels.append({
-        "id": vru["id"],
-        "name": f"ВРУ-1-22-УХЛ4",
-        "note": f"Iн={vru_br.get('rating','?')}А, Iкз={project['vru'].get('isc_ka',10)}кА",
+        "id":      vru_result.get("id", vru_src.get("id", "ВРУ-1")),
+        "name":    vru_src.get("name", "Вводно-распределительное устройство"),
+        "note":    (f"Iн={vru_br.get('rating','?')}А, "
+                    f"Iкз={vru_src.get('isc_ka', 10)}кА"),
+        "has_avr": vru_src.get("has_avr", False),
     })
-    add_breaker(vru_br)
-    add_cable(vru_cb)
+    _add_breaker(vru_br)
+    _add_cable(vru_cb)
 
-    # Щиты
-    for feeder in vru.get("feeders", []):
-        for panel in feeder.get("panels", []):
-            pb = panel.get("breaker", {})
-            pc = panel.get("cable", {})
-            bus_a = pb.get("rating", 63)
-            pname = panel["name"]
-            if not pname.lower().startswith("щит"):
-                pname = f"Щит {pname}"
+    # ── Фидеры → Щиты → Потребители ──────────────────────────────────────────
+
+    for feeder in vru_result.get("feeders", []):
+        for panel_res in feeder.get("panels", []):
+            panel_id   = panel_res.get("id", "")
+            panel_name = panel_res.get("name", panel_id)
+            panel_src  = {}
+
+            # Найдём источник щита в project для panel_type
+            for f_src in project.get("vru", {}).get("feeders", []):
+                for p_src in f_src.get("panels", []):
+                    if p_src.get("id") == panel_id:
+                        panel_src = p_src
+                        break
+
+            panel_type  = panel_src.get("panel_type") or panel_src.get("type", "")
+            has_avr     = panel_src.get("has_avr", False)
+            bus_a       = panel_res.get("breaker", {}).get("rating", "?")
+            consumers   = panel_res.get("consumers", [])
+            n_consumers = sum(1 for c in consumers if not c.get("reserve"))
+
             panels.append({
-                "id": panel["id"],
-                "name": pname,
-                "note": f"Iн шины={bus_a}А,",
+                "id":      panel_id,
+                "name":    panel_name,
+                "note":    f"Iн шины={bus_a}А",
+                "has_avr": has_avr,
             })
-            add_breaker(pb)
-            add_cable(pc)
+
+            # АВ питания щита
+            _add_breaker(panel_res.get("breaker", {}))
+
+            # Кабель питания щита
+            _add_cable(panel_res.get("cable", {}))
 
             # Потребители
-            for c in panel.get("consumers", []):
-                add_breaker(c.get("breaker", {}))
-                add_cable(c.get("cable", {}))
+            n_breakers = 0
+            for c in consumers:
+                br = c.get("breaker", {})
+                if br and br.get("rating"):
+                    _add_breaker(br)
+                    n_breakers += 1
+                _add_cable(c.get("cable", {}))
+
+            # Шаблонные позиции по типу щита (always apply "all", even if no specific type)
+            if get_template_items:
+                tmpl_items = get_template_items(panel_type, n_consumers, n_breakers)
+                for ti in tmpl_items:
+                    hardware.append(ti)
+
+    # ── Наружные сети освещения ───────────────────────────────────────────────
+
+    outdoor_results = project.get("_results", {}).get("outdoor_networks", [])
+    for net in outdoor_results:
+        _add_cable(net.get("cable", {}))
+
+    # ── extra_items из project.json ───────────────────────────────────────────
+
+    extra = project.get("extra_items", [])
 
     return {
-        "panels": panels,
-        "breakers": breaker_counts,
-        "cables": cable_lengths,
+        "panels":   panels,
+        "breakers": breakers,
+        "cables":   cables,
+        "hardware": hardware,
+        "extra":    extra,
+        "series":   series_brand,
     }
 
 
+# ── DOCX ──────────────────────────────────────────────────────────────────────
+
+_COL_WIDTHS_CM = [1.5, 4.0, 8.5, 1.5, 1.2, 5.3]   # Поз. Марка Наим. Кол. Ед. Примеч.
+
+
+def _cell_text(cell, text: str, size_pt: int = 10, bold: bool = False,
+               center: bool = False):
+    from docx.shared import Pt
+    from docx.enum.text import WD_ALIGN_PARAGRAPH
+    p = cell.paragraphs[0]
+    p.alignment = WD_ALIGN_PARAGRAPH.CENTER if center else WD_ALIGN_PARAGRAPH.LEFT
+    run = p.add_run(str(text))
+    run.font.size  = Pt(size_pt)
+    run.font.bold  = bold
+    run.font.name  = "Times New Roman"
+
+
+def _add_header_row(table, col_widths):
+    from docx.shared import Cm
+    from docx.enum.table import WD_ALIGN_VERTICAL
+    headers = ["Поз.", "Марка / Обозначение", "Наименование", "Кол.", "Ед.", "Примечание"]
+    row = table.rows[0]
+    for cell, h, w in zip(row.cells, headers, col_widths):
+        cell.width = Cm(w)
+        cell.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
+        _cell_text(cell, h, bold=True, center=True)
+
+
+def _add_section_row(table, title: str):
+    row = table.add_row()
+    merged = row.cells[0].merge(row.cells[5])
+    _cell_text(merged, f"  {title}", bold=True)
+
+
+def _add_item_row(table, pos: int, mark: str, name: str,
+                  qty, unit: str, note: str, col_widths):
+    from docx.shared import Cm
+    row = table.add_row()
+    data = [str(pos), mark, name, str(qty), unit, note]
+    for cell, val, w in zip(row.cells, data, col_widths):
+        cell.width = Cm(w)
+        center = val in (str(pos), str(qty), unit)
+        _cell_text(cell, val, center=center)
+    return pos + 1
+
+
+def _add_stamp(doc, proj: dict):
+    """
+    Штамп (подписи): таблица 4 строки.
+    Колонки: Должность | ФИО | Подпись | Дата
+    """
+    from docx.shared import Pt, Cm
+    from docx.enum.text import WD_ALIGN_PARAGRAPH
+
+    doc.add_paragraph()
+    stamp = doc.add_table(rows=5, cols=4)
+    stamp.style = "Table Grid"
+
+    col_w = [4.0, 5.5, 3.0, 2.5]
+    headers_r0 = ["Должность", "Фамилия И.О.", "Подпись", "Дата"]
+    rows_data = [
+        ("Разработал",    proj.get("designer",   "")),
+        ("Проверил",      proj.get("checker",    "")),
+        ("Нормоконтроль", proj.get("norm_head",  "")),
+        ("ГИП",           proj.get("gip",        "")),
+    ]
+
+    def _st_cell(cell, text, bold=False, center=False):
+        from docx.enum.text import WD_ALIGN_PARAGRAPH
+        p = cell.paragraphs[0]
+        p.alignment = WD_ALIGN_PARAGRAPH.CENTER if center else WD_ALIGN_PARAGRAPH.LEFT
+        run = p.add_run(str(text))
+        run.font.size = Pt(9)
+        run.font.bold = bold
+        run.font.name = "Times New Roman"
+
+    # Строка заголовков
+    for cell, h, w in zip(stamp.rows[0].cells, headers_r0, col_w):
+        from docx.shared import Cm
+        cell.width = Cm(w)
+        _st_cell(cell, h, bold=True, center=True)
+
+    for i, (role, name) in enumerate(rows_data, start=1):
+        row = stamp.rows[i]
+        _st_cell(row.cells[0], role)
+        _st_cell(row.cells[1], name)
+        # Колонки "Подпись" и "Дата" оставляем пустыми (заполняются вручную)
+
+    # Строка: организация + дата
+    p_org = doc.add_paragraph()
+    p_org.alignment = WD_ALIGN_PARAGRAPH.LEFT
+    run = p_org.add_run(
+        f"Организация: {proj.get('org','')}   |   "
+        f"Город: {proj.get('city','')}   |   "
+        f"Стадия: {proj.get('stage','Р')}   |   "
+        f"Объект: {proj.get('object_type','')}   |   "
+        f"Система: {proj.get('system','ЭС и ЭО')}"
+    )
+    run.font.size = Pt(9)
+    run.font.name = "Times New Roman"
+
+
+# ── Публичный API ─────────────────────────────────────────────────────────────
+
 def generate_spec(project: dict, docs_dir: Path) -> Path:
     """
-    Генерирует спецификацию в формате DOCX.
-    Возвращает путь к созданному файлу.
+    Генерирует спецификацию оборудования по ГОСТ 21.110-2013.
+    Возвращает путь к созданному файлу (.docx или .txt).
     """
     try:
         from docx import Document
-        from docx.shared import Pt, Cm, RGBColor
+        from docx.shared import Pt, Cm
         from docx.enum.text import WD_ALIGN_PARAGRAPH
-        from docx.enum.table import WD_TABLE_ALIGNMENT, WD_ALIGN_VERTICAL
-        from docx.oxml.ns import qn
-        from docx.oxml import OxmlElement
+        from docx.enum.table import WD_TABLE_ALIGNMENT
         _has_docx = True
     except ImportError:
         _has_docx = False
 
-    proj = project["project"]
-    code = proj.get("code", "")
-    name = proj.get("name", "")
-    stage = proj.get("stage", "Р")
-    rev = proj.get("revision", 0)
-    date = proj.get("date", "")
-    designer = proj.get("designer", "")
-    checker = proj.get("checker", "")
-    norm_head = proj.get("norm_head", "")
+    docs_dir = Path(docs_dir)
+    docs_dir.mkdir(parents=True, exist_ok=True)
 
-    items = _build_spec_items(project)
-    out_path = docs_dir / f"{code}_spec.docx"
+    proj  = project.get("project", {})
+    code  = proj.get("code", "ОБЪЕКТ")
+    name  = proj.get("name", "")
+    stage = proj.get("stage", "Р")
+    rev   = proj.get("revision", 0)
+    date  = proj.get("date", "")
+
+    data = _build_spec_data(project)
 
     if not _has_docx:
-        # Fallback: текстовый файл
         txt_path = docs_dir / f"{code}_spec.txt"
-        _write_spec_txt(project, items, txt_path, proj)
+        _write_txt(data, proj, txt_path)
         return txt_path
 
+    out_path = docs_dir / f"{code}_spec.docx"
     doc = Document()
 
-    # ── Поля страницы ──
-    section = doc.sections[0]
-    section.page_width  = Cm(29.7)
-    section.page_height = Cm(21.0)
-    section.left_margin   = Cm(2.0)
-    section.right_margin  = Cm(1.0)
-    section.top_margin    = Cm(1.5)
-    section.bottom_margin = Cm(1.5)
+    # ── Страница: А4 альбомная ────────────────────────────────────────────────
+    sec = doc.sections[0]
+    sec.page_width    = Cm(29.7)
+    sec.page_height   = Cm(21.0)
+    sec.left_margin   = Cm(2.0)
+    sec.right_margin  = Cm(1.0)
+    sec.top_margin    = Cm(1.5)
+    sec.bottom_margin = Cm(1.5)
 
-    # ── Заголовок ──
-    def add_centered(text, size=12, bold=False):
+    def _heading(text: str, size: int = 12, bold: bool = False):
         p = doc.add_paragraph()
         p.alignment = WD_ALIGN_PARAGRAPH.CENTER
         run = p.add_run(text)
         run.font.size = Pt(size)
         run.font.bold = bold
         run.font.name = "Times New Roman"
-        return p
 
-    add_centered("Спецификация оборудования, изделий и материалов", size=13, bold=True)
-    add_centered(f"Электроснабжение {name.lower()}", size=11)
-    add_centered(
-        f"Раздел: ЭС и ЭО | Стадия: {stage} | Код: {code} | Ред.: {rev} | Дата: {date}",
-        size=10
+    _heading("СПЕЦИФИКАЦИЯ ОБОРУДОВАНИЯ, ИЗДЕЛИЙ И МАТЕРИАЛОВ", size=13, bold=True)
+    _heading(name, size=11)
+    _heading(
+        f"Раздел: {proj.get('system','ЭС и ЭО')}  |  Стадия: {stage}  |  "
+        f"Код: {code}  |  Ред.: {rev}  |  Дата: {date}",
+        size=10,
     )
     doc.add_paragraph()
 
-    # ── Таблица ──
-    col_widths = [Cm(1.3), Cm(4.5), Cm(8.0), Cm(1.5), Cm(1.2), Cm(5.0)]
-    headers = ["Поз.", "Марка/Обозначение", "Наименование", "Кол.", "Ед.", "Примечание"]
-
+    # ── Основная таблица ──────────────────────────────────────────────────────
+    col_widths = _COL_WIDTHS_CM
     table = doc.add_table(rows=1, cols=6)
-    table.style = "Table Grid"
+    table.style     = "Table Grid"
     table.alignment = WD_TABLE_ALIGNMENT.CENTER
-
-    # Шапка таблицы
-    hdr_row = table.rows[0]
-    for i, (cell, h, w) in enumerate(zip(hdr_row.cells, headers, col_widths)):
-        cell.width = w
-        p = cell.paragraphs[0]
-        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        run = p.add_run(h)
-        run.font.bold = True
-        run.font.size = Pt(10)
-        run.font.name = "Times New Roman"
-        cell.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
+    _add_header_row(table, col_widths)
 
     pos = 1
 
-    def add_section_row(title: str):
-        row = table.add_row()
-        merged = row.cells[0].merge(row.cells[5])
-        p = merged.paragraphs[0]
-        run = p.add_run(title)
-        run.font.bold = True
-        run.font.size = Pt(10)
-        run.font.name = "Times New Roman"
+    # ── 1. Щиты и шкафы ──────────────────────────────────────────────────────
+    _add_section_row(table, "1. Щиты и шкафы управления")
+    for panel in data["panels"]:
+        avr_note = " (с АВР)" if panel.get("has_avr") else ""
+        pos = _add_item_row(table, pos,
+                             panel["id"],
+                             panel["name"] + avr_note,
+                             1, "шт.",
+                             panel.get("note", ""),
+                             col_widths)
 
-    def add_item_row(mark: str, name: str, qty, unit: str, note: str = ""):
-        nonlocal pos
-        row = table.add_row()
-        data = [str(pos), mark, name, str(qty), unit, note]
-        for cell, val, w in zip(row.cells, data, col_widths):
-            cell.width = w
-            p = cell.paragraphs[0]
-            align = WD_ALIGN_PARAGRAPH.CENTER if val in (str(pos), str(qty), unit) else WD_ALIGN_PARAGRAPH.LEFT
-            p.alignment = align
-            run = p.add_run(val)
-            run.font.size = Pt(10)
-            run.font.name = "Times New Roman"
-        pos += 1
+    # ── 2. Аппараты защиты ───────────────────────────────────────────────────
+    _add_section_row(table, "2. Аппараты защиты")
+    for key in sorted(data["breakers"]):
+        br   = data["breakers"][key]
+        gost = br.get("gost", "")
+        pos  = _add_item_row(table, pos,
+                              br["mark"],
+                              br["name"],
+                              br["count"], "шт.",
+                              gost,
+                              col_widths)
 
-    # ── Раздел 1: Щиты ──
-    add_section_row("Щиты и шкафы управления")
-    for panel in items["panels"]:
-        add_item_row(panel["id"], panel["name"], 1, "шт.", panel.get("note", ""))
+    # ── 3. Кабели и провода ───────────────────────────────────────────────────
+    _add_section_row(table, "3. Кабели и провода")
+    for (mark, cores, section) in sorted(data["cables"]):
+        entry  = data["cables"][(mark, cores, section)]
+        length = round(entry["length_m"])
+        notes  = "; ".join(sorted(entry["routing_notes"]))
+        cable_name = f"Кабель {mark} {cores}×{section} мм²"
+        cable_mark = f"{mark} {cores}×{section}"
+        pos = _add_item_row(table, pos,
+                             cable_mark,
+                             cable_name,
+                             length, "м",
+                             notes or "с запасом 20%",
+                             col_widths)
 
-    # ── Раздел 2: Автоматы ──
-    add_section_row("Аппараты защиты")
-    for (rating, char, poles), count in sorted(items["breakers"].items()):
-        pole_str = "2 полюса" if poles == 2 else "3 полюса"
-        mark = f"АВ {rating}А {char}"
-        name_str = f"Выключатель автоматический {poles}П {rating}А хар.{char}"
-        add_item_row(mark, name_str, count, "шт.", f"МСВ, {pole_str}")
+    # ── 4. Электроустановочные изделия (шаблоны щитов) ───────────────────────
+    if data["hardware"]:
+        _add_section_row(table, "4. Электроустановочные изделия и оборудование")
+        # Группируем одинаковые позиции
+        hw_agg: dict[tuple, dict] = {}
+        for item in data["hardware"]:
+            key = (item["name"], item.get("mark", ""), item["unit"])
+            if key not in hw_agg:
+                hw_agg[key] = {**item, "qty": 0}
+            hw_agg[key]["qty"] += item["qty"]
+        for key in sorted(hw_agg):
+            item = hw_agg[key]
+            qty  = item["qty"]
+            if isinstance(qty, float) and qty == int(qty):
+                qty = int(qty)
+            pos = _add_item_row(table, pos,
+                                 item.get("mark", ""),
+                                 item["name"],
+                                 qty, item["unit"],
+                                 item.get("note", ""),
+                                 col_widths)
 
-    # ── Раздел 3: Кабели ──
-    add_section_row("Кабели и провода")
-    for (mark, cores, section), length_m in sorted(items["cables"].items()):
-        length_with_reserve = round(length_m * 1.05)  # +5% запас
-        name_str = f"Кабель {mark} {cores}×{section}"
-        add_item_row(f"{mark} {cores}×{section}", name_str,
-                     length_with_reserve, "М", "с запасом 5%")
+    # ── 5. Прочие материалы (extra_items) ────────────────────────────────────
+    if data["extra"]:
+        _add_section_row(table, "5. Прочие материалы")
+        for item in data["extra"]:
+            qty = item.get("qty", 1)
+            if isinstance(qty, float) and qty == int(qty):
+                qty = int(qty)
+            pos = _add_item_row(table, pos,
+                                 item.get("mark", ""),
+                                 item.get("name", ""),
+                                 qty,
+                                 item.get("unit", "шт."),
+                                 item.get("note", ""),
+                                 col_widths)
 
     doc.add_paragraph()
-
-    # ── Подписи ──
-    p_sign = doc.add_paragraph()
-    p_sign.alignment = WD_ALIGN_PARAGRAPH.LEFT
-    tab_str = "\t\t\t"
-    run = p_sign.add_run(
-        f"Разработал: {designer}{tab_str}Проверил: {checker}{tab_str}Н.контроль: {norm_head}"
-    )
-    run.font.size = Pt(10)
-    run.font.name = "Times New Roman"
+    _add_stamp(doc, proj)
 
     doc.save(str(out_path))
     return out_path
 
 
-def _write_spec_txt(project, items, path: Path, proj: dict):
-    """Запасной вариант — текстовый файл без python-docx."""
+# ── TXT fallback ──────────────────────────────────────────────────────────────
+
+def _write_txt(data: dict, proj: dict, path: Path):
+    """Запасной вариант без python-docx."""
+    code  = proj.get("code", "")
+    name  = proj.get("name", "")
+    stage = proj.get("stage", "Р")
+    rev   = proj.get("revision", 0)
+
     lines = [
         "СПЕЦИФИКАЦИЯ ОБОРУДОВАНИЯ, ИЗДЕЛИЙ И МАТЕРИАЛОВ",
-        f"Объект: {proj.get('name','')}",
-        f"Код: {proj.get('code','')} | Стадия: {proj.get('stage','')} | Ред.: {proj.get('revision',0)}",
+        f"Объект: {name}",
+        f"Код: {code}  |  Стадия: {stage}  |  Ред.: {rev}",
         "",
-        f"{'Поз.':<5} {'Марка':<20} {'Наименование':<45} {'Кол.':<6} {'Ед.':<4} Примечание",
-        "-" * 100,
+        f"{'Поз.':<5} {'Марка':<22} {'Наименование':<45} {'Кол.':<7} {'Ед.':<5} Примечание",
+        "-" * 110,
     ]
     pos = 1
 
-    lines.append("--- Щиты и шкафы управления ---")
-    for panel in items["panels"]:
-        lines.append(f"{pos:<5} {panel['id']:<20} {panel['name']:<45} {'1':<6} {'шт.':<4} {panel.get('note','')}")
+    def row(mark, name_s, qty, unit, note=""):
+        nonlocal pos
+        lines.append(f"{pos:<5} {mark:<22} {name_s:<45} {qty!s:<7} {unit:<5} {note}")
         pos += 1
 
-    lines.append("--- Аппараты защиты ---")
-    for (rating, char, poles), count in sorted(items["breakers"].items()):
-        mark = f"АВ {rating}А {char}"
-        name_str = f"Выключатель автоматический {poles}П {rating}А хар.{char}"
-        lines.append(f"{pos:<5} {mark:<20} {name_str:<45} {count:<6} {'шт.':<4}")
-        pos += 1
+    lines.append("--- 1. Щиты и шкафы управления ---")
+    for panel in data["panels"]:
+        avr = " (АВР)" if panel.get("has_avr") else ""
+        row(panel["id"], panel["name"] + avr, 1, "шт.", panel.get("note", ""))
 
-    lines.append("--- Кабели и провода ---")
-    for (mark, cores, section), length_m in sorted(items["cables"].items()):
-        length_r = round(length_m * 1.05)
-        name_str = f"Кабель {mark} {cores}×{section}"
-        m = f"{mark} {cores}×{section}"
-        lines.append(f"{pos:<5} {m:<20} {name_str:<45} {length_r:<6} {'М':<4} с запасом 5%")
-        pos += 1
+    lines.append("--- 2. Аппараты защиты ---")
+    for key in sorted(data["breakers"]):
+        br = data["breakers"][key]
+        row(br["mark"], br["name"], br["count"], "шт.", br.get("gost", ""))
 
+    lines.append("--- 3. Кабели и провода ---")
+    for (mark, cores, section) in sorted(data["cables"]):
+        entry  = data["cables"][(mark, cores, section)]
+        length = round(entry["length_m"])
+        notes  = "; ".join(sorted(entry["routing_notes"]))
+        cable_mark = f"{mark} {cores}×{section}"
+        cable_name = f"Кабель {mark} {cores}×{section} мм²"
+        row(cable_mark, cable_name, length, "м", notes or "с запасом 20%")
+
+    if data["hardware"]:
+        lines.append("--- 4. Электроустановочные изделия ---")
+        hw_agg: dict[tuple, dict] = {}
+        for item in data["hardware"]:
+            key = (item["name"], item.get("mark", ""), item["unit"])
+            if key not in hw_agg:
+                hw_agg[key] = {**item, "qty": 0}
+            hw_agg[key]["qty"] += item["qty"]
+        for key in sorted(hw_agg):
+            item = hw_agg[key]
+            qty  = item["qty"]
+            if isinstance(qty, float) and qty == int(qty):
+                qty = int(qty)
+            row(item.get("mark", ""), item["name"], qty, item["unit"], item.get("note", ""))
+
+    if data["extra"]:
+        lines.append("--- 5. Прочие материалы ---")
+        for item in data["extra"]:
+            qty = item.get("qty", 1)
+            if isinstance(qty, float) and qty == int(qty):
+                qty = int(qty)
+            row(item.get("mark", ""), item.get("name", ""),
+                qty, item.get("unit", "шт."), item.get("note", ""))
+
+    lines += [
+        "",
+        f"Разработал: {proj.get('designer','')}",
+        f"Проверил:   {proj.get('checker','')}",
+        f"Н.контроль: {proj.get('norm_head','')}",
+        f"ГИП:        {proj.get('gip','')}",
+    ]
     path.write_text("\n".join(lines), encoding="utf-8")

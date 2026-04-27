@@ -52,6 +52,64 @@ _TYPE_TO_CHAR = {
 # Количество полюсов по числу фаз
 _PHASES_TO_POLES = {1: 2, 3: 3}
 
+# ── Серии АВ по производителям (диапазон токов → серия + ГОСТ) ───────
+BREAKER_SERIES: dict[str, list[tuple]] = {
+    # (min_rating, max_rating): {"series": str, "gost": str}
+    "IEK": [
+        ((6,  63),  {"series": "ВА47-63",   "gost": "ГОСТ IEC 60898-1"}),
+        ((80, 125), {"series": "ВА57-35",   "gost": "ГОСТ Р 50030.2"}),
+        ((160, 250),{"series": "ВА88-35",   "gost": "ГОСТ Р 50030.2"}),
+        ((315, 630),{"series": "ВА88-43",   "gost": "ГОСТ Р 50030.2"}),
+    ],
+    "Schneider": [
+        ((6,  63),  {"series": "Easy9",         "gost": "ГОСТ IEC 60898-1"}),
+        ((80, 250), {"series": "EasyPact CVS",  "gost": "ГОСТ Р 50030.2"}),
+        ((315, 630),{"series": "Compact NS",    "gost": "ГОСТ Р 50030.2"}),
+    ],
+    "ABB": [
+        ((6,  63),  {"series": "SH200L",        "gost": "ГОСТ IEC 60898-1"}),
+        ((80, 250), {"series": "SACE Tmax XT",  "gost": "ГОСТ Р 50030.2"}),
+        ((315, 630),{"series": "SACE Tmax T",   "gost": "ГОСТ Р 50030.2"}),
+    ],
+    "DEKraft": [
+        ((6,  63),  {"series": "ВА47-29",   "gost": "ГОСТ IEC 60898-1"}),
+        ((80, 250), {"series": "ВА-101",    "gost": "ГОСТ Р 50030.2"}),
+    ],
+    "TDM": [
+        ((6,  63),  {"series": "SQ0208",    "gost": "ГОСТ IEC 60898-1"}),
+        ((80, 250), {"series": "ВА88-35М",  "gost": "ГОСТ Р 50030.2"}),
+    ],
+}
+
+
+def get_breaker_designation(rating: int, char: str, poles: int,
+                             series_brand: str = "IEK") -> dict:
+    """
+    Возвращает полное обозначение АВ для спецификации.
+
+    Returns:
+        {"mark": str, "name": str, "gost": str}
+        mark — краткое обозначение (марка/тип)
+        name — полное наименование для столбца "Наименование"
+    """
+    brand_series = BREAKER_SERIES.get(series_brand, BREAKER_SERIES["IEK"])
+    series_info = {"series": f"АВ", "gost": "ГОСТ IEC 60898-1"}
+    for (lo, hi), info in brand_series:
+        if lo <= rating <= hi:
+            series_info = info
+            break
+
+    series = series_info["series"]
+    gost   = series_info["gost"]
+    pole_str = f"{poles}P" if series_brand in ("Schneider", "ABB") else f"{poles}П"
+
+    mark = f"{series} {rating}{char}"
+    name = (
+        f"Выключатель автоматический {series} {rating}А "
+        f"хар.{char} {poles}пол., {gost}"
+    )
+    return {"mark": mark, "name": name, "gost": gost, "series": series}
+
 
 def _next_rating(i_min: float) -> int:
     """Ближайший стандартный номинал ≥ i_min."""
