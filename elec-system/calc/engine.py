@@ -249,23 +249,23 @@ def calc_panel(panel: dict, building: dict | None = None) -> dict:
         i_calc  = calc_consumer_current(c)
         i_start = i_calc * c.get("start_factor", 1.0)
 
-        # Кабель: учитываем cable_routing для расчётной длины
+        # Сначала автомат — чтобы использовать его номинал для выбора кабеля (ПУЭ 3.1.4)
+        breaker_result = select_breaker_for_consumer(c, i_calc)
+
+        # Кабель: I_доп ≥ max(Iр, I_ном_АВ) — кабель должен выдерживать ток защиты
         cable_cfg = dict(c.get("cable", {}))
         cable_cfg["cos_phi"] = c.get("cos_phi", 0.85)
-        # Расчётная длина (с запасом / стояком)
         eff_len = effective_cable_length(cable_cfg, building)
         cable_cfg_calc = {**cable_cfg, "length_m": eff_len}
-        cable_result = select_cable_for_current(cable_cfg_calc, i_calc, i_start)
+        i_cable_min = max(i_calc, breaker_result.get("rating", i_calc))
+        cable_result = select_cable_for_current(cable_cfg_calc, i_cable_min, i_start)
         cable_result["length_m_plan"]   = cable_cfg.get("length_m", 0)
         cable_result["length_m_calc"]   = eff_len
         cable_result["routing_note"]    = routing_note(cable_cfg, building)
 
-        # Потеря напряжения
+        # Потеря напряжения считается по фактическому расчётному току
         du = calc_voltage_drop(cable_result, i_calc, c.get("phases", 3))
         cable_result["voltage_drop_pct"] = du
-
-        # Автомат потребителя
-        breaker_result = select_breaker_for_consumer(c, i_calc)
 
         # Суммируем только не-резервных потребителей
         if not is_reserve:
@@ -309,15 +309,16 @@ def calc_panel(panel: dict, building: dict | None = None) -> dict:
     i_panel = s_calc * 1000 / (math.sqrt(3) * U_LINE) if n > 0 else 0
     i_panel = round(i_panel, 2)
 
-    # Питающий кабель щита
+    # Сначала автомат щита — потом кабель под него (ПУЭ 3.1.4)
+    panel_breaker = select_panel_breaker(i_panel)
+
+    # Питающий кабель щита: I_доп ≥ max(Iр, I_ном_АВ)
     panel_cable_cfg = dict(panel.get("cable", {}))
     panel_cable_cfg.setdefault("cos_phi", cos_phi_panel)
-    panel_cable_result = select_cable_for_current(panel_cable_cfg, i_panel)
+    i_cable_min = max(i_panel, panel_breaker.get("rating", i_panel))
+    panel_cable_result = select_cable_for_current(panel_cable_cfg, i_cable_min)
     du_panel = calc_voltage_drop(panel_cable_result, i_panel, 3)
     panel_cable_result["voltage_drop_pct"] = du_panel
-
-    # Вводной автомат щита
-    panel_breaker = select_panel_breaker(i_panel)
 
     return {
         "id": panel["id"],
