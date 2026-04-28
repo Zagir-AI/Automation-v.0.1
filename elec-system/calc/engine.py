@@ -39,6 +39,174 @@ U_LINE  = 380.0   # В — линейное напряжение
 CABLE_RESERVE_INDOOR  = 20.0
 CABLE_RESERVE_OUTDOOR = 20.0
 
+# ── Критерии выбора кабеля ────────────────────────────────────────────────────
+
+# Допустимые потери напряжения по типу потребителя, % (ПУЭ 7.1.67, 7.1.60)
+_DU_LIMITS: dict[str, float] = {
+    "lighting":         2.5,
+    "outdoor_lighting": 5.0,
+    "sockets":          5.0,
+    "it_equipment":     5.0,
+    "hvac":             5.0,
+    "motor":            5.0,
+    "pump":             5.0,
+    "elevator":         5.0,
+    "kitchen":          5.0,
+    "welding":          5.0,
+    "ventilation_unit": 5.0,
+    "smoke_fan":        5.0,
+    "panel":            5.0,   # питающий кабель щита
+    "default":          5.0,
+}
+
+# Коэффициент термической стойкости (ГОСТ 28249-93, ПУЭ 1.4.17)
+# S_мин = I_кз(А) × √(t_откл(с)) / C
+_KZ_C = {"copper": 115, "aluminium": 74}
+_KZ_T_TRIP_S = 0.02   # время отключения, с (мгновенный расцепитель АВ)
+
+# Минимальный кратность тока мгновенного расцепителя по характеристике
+_TRIP_K_MIN = {"B": 3, "C": 5, "D": 10}
+
+
+def _du_limit(consumer_type: str) -> float:
+    """Допустимая потеря напряжения для типа потребителя, %."""
+    return _DU_LIMITS.get(consumer_type, _DU_LIMITS["default"])
+
+
+def _calc_isc_end(isc_ka_source: float, mark: str, section: float,
+                   length_m: float) -> float:
+    """
+    Ток однофазного КЗ (фаза–ноль) в конце кабельной линии, А.
+
+    Z_ист = U_ф / I_кз_ист
+    I_кз_кон = U_ф / (Z_ист + 2 × r_каб)
+    (реактивная составляющая кабеля пренебрежимо мала до 240мм²)
+    """
+    material = get_conductor_material(mark)
+    r0, _   = CABLE_RESISTANCE.get((material, section), (0.5, 0.0))
+    z_src   = U_PHASE / max(isc_ka_source * 1000, 1)
+    r_cable = 2 * r0 * length_m / 1000          # туда + обратно (ф+0)
+    z_total = z_src + r_cable
+    return round(U_PHASE / z_total, 1) if z_total > 0 else 0.0
+
+
+def _upgrade_section_for_du(cable_result: dict, i_calc: float,
+                             phases: int, du_max: float) -> dict:
+    """
+    Проверяет ΔU для выбранного сечения и при необходимости увеличивает его.
+
+    Перебирает стандартные сечения начиная с текущего вверх.
+    Возвращает обновлённый cable_result с полями:
+      voltage_drop_pct, du_limit_pct, du_ok, section_upgraded_for_du
+    """
+    section = cable_result.get("section_mm2")
+    if not section:
+        return cable_result
+
+    mark     = cable_result.get("mark", "ВВГнг-LS")
+    install  = cable_result.get("install_key", "tray")
+    k_temp   = cable_result.get("k_temp", 1.0)
+    parallel = cable_result.get("parallel", 1)
+    cos_phi  = cable_result.get("cos_phi", 0.85)
+    length_m = cable_result.get("length_m", 0)
+    sin_phi  = math.sqrt(max(0.0, 1.0 - cos_phi ** 2))
+    material = get_conductor_material(mark)
+    amp_tab  = get_ampacity_table(mark)
+
+    start = STANDARD_SECTIONS.index(section) if section in STANDARD_SECTIONS else 0
+
+    for s in STANDARD_SECTIONS[start:]:
+        if s not in amp_tab:
+            continue
+        i_base = amp_tab[s].get(install)
+        if not i_base:
+            continue
+        i_allowed = i_base * k_temp * parallel
+        if i_allowed < i_calc:
+            continue
+
+        r0, x0   = CABLE_RESISTANCE.get((material, s), (0.5, 0.08))
+        z_eff    = r0 * cos_phi + x0 * sin_phi
+        length_km = length_m / 1000.0
+
+        if phases == 3:
+            du = math.sqrt(3) * i_calc * length_km * z_eff / U_LINE * 100
+        else:
+            du = 2.0 * i_calc * length_km * z_eff / U_PHASE * 100
+        du = round(du, 2)
+
+        if du <= du_max:
+            upgraded = (s != section)
+            upd = dict(cable_result)
+            upd.update({
+                "section_mm2":             s,
+                "i_allowed":               round(i_allowed, 2),
+                "ok":                      True,
+                "voltage_drop_pct":        du,
+                "du_limit_pct":            du_max,
+                "du_ok":                   True,
+                "section_upgraded_for_du": upgraded,
+            })
+            return upd
+
+    # Ни одно сечение не укладывается в ΔU — возвращаем с флагом предупреждения
+    upd = dict(cable_result)
+    upd.update({"du_limit_pct": du_max, "du_ok": False,
+                "section_upgraded_for_du": False})
+    return upd
+
+
+def _add_kz_checks(cable_result: dict, i_calc: float, phases: int,
+                    breaker_rating: int, breaker_char: str,
+                    isc_ka_source: float) -> dict:
+    """
+    Добавляет в cable_result результаты двух проверок по токам КЗ:
+
+    1. Термическая стойкость (ПУЭ 1.4.17 / ГОСТ 28249-93):
+       S_мин = I_кз_ист(А) × √(t_откл) / C
+
+    2. Чувствительность защиты (ПУЭ 3.1.8):
+       I_кз_конец ≥ k_мин × I_ном_АВ
+       (ПУЭ — автомат должен отключить КЗ в мгновенной зоне)
+    """
+    section  = cable_result.get("section_mm2")
+    mark     = cable_result.get("mark", "ВВГнг-LS")
+    length_m = cable_result.get("length_m", 0)
+
+    if not section or not isc_ka_source:
+        return cable_result
+
+    material = get_conductor_material(mark)
+    C        = _KZ_C.get(material, 115)
+
+    # 1. Термическая стойкость
+    i_kz_src_a   = isc_ka_source * 1000
+    s_min_thermal = i_kz_src_a * math.sqrt(_KZ_T_TRIP_S) / C
+    # Ближайший стандартный номинал ≥ s_min_thermal
+    s_std_thermal = STANDARD_SECTIONS[-1]
+    for s in STANDARD_SECTIONS:
+        if s >= s_min_thermal:
+            s_std_thermal = s
+            break
+    kz_thermal_ok = (section >= s_std_thermal)
+
+    # 2. Чувствительность защиты
+    i_kz_end    = _calc_isc_end(isc_ka_source, mark, section, length_m)
+    k_min       = _TRIP_K_MIN.get(breaker_char, 5)
+    i_trip_min  = k_min * breaker_rating
+    kz_sens_ok  = (i_kz_end >= i_trip_min)
+
+    upd = dict(cable_result)
+    upd.update({
+        "kz_thermal_ok":        kz_thermal_ok,
+        "kz_thermal_s_min_mm2": s_std_thermal,
+        "kz_sens_ok":           kz_sens_ok,
+        "kz_sens_i_end_a":      int(i_kz_end),
+        "kz_sens_i_trip_min_a": i_trip_min,
+        "isc_ka_source":        isc_ka_source,
+    })
+    return upd
+
 
 def effective_cable_length(cable_cfg: dict, building: dict | None = None) -> float:
     """
@@ -231,11 +399,12 @@ def calc_voltage_drop(cable_result: dict, i_calc: float, phases: int) -> float:
 #  УРОВЕНЬ 2: ЩИТ
 # ─────────────────────────────────────────────
 
-def calc_panel(panel: dict, building: dict | None = None) -> dict:
+def calc_panel(panel: dict, building: dict | None = None, isc_ka: float = 10.0) -> dict:
     """
     Расчёт щита: нагрузки, кабели, автоматы всех потребителей.
 
     building: project["building"] — для расчёта длин кабелей по floor_height.
+    isc_ka: ток КЗ на шинах питания, кА (для термической стойкости и чувствительности).
     reserve=True потребители: кабель и автомат подбираются, но НЕ суммируются в нагрузку.
     """
     consumers = panel.get("consumers", [])
@@ -263,9 +432,14 @@ def calc_panel(panel: dict, building: dict | None = None) -> dict:
         cable_result["length_m_calc"]   = eff_len
         cable_result["routing_note"]    = routing_note(cable_cfg, building)
 
-        # Потеря напряжения считается по фактическому расчётному току
-        du = calc_voltage_drop(cable_result, i_calc, c.get("phases", 3))
-        cable_result["voltage_drop_pct"] = du
+        # ΔU — увеличить сечение если превышает допуск (ПУЭ 7.1.67/7.1.60)
+        du_max = _du_limit(c.get("type", "default"))
+        cable_result = _upgrade_section_for_du(cable_result, i_calc, c.get("phases", 3), du_max)
+        # КЗ: термическая стойкость + чувствительность защиты (ПУЭ 1.4.17, ПУЭ 3.1.8)
+        cable_result = _add_kz_checks(cable_result, i_calc, c.get("phases", 3),
+                                      breaker_result.get("rating", 6),
+                                      breaker_result.get("char", "C"),
+                                      isc_ka)
 
         # Суммируем только не-резервных потребителей
         if not is_reserve:
@@ -317,8 +491,11 @@ def calc_panel(panel: dict, building: dict | None = None) -> dict:
     panel_cable_cfg.setdefault("cos_phi", cos_phi_panel)
     i_cable_min = max(i_panel, panel_breaker.get("rating", i_panel))
     panel_cable_result = select_cable_for_current(panel_cable_cfg, i_cable_min)
-    du_panel = calc_voltage_drop(panel_cable_result, i_panel, 3)
-    panel_cable_result["voltage_drop_pct"] = du_panel
+    panel_cable_result = _upgrade_section_for_du(panel_cable_result, i_panel, 3, _du_limit("panel"))
+    panel_cable_result = _add_kz_checks(panel_cable_result, i_panel, 3,
+                                        panel_breaker.get("rating", 6),
+                                        panel_breaker.get("char", "C"),
+                                        isc_ka)
 
     return {
         "id": panel["id"],
@@ -341,14 +518,14 @@ def calc_panel(panel: dict, building: dict | None = None) -> dict:
 #  УРОВЕНЬ 3: ФИДЕР
 # ─────────────────────────────────────────────
 
-def calc_feeder(feeder: dict, building: dict | None = None) -> dict:
+def calc_feeder(feeder: dict, building: dict | None = None, isc_ka: float = 10.0) -> dict:
     """Расчёт фидера: суммирует щиты."""
     panels_results = []
     p_total = 0.0
     q_total = 0.0
 
     for panel in feeder.get("panels", []):
-        pr = calc_panel(panel, building)
+        pr = calc_panel(panel, building, isc_ka)
         panels_results.append(pr)
         cos_phi = pr["cos_phi"]
         sin_phi = math.sqrt(max(0, 1 - cos_phi**2))
@@ -381,12 +558,13 @@ def calc_feeder(feeder: dict, building: dict | None = None) -> dict:
 
 def calc_vru(vru: dict, building: dict | None = None) -> dict:
     """Расчёт ВРУ: суммирует фидеры."""
+    isc_ka = float(vru.get("isc_ka", 10.0))
     feeders_results = []
     p_total = 0.0
     q_total = 0.0
 
     for feeder in vru.get("feeders", []):
-        fr = calc_feeder(feeder, building)
+        fr = calc_feeder(feeder, building, isc_ka)
         feeders_results.append(fr)
         cos_phi = fr["cos_phi"]
         sin_phi = math.sqrt(max(0, 1 - cos_phi**2))
@@ -420,6 +598,11 @@ def calc_vru(vru: dict, building: dict | None = None) -> dict:
     if i_vru > 0:
         i_cable_min = max(i_vru, vru_breaker.get("rating", i_vru))
         vru_cable_result = select_cable_for_current(vru_cable_cfg, i_cable_min)
+        vru_cable_result = _upgrade_section_for_du(vru_cable_result, i_vru, 3, _du_limit("panel"))
+        vru_cable_result = _add_kz_checks(vru_cable_result, i_vru, 3,
+                                          vru_breaker.get("rating", 6),
+                                          vru_breaker.get("char", "C"),
+                                          isc_ka)
     else:
         vru_cable_result = {**vru_cable_cfg, "section_mm2": None, "i_calc": 0,
                             "i_allowed": 0, "ok": False, "auto_selected": True}

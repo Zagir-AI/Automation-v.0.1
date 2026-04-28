@@ -438,7 +438,7 @@
     "calc_done": true
   },
   "_results": {
-    "calculated_at": "2026-04-28T04:52:09.729494",
+    "calculated_at": "2026-04-28T15:55:41.954477",
     "vru": {
       "id": "ВРУ-1",
       "name": "ВРУ-1",
@@ -484,7 +484,16 @@
                     "length_m_plan": 30,
                     "length_m_calc": 36.0,
                     "routing_note": "план 30м + запас 20%",
-                    "voltage_drop_pct": 0.9
+                    "voltage_drop_pct": 0.9,
+                    "du_limit_pct": 2.5,
+                    "du_ok": true,
+                    "section_upgraded_for_du": false,
+                    "kz_thermal_ok": false,
+                    "kz_thermal_s_min_mm2": 16,
+                    "kz_sens_ok": true,
+                    "kz_sens_i_end_a": 224,
+                    "kz_sens_i_trip_min_a": 30,
+                    "isc_ka_source": 10.0
                   },
                   "breaker": {
                     "rating": 6,
@@ -526,7 +535,16 @@
                     "length_m_plan": 25,
                     "length_m_calc": 30.0,
                     "routing_note": "план 25м + запас 20%",
-                    "voltage_drop_pct": 0.5
+                    "voltage_drop_pct": 0.5,
+                    "du_limit_pct": 2.5,
+                    "du_ok": true,
+                    "section_upgraded_for_du": false,
+                    "kz_thermal_ok": false,
+                    "kz_thermal_s_min_mm2": 16,
+                    "kz_sens_ok": true,
+                    "kz_sens_i_end_a": 268,
+                    "kz_sens_i_trip_min_a": 30,
+                    "isc_ka_source": 10.0
                   },
                   "breaker": {
                     "rating": 6,
@@ -560,7 +578,16 @@
                 "install_key": "tray",
                 "k_temp": 1.0,
                 "auto_selected": true,
-                "voltage_drop_pct": 1.04
+                "voltage_drop_pct": 1.04,
+                "du_limit_pct": 5.0,
+                "du_ok": true,
+                "section_upgraded_for_du": false,
+                "kz_thermal_ok": false,
+                "kz_thermal_s_min_mm2": 16,
+                "kz_sens_ok": true,
+                "kz_sens_i_end_a": 320,
+                "kz_sens_i_trip_min_a": 50,
+                "isc_ka_source": 10.0
               },
               "breaker": {
                 "rating": 10,
@@ -618,7 +645,16 @@
                     "length_m_plan": 20,
                     "length_m_calc": 24.0,
                     "routing_note": "план 20м + запас 20%",
-                    "voltage_drop_pct": 0.44
+                    "voltage_drop_pct": 0.44,
+                    "du_limit_pct": 5.0,
+                    "du_ok": true,
+                    "section_upgraded_for_du": false,
+                    "kz_thermal_ok": false,
+                    "kz_thermal_s_min_mm2": 16,
+                    "kz_sens_ok": true,
+                    "kz_sens_i_end_a": 333,
+                    "kz_sens_i_trip_min_a": 30,
+                    "isc_ka_source": 10.0
                   },
                   "breaker": {
                     "rating": 6,
@@ -660,7 +696,16 @@
                     "length_m_plan": 35,
                     "length_m_calc": 42.0,
                     "routing_note": "план 35м + запас 20%",
-                    "voltage_drop_pct": 0.78
+                    "voltage_drop_pct": 0.78,
+                    "du_limit_pct": 5.0,
+                    "du_ok": true,
+                    "section_upgraded_for_du": false,
+                    "kz_thermal_ok": false,
+                    "kz_thermal_s_min_mm2": 16,
+                    "kz_sens_ok": true,
+                    "kz_sens_i_end_a": 193,
+                    "kz_sens_i_trip_min_a": 30,
+                    "isc_ka_source": 10.0
                   },
                   "breaker": {
                     "rating": 6,
@@ -702,7 +747,16 @@
                     "length_m_plan": 15,
                     "length_m_calc": 18.0,
                     "routing_note": "план 15м + запас 20%",
-                    "voltage_drop_pct": 0.75
+                    "voltage_drop_pct": 0.75,
+                    "du_limit_pct": 5.0,
+                    "du_ok": true,
+                    "section_upgraded_for_du": false,
+                    "kz_thermal_ok": false,
+                    "kz_thermal_s_min_mm2": 16,
+                    "kz_sens_ok": true,
+                    "kz_sens_i_end_a": 439,
+                    "kz_sens_i_trip_min_a": 50,
+                    "isc_ka_source": 10.0
                   },
                   "breaker": {
                     "rating": 10,
@@ -736,7 +790,16 @@
                 "install_key": "tray",
                 "k_temp": 1.0,
                 "auto_selected": true,
-                "voltage_drop_pct": 1.42
+                "voltage_drop_pct": 1.42,
+                "du_limit_pct": 5.0,
+                "du_ok": true,
+                "section_upgraded_for_du": false,
+                "kz_thermal_ok": false,
+                "kz_thermal_s_min_mm2": 16,
+                "kz_sens_ok": true,
+                "kz_sens_i_end_a": 439,
+                "kz_sens_i_trip_min_a": 100,
+                "isc_ka_source": 10.0
               },
               "breaker": {
                 "rating": 20,
@@ -794,7 +857,16 @@
                     "length_m_plan": 40,
                     "length_m_calc": 48.0,
                     "routing_note": "план 40м + запас 20%",
-                    "voltage_drop_pct": 3.55
+                    "voltage_drop_pct": 3.55,
+                    "du_limit_pct": 5.0,
+                    "du_ok": true,
+                    "section_upgraded_for_du": false,
+                    "kz_thermal_ok": false,
+                    "kz_thermal_s_min_mm2": 16,
+                    "kz_sens_ok": true,
+                    "kz_sens_i_end_a": 169,
+                    "kz_sens_i_trip_min_a": 160,
+                    "isc_ka_source": 10.0
                   },
                   "breaker": {
                     "rating": 16,
@@ -828,7 +900,16 @@
                 "install_key": "tray",
                 "k_temp": 1.0,
                 "auto_selected": true,
-                "voltage_drop_pct": 2.96
+                "voltage_drop_pct": 2.96,
+                "du_limit_pct": 5.0,
+                "du_ok": true,
+                "section_upgraded_for_du": false,
+                "kz_thermal_ok": false,
+                "kz_thermal_s_min_mm2": 16,
+                "kz_sens_ok": true,
+                "kz_sens_i_end_a": 202,
+                "kz_sens_i_trip_min_a": 80,
+                "isc_ka_source": 10.0
               },
               "breaker": {
                 "rating": 16,
@@ -886,7 +967,16 @@
                     "length_m_plan": 20,
                     "length_m_calc": 24.0,
                     "routing_note": "план 20м + запас 20%",
-                    "voltage_drop_pct": 0.53
+                    "voltage_drop_pct": 0.53,
+                    "du_limit_pct": 5.0,
+                    "du_ok": true,
+                    "section_upgraded_for_du": false,
+                    "kz_thermal_ok": false,
+                    "kz_thermal_s_min_mm2": 16,
+                    "kz_sens_ok": true,
+                    "kz_sens_i_end_a": 333,
+                    "kz_sens_i_trip_min_a": 60,
+                    "isc_ka_source": 10.0
                   },
                   "breaker": {
                     "rating": 6,
@@ -928,7 +1018,16 @@
                     "length_m_plan": 20,
                     "length_m_calc": 24.0,
                     "routing_note": "план 20м + запас 20%",
-                    "voltage_drop_pct": 0.53
+                    "voltage_drop_pct": 0.53,
+                    "du_limit_pct": 5.0,
+                    "du_ok": true,
+                    "section_upgraded_for_du": false,
+                    "kz_thermal_ok": false,
+                    "kz_thermal_s_min_mm2": 16,
+                    "kz_sens_ok": true,
+                    "kz_sens_i_end_a": 333,
+                    "kz_sens_i_trip_min_a": 60,
+                    "isc_ka_source": 10.0
                   },
                   "breaker": {
                     "rating": 6,
@@ -962,7 +1061,16 @@
                 "install_key": "tray",
                 "k_temp": 1.0,
                 "auto_selected": true,
-                "voltage_drop_pct": 0.67
+                "voltage_drop_pct": 0.67,
+                "du_limit_pct": 5.0,
+                "du_ok": true,
+                "section_upgraded_for_du": false,
+                "kz_thermal_ok": false,
+                "kz_thermal_s_min_mm2": 16,
+                "kz_sens_ok": true,
+                "kz_sens_i_end_a": 268,
+                "kz_sens_i_trip_min_a": 30,
+                "isc_ka_source": 10.0
               },
               "breaker": {
                 "rating": 6,
@@ -1020,7 +1128,16 @@
                     "length_m_plan": 25,
                     "length_m_calc": 30.0,
                     "routing_note": "план 25м + запас 20%",
-                    "voltage_drop_pct": 1.22
+                    "voltage_drop_pct": 1.22,
+                    "du_limit_pct": 5.0,
+                    "du_ok": true,
+                    "section_upgraded_for_du": false,
+                    "kz_thermal_ok": false,
+                    "kz_thermal_s_min_mm2": 16,
+                    "kz_sens_ok": true,
+                    "kz_sens_i_end_a": 268,
+                    "kz_sens_i_trip_min_a": 100,
+                    "isc_ka_source": 10.0
                   },
                   "breaker": {
                     "rating": 10,
@@ -1062,7 +1179,16 @@
                     "length_m_plan": 30,
                     "length_m_calc": 36.0,
                     "routing_note": "план 30м + запас 20%",
-                    "voltage_drop_pct": 1.07
+                    "voltage_drop_pct": 1.07,
+                    "du_limit_pct": 5.0,
+                    "du_ok": true,
+                    "section_upgraded_for_du": false,
+                    "kz_thermal_ok": false,
+                    "kz_thermal_s_min_mm2": 16,
+                    "kz_sens_ok": true,
+                    "kz_sens_i_end_a": 224,
+                    "kz_sens_i_trip_min_a": 100,
+                    "isc_ka_source": 10.0
                   },
                   "breaker": {
                     "rating": 10,
@@ -1096,7 +1222,16 @@
                 "install_key": "tray",
                 "k_temp": 1.0,
                 "auto_selected": true,
-                "voltage_drop_pct": 2.46
+                "voltage_drop_pct": 2.46,
+                "du_limit_pct": 5.0,
+                "du_ok": true,
+                "section_upgraded_for_du": false,
+                "kz_thermal_ok": false,
+                "kz_thermal_s_min_mm2": 16,
+                "kz_sens_ok": true,
+                "kz_sens_i_end_a": 230,
+                "kz_sens_i_trip_min_a": 80,
+                "isc_ka_source": 10.0
               },
               "breaker": {
                 "rating": 16,
@@ -1142,7 +1277,16 @@
                     "length_m_plan": 35,
                     "length_m_calc": 42.0,
                     "routing_note": "план 35м + запас 20%",
-                    "voltage_drop_pct": 2.91
+                    "voltage_drop_pct": 2.91,
+                    "du_limit_pct": 5.0,
+                    "du_ok": true,
+                    "section_upgraded_for_du": false,
+                    "kz_thermal_ok": false,
+                    "kz_thermal_s_min_mm2": 16,
+                    "kz_sens_ok": true,
+                    "kz_sens_i_end_a": 193,
+                    "kz_sens_i_trip_min_a": 160,
+                    "isc_ka_source": 10.0
                   },
                   "breaker": {
                     "rating": 16,
@@ -1184,7 +1328,16 @@
                     "length_m_plan": 35,
                     "length_m_calc": 42.0,
                     "routing_note": "план 35м + запас 20%",
-                    "voltage_drop_pct": 2.91
+                    "voltage_drop_pct": 2.91,
+                    "du_limit_pct": 5.0,
+                    "du_ok": true,
+                    "section_upgraded_for_du": false,
+                    "kz_thermal_ok": false,
+                    "kz_thermal_s_min_mm2": 16,
+                    "kz_sens_ok": true,
+                    "kz_sens_i_end_a": 193,
+                    "kz_sens_i_trip_min_a": 160,
+                    "isc_ka_source": 10.0
                   },
                   "breaker": {
                     "rating": 16,
@@ -1218,7 +1371,16 @@
                 "install_key": "tray",
                 "k_temp": 1.0,
                 "auto_selected": true,
-                "voltage_drop_pct": 2.78
+                "voltage_drop_pct": 2.78,
+                "du_limit_pct": 5.0,
+                "du_ok": true,
+                "section_upgraded_for_du": false,
+                "kz_thermal_ok": false,
+                "kz_thermal_s_min_mm2": 16,
+                "kz_sens_ok": true,
+                "kz_sens_i_end_a": 202,
+                "kz_sens_i_trip_min_a": 80,
+                "isc_ka_source": 10.0
               },
               "breaker": {
                 "rating": 16,
@@ -1256,7 +1418,17 @@
         "ok": true,
         "install_key": "tray",
         "k_temp": 1.0,
-        "auto_selected": true
+        "auto_selected": true,
+        "voltage_drop_pct": 0.66,
+        "du_limit_pct": 5.0,
+        "du_ok": true,
+        "section_upgraded_for_du": false,
+        "kz_thermal_ok": true,
+        "kz_thermal_s_min_mm2": 16,
+        "kz_sens_ok": true,
+        "kz_sens_i_end_a": 3197,
+        "kz_sens_i_trip_min_a": 400,
+        "isc_ka_source": 10.0
       },
       "breaker": {
         "rating": 80,
@@ -1286,7 +1458,17 @@
         "ok": true,
         "install_key": "tray",
         "k_temp": 1.0,
-        "auto_selected": true
+        "auto_selected": true,
+        "voltage_drop_pct": 0.66,
+        "du_limit_pct": 5.0,
+        "du_ok": true,
+        "section_upgraded_for_du": false,
+        "kz_thermal_ok": true,
+        "kz_thermal_s_min_mm2": 16,
+        "kz_sens_ok": true,
+        "kz_sens_i_end_a": 3197,
+        "kz_sens_i_trip_min_a": 400,
+        "isc_ka_source": 10.0
       }
     }
   },
