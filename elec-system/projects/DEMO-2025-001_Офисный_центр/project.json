@@ -434,11 +434,11 @@
   "_meta": {
     "schema_version": "1.1",
     "created": "2025-04-18",
-    "last_modified": "2026-04-27",
+    "last_modified": "2026-04-28",
     "calc_done": true
   },
   "_results": {
-    "calculated_at": "2026-04-27T18:48:12.042167",
+    "calculated_at": "2026-04-28T04:44:21.843421",
     "vru": {
       "id": "ВРУ-1",
       "name": "ВРУ-1",
@@ -1288,13 +1288,67 @@
         "k_temp": 1.0,
         "auto_selected": true
       }
-    }
+    },
+    "outdoor_networks": [
+      {
+        "id": "ОН-1",
+        "name": "Наружное освещение паркинга",
+        "voltage_kv": 0.4,
+        "p_installed_kw": 1.2,
+        "p_calc_kw": 1.2,
+        "cos_phi": 0.95,
+        "i_calc_a": 1.823,
+        "cable": {
+          "mark": "ВВГнг-LS",
+          "cores": 4,
+          "section_mm2": 1.5,
+          "length_m": 80,
+          "install": "земля",
+          "install_key": "ground",
+          "i_calc": 1.82,
+          "i_allowed": 22.0,
+          "ambient_t": 15,
+          "k_temp": 1.0,
+          "voltage_drop_pct": 0.8,
+          "du_limit_pct": 5.0,
+          "ok": true,
+          "auto_selected": true
+        },
+        "breaker": {
+          "rating": 6,
+          "char": "C",
+          "poles": 3,
+          "type": "АВ 6А хар.C 3П",
+          "i_calc": 2.01
+        },
+        "consumers": [
+          {
+            "id": "НО-СВ-01",
+            "name": "Светильник LED 150Вт",
+            "power_kw": 0.15,
+            "n_units": 8,
+            "demand_factor": 1.0,
+            "cos_phi": 0.95,
+            "p_calc_kw": 1.2,
+            "i_calc_a": 1.823,
+            "category_pue": 3,
+            "breaker": {
+              "rating": 6,
+              "char": "C",
+              "poles": 3,
+              "type": "АВ 6А хар.C 3П",
+              "i_calc": 2.01
+            }
+          }
+        ]
+      }
+    ]
   },
   "compensation": {
     "required": true,
     "tg_phi_fact": 0.614,
     "tg_phi_target": 0.33,
-    "q_comp_kvar": 13.77,
+    "q_comp_kvar": 10.95,
     "selected_krm": {
       "power_kvar": 15,
       "model": "КРМ-0.4-15",
