@@ -75,7 +75,7 @@ def _make_panel(panel_id: str) -> dict:
         "type":         meta["type"],
         "category_pue": meta["category_pue"],
         "has_avr":      meta["has_avr"],
-        "incoming_cable": {
+        "cable": {
             "mark":        "ВВГнг-LS",
             "cores":       4,
             "install":     "лоток",
