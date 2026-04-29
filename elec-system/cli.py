@@ -351,6 +351,20 @@ def cmd_calc(args):
                   f"кабель {cb.get('mark','?')} {cb.get('cores','?')}×{sec}мм²  "
                   f"АВ {rat}А{du_warn}")
 
+    # Итог по кабелям
+    n_du = n_kzt = n_kzs = 0
+    for feeder in vru.get("feeders", []):
+        for panel in feeder.get("panels", []):
+            for cb_src in [panel.get("cable", {})] + [c.get("cable", {}) for c in panel.get("consumers", [])]:
+                if not cb_src.get("du_ok", True):      n_du  += 1
+                if not cb_src.get("kz_thermal_ok", True): n_kzt += 1
+                if not cb_src.get("kz_sens_ok", True):    n_kzs += 1
+    cable_total = n_du + n_kzt + n_kzs
+    if cable_total:
+        print(warn(f"Кабели: {n_du} ΔU | {n_kzt} термо-КЗ | {n_kzs} чувств. → python cli.py check-cables {args.path}"))
+    else:
+        print(ok("Кабели: нарушений нет"))
+
     print()
     print(info(f"Результаты сохранены: {proj_dir / 'project.json'}"))
 
@@ -535,6 +549,73 @@ def cmd_plan(args):
     print(info(f"Чертежи: {dwg_dir}"))
 
 
+def cmd_check_cables(args):
+    """Проверка кабелей: ΔU, термостойкость КЗ, чувствительность КЗ."""
+    proj_dir = find_project_dir(args.path)
+    project  = load_project(proj_dir)
+    project  = _ensure_calc(project, proj_dir)
+
+    p_name = project["project"]["name"]
+    print(hdr(f"Проверка кабелей: {p_name}"))
+
+    vru = project.get("_results", {}).get("vru", {})
+    du_errors   = []
+    kz_therm    = []
+    kz_sens     = []
+
+    def _collect(obj_id, obj_name, cb, level=""):
+        if not cb:
+            return
+        prefix = f"{level}{obj_id} {obj_name[:30]}"
+        du  = cb.get("voltage_drop_pct", 0)
+        lim = cb.get("du_limit_pct", 5.0)
+        if not cb.get("du_ok", True):
+            du_errors.append(f"  {prefix:<44} ΔU={du}% > {lim}%  "
+                             f"({cb.get('mark','?')} {cb.get('cores','?')}×{cb.get('section_mm2','?')}мм², "
+                             f"L={cb.get('length_m_calc', cb.get('length_m','?'))}м)")
+        if not cb.get("kz_thermal_ok", True):
+            s_min = cb.get("kz_thermal_s_min_mm2", "?")
+            s_act = cb.get("section_mm2", "?")
+            kz_therm.append(f"  {prefix:<44} Sмин={s_min}мм² > Sфакт={s_act}мм²  "
+                            f"(Iкз={cb.get('isc_ka_source','?')}кА)")
+        if not cb.get("kz_sens_ok", True):
+            i_end = cb.get("kz_sens_i_end_a", "?")
+            i_min = cb.get("kz_sens_i_trip_min_a", "?")
+            kz_sens.append(f"  {prefix:<44} Iкз_конец={i_end}А < Iоткл_мин={i_min}А")
+
+    for feeder in vru.get("feeders", []):
+        for panel in feeder.get("panels", []):
+            _collect(panel["id"], panel["name"], panel.get("cable", {}), "⬦ ")
+            for c in panel.get("consumers", []):
+                _collect(c["id"], c["name"], c.get("cable", {}), "  · ")
+
+    total = len(du_errors) + len(kz_therm) + len(kz_sens)
+    print(f"\nПроверено линий: {sum(1 + len(p.get('consumers',[])) for f in vru.get('feeders',[]) for p in f.get('panels',[]))}")
+    print(f"  Нарушений ΔU:              {len(du_errors)}")
+    print(f"  Нарушений термостойкости:  {len(kz_therm)}")
+    print(f"  Нарушений чувствительности:{len(kz_sens)}")
+
+    if du_errors:
+        print(f"\n{C.YELLOW}⚠ Превышение ΔU (обязательно исправить):{C.RESET}")
+        for line in du_errors:
+            print(line)
+    if kz_therm:
+        print(f"\n{C.YELLOW}⚠ Термостойкость при КЗ (увеличить сечение):{C.RESET}")
+        for line in kz_therm:
+            print(line)
+    if kz_sens:
+        print(f"\n{C.YELLOW}⚠ Чувствительность защиты (проверить автомат):{C.RESET}")
+        for line in kz_sens:
+            print(line)
+
+    if total == 0:
+        print(f"\n{C.GREEN}✓ Нарушений нет{C.RESET}")
+    else:
+        print()
+        print(err(f"Итого нарушений: {total}"))
+        sys.exit(1)
+
+
 def cmd_check_selectivity(args):
     """Проверка селективности автоматов."""
     from rules.selectivity import check_selectivity, print_selectivity_report
@@ -709,6 +790,10 @@ def main():
     p_plan.add_argument("path", help="Путь к папке проекта или код")
     p_plan.add_argument("--section", help="Раздел: ОВ, ВК, ТХ, ДУ, ПС, ЭОМ, ЭН")
 
+    # check-cables
+    p_cc = sub.add_parser("check-cables", help="Проверить кабели: ΔU, КЗ")
+    p_cc.add_argument("path", help="Путь к папке проекта или код")
+
     # check-selectivity
     p_sel = sub.add_parser("check-selectivity", help="Проверить селективность АВ")
     p_sel.add_argument("path", help="Путь к папке проекта или код")
@@ -743,6 +828,7 @@ def main():
         "validate":           cmd_validate,
         "docs":               cmd_docs,
         "plan":               cmd_plan,
+        "check-cables":       cmd_check_cables,
         "check-selectivity":  cmd_check_selectivity,
         "check-compensation": cmd_check_compensation,
         "import":             cmd_import,
