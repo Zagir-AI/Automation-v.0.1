@@ -86,11 +86,11 @@ with st.sidebar:
         calc_done = p.get("_meta", {}).get("calc_done", False)
         icon = "✅" if calc_done else "🔲"
         label = f"{icon} **{proj_info.get('code','?')}** {proj_info.get('name','')[:25]}"
-        if st.button(label, key=str(d), use_container_width=True):
+        if st.button(label, key=str(d), width="stretch"):
             st.session_state["active_project"] = str(d)
 
     st.divider()
-    if st.button("➕ Новый объект", use_container_width=True):
+    if st.button("➕ Новый объект", width="stretch"):
         st.session_state["show_new_form"] = True
 
 
@@ -180,7 +180,7 @@ with col_title:
 
 with col_btns:
     st.write("")
-    if st.button("🔄 Пересчитать всё", type="primary", use_container_width=True):
+    if st.button("🔄 Пересчитать всё", type="primary", width="stretch"):
         with st.spinner("Расчёт..."):
             out, err, rc = run_cli(["calc", str(proj_dir)])
         if rc == 0:
@@ -192,7 +192,7 @@ with col_btns:
         else:
             st.error(f"Ошибка расчёта:\n{err}")
 
-    if st.button("📄 Сгенерировать документы", use_container_width=True):
+    if st.button("📄 Сгенерировать документы", width="stretch"):
         with st.spinner("Генерация..."):
             out, err, rc = run_cli(["docs", str(proj_dir)])
         if rc == 0:
@@ -254,7 +254,7 @@ with tab_summary:
                     "ΔU, %": f"{'⚠️ ' if du > 5 else ''}{du}",
                     "Автомат": f"{pb.get('rating','')}А {pb.get('char','')}",
                 })
-            st.dataframe(data, use_container_width=True, hide_index=True)
+            st.dataframe(data, width="stretch", hide_index=True)
     else:
         st.warning("Проект ещё не рассчитан. Нажми **Пересчитать всё**.")
 
@@ -321,7 +321,7 @@ with tab_results:
                             "ΔU, %": f"{'⚠️' if du>5 else ''}{du}",
                             "Автомат": f"{cb.get('rating','')}А {cb.get('char','')}",
                         })
-                    st.dataframe(data, use_container_width=True, hide_index=True)
+                    st.dataframe(data, width="stretch", hide_index=True)
 
 
 # ── Вкладка: Изменения ───────────────────────────────────────────────
@@ -380,7 +380,7 @@ with tab_docs:
 
         if items:
             st.success(f"Найдено позиций: {len(items)}")
-            st.dataframe(items, use_container_width=True, hide_index=True)
+            st.dataframe(items, width="stretch", hide_index=True)
             st.caption("Данные распарсены. Используй их для заполнения спецификации.")
         else:
             st.warning("Позиции не найдены. Проверь формат файла.")
