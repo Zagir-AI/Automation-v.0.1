@@ -434,11 +434,11 @@
   "_meta": {
     "schema_version": "1.1",
     "created": "2025-04-18",
-    "last_modified": "2026-04-28",
+    "last_modified": "2026-04-29",
     "calc_done": true
   },
   "_results": {
-    "calculated_at": "2026-04-28T15:55:41.954477",
+    "calculated_at": "2026-04-29T16:52:27.412506",
     "vru": {
       "id": "ВРУ-1",
       "name": "ВРУ-1",
