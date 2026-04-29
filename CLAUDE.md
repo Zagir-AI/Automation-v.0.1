@@ -193,8 +193,13 @@ python cli.py plan projects/DEMO-2025-001_Офисный_центр --section В
 python cli.py import projects/DEMO-2025-001_Офисный_центр dwg задание_ОВ.dxf --section ОВ
 python cli.py import projects/DEMO-2025-001_Офисный_центр table нагрузки_ВК.xlsx --section ВК
 
-# Новый объект
+# Новый объект (интерактивный режим — в реальном терминале)
 python cli.py new ОБЪ-2025-002 "Школа на ул. Садовой"
+
+# Новый объект неинтерактивно (CI/скрипты, не-TTY) — штамп через флаги
+python cli.py new ОБЪ-2025-002 "Школа на ул. Садовой" \
+  --designer "Иванов И.И." --checker "Сидоров С.С." \
+  --gip "Петров П.П." --org "ООО Электропроект" --city "Москва"
 
 # Список проектов
 python cli.py list

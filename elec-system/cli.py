@@ -117,10 +117,14 @@ def cmd_list(args):
 
 
 def _prompt(label: str, default: str = "", required: bool = False) -> str:
-    """Интерактивный ввод одного поля штампа. Enter = оставить default."""
+    """Интерактивный ввод одного поля штампа. Enter = оставить default.
+    В не-TTY (CI/скрипты/EOF) — без падения возвращает default."""
     suffix = f" [{default}]" if default else ""
     while True:
-        val = input(f"  {label}{suffix}: ").strip()
+        try:
+            val = input(f"  {label}{suffix}: ").strip()
+        except EOFError:
+            return default
         if not val:
             val = default
         if val or not required:
@@ -150,7 +154,13 @@ def _input_stamp(current: dict | None = None) -> dict:
 
 
 def cmd_new(args):
-    """Создать новый проект из шаблона (с интерактивным вводом штампа)."""
+    """Создать новый проект из шаблона.
+
+    Режимы:
+      - Интерактивный (TTY и без флагов штампа): запрос полей штампа.
+      - Неинтерактивный (не-TTY ИЛИ передан хотя бы один флаг штампа):
+        штамп заполняется из флагов; незаданные поля — пустые/дефолтные.
+    """
     code = args.code.upper()
     name = args.name
 
@@ -161,9 +171,26 @@ def cmd_new(args):
         print(warn(f"Папка уже существует: {target}"))
         return
 
+    flag_stamp = {
+        "designer":    getattr(args, "designer", None)    or "",
+        "checker":     getattr(args, "checker", None)     or "",
+        "norm_head":   getattr(args, "norm_head", None)   or "",
+        "gip":         getattr(args, "gip", None)         or "",
+        "gap":         getattr(args, "gap", None)         or "",
+        "org":         getattr(args, "org", None)         or "",
+        "city":        getattr(args, "city", None)        or "",
+        "stage":       getattr(args, "stage", None)       or "Р",
+        "object_type": getattr(args, "object_type", None) or "Общественное здание",
+        "system":      getattr(args, "system", None)      or "TN-S",
+    }
+    has_flags = any(getattr(args, k, None) for k in
+                    ("designer","checker","norm_head","gip","gap",
+                     "org","city","stage","object_type","system"))
+    interactive = sys.stdin.isatty() and not has_flags
+
     target.mkdir()
 
-    stamp = _input_stamp()
+    stamp = _input_stamp(flag_stamp) if interactive else flag_stamp
     today = str(__import__("datetime").date.today())
 
     template = {
@@ -227,6 +254,9 @@ def cmd_new(args):
 
     print(ok(f"Создан проект: {target}"))
     print(info(f"Редактируй: {target / 'project.json'}"))
+    if not interactive and not stamp.get("designer"):
+        print(info(f"Заполни штамп: python cli.py stamp {target.name} "
+                   f"--field designer --value 'Иванов И.И.'"))
 
 
 def cmd_validate(args):
@@ -641,6 +671,16 @@ def main():
     p_new = sub.add_parser("new", help="Создать новый проект")
     p_new.add_argument("code", help="Код объекта, напр. ОБЪ-2025-001")
     p_new.add_argument("name", help="Название объекта")
+    p_new.add_argument("--designer",    help="Разработал (ФИО)")
+    p_new.add_argument("--checker",     help="Проверил (ФИО)")
+    p_new.add_argument("--norm-head",   dest="norm_head", help="Н.контроль (ФИО)")
+    p_new.add_argument("--gip",         help="ГИП (ФИО)")
+    p_new.add_argument("--gap",         help="ГАП (ФИО)")
+    p_new.add_argument("--org",         help="Организация")
+    p_new.add_argument("--city",        help="Город")
+    p_new.add_argument("--stage",       help="Стадия [Р]")
+    p_new.add_argument("--object-type", dest="object_type", help="Тип объекта")
+    p_new.add_argument("--system",      help="Система заземления [TN-S]")
 
     # calc
     p_calc = sub.add_parser("calc", help="Рассчитать нагрузки ВРУ")
