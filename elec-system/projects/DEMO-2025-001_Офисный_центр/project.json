@@ -9,7 +9,7 @@
     "frequency": 50,
     "city": "Москва",
     "address": "ул. Примерная, д. 1",
-    "designer": "Иванов И.И.",
+    "designer": "Смирнов А.А.",
     "checker": "Петров П.П.",
     "norm_head": "Сидоров С.С.",
     "gip": "Козлов К.К.",
@@ -438,7 +438,7 @@
     "calc_done": true
   },
   "_results": {
-    "calculated_at": "2026-04-29T16:52:27.412506",
+    "calculated_at": "2026-04-29T16:55:09.248473",
     "vru": {
       "id": "ВРУ-1",
       "name": "ВРУ-1",
@@ -1470,7 +1470,61 @@
         "kz_sens_i_trip_min_a": 400,
         "isc_ka_source": 10.0
       }
-    }
+    },
+    "outdoor_networks": [
+      {
+        "id": "ОН-1",
+        "name": "Наружное освещение паркинга",
+        "voltage_kv": 0.4,
+        "p_installed_kw": 1.2,
+        "p_calc_kw": 1.2,
+        "cos_phi": 0.95,
+        "i_calc_a": 1.823,
+        "cable": {
+          "mark": "ВВГнг-LS",
+          "cores": 4,
+          "section_mm2": 1.5,
+          "length_m": 80,
+          "install": "земля",
+          "install_key": "ground",
+          "i_calc": 1.82,
+          "i_allowed": 22.0,
+          "ambient_t": 15,
+          "k_temp": 1.0,
+          "voltage_drop_pct": 0.8,
+          "du_limit_pct": 5.0,
+          "ok": true,
+          "auto_selected": true
+        },
+        "breaker": {
+          "rating": 6,
+          "char": "C",
+          "poles": 3,
+          "type": "АВ 6А хар.C 3П",
+          "i_calc": 2.01
+        },
+        "consumers": [
+          {
+            "id": "НО-СВ-01",
+            "name": "Светильник LED 150Вт",
+            "power_kw": 0.15,
+            "n_units": 8,
+            "demand_factor": 1.0,
+            "cos_phi": 0.95,
+            "p_calc_kw": 1.2,
+            "i_calc_a": 1.823,
+            "category_pue": 3,
+            "breaker": {
+              "rating": 6,
+              "char": "C",
+              "poles": 3,
+              "type": "АВ 6А хар.C 3П",
+              "i_calc": 2.01
+            }
+          }
+        ]
+      }
+    ]
   },
   "compensation": {
     "required": true,

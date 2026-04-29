@@ -489,7 +489,7 @@ $SKPOLY
   9
 $TDCREATE
  40
-2461157.573703704
+2461160.7050925926
   9
 $TDUCREATE
  40
@@ -497,7 +497,7 @@ $TDUCREATE
   9
 $TDUPDATE
  40
-2461157.573703704
+2461160.7050925926
   9
 $TDUUPDATE
  40
@@ -549,7 +549,7 @@ $SPLINESEGS
   9
 $HANDSEED
   5
-5D
+72
   9
 $SURFTAB1
  70
@@ -929,11 +929,11 @@ $PSTYLEMODE
   9
 $FINGERPRINTGUID
   2
-{A846A770-6E1D-4089-89DB-162BB4DE7B4E}
+{7CCCE99D-4202-4505-AF6C-0E44678F9173}
   9
 $VERSIONGUID
   2
-{BB317935-6174-4FDB-81A1-8BAA12E58E5A}
+{5C108B6B-65E2-4615-8C32-6D1100E81A0B}
   9
 $EXTNAMES
 290
@@ -1845,7 +1845,7 @@ ACAD
   0
 APPID
   5
-5A
+6F
 330
 3
 100
@@ -1859,7 +1859,7 @@ HATCHBACKGROUNDCOLOR
   0
 APPID
   5
-5B
+70
 330
 3
 100
@@ -2479,7 +2479,7 @@ AcDbText
  40
 2.5
   1
-P=21.0кВт  I=37.4А
+P=38.5кВт  I=68.7А
 100
 AcDbAttribute
   2
@@ -2821,7 +2821,7 @@ AcDbText
  40
 100.0
   1
-ВВГнг-LS 4×1.5
+ВВГнг-LS 4×2.5
 100
 AcDbText
   0
@@ -2989,9 +2989,501 @@ AcDbText
 100
 AcDbText
   0
-TEXT
+INSERT
   5
 57
+330
+17
+100
+AcDbEntity
+  8
+0
+100
+AcDbBlockReference
+ 66
+1
+  2
+PANEL_BOX
+ 10
+3600.0
+ 20
+0.0
+ 30
+0.0
+  0
+ATTRIB
+  5
+59
+330
+17
+100
+AcDbEntity
+  8
+0
+100
+AcDbText
+ 10
+3900.0
+ 20
+450.0
+ 30
+0.0
+ 40
+2.5
+  1
+ЩОВ-1
+100
+AcDbAttribute
+  2
+PANEL_ID
+ 70
+0
+  0
+ATTRIB
+  5
+5A
+330
+17
+100
+AcDbEntity
+  8
+0
+100
+AcDbText
+ 10
+3900.0
+ 20
+-150.0
+ 30
+0.0
+ 40
+2.5
+  1
+Щит отопления №1
+100
+AcDbAttribute
+  2
+PANEL_NAME
+ 70
+0
+  0
+ATTRIB
+  5
+5B
+330
+17
+100
+AcDbEntity
+  8
+0
+100
+AcDbText
+ 10
+3900.0
+ 20
+-280.0
+ 30
+0.0
+ 40
+2.5
+  1
+P=2.4кВт I=4.3А
+100
+AcDbAttribute
+  2
+PANEL_LOAD
+ 70
+0
+  0
+SEQEND
+  5
+58
+330
+57
+100
+AcDbEntity
+  8
+0
+  0
+LINE
+  5
+5C
+330
+17
+100
+AcDbEntity
+  8
+CABLES
+100
+AcDbLine
+ 10
+3900.0
+ 20
+400.0
+ 30
+0.0
+ 11
+2700.0
+ 21
+1000.0
+ 31
+0.0
+  0
+TEXT
+  5
+5D
+330
+17
+100
+AcDbEntity
+  8
+LABELS
+100
+AcDbText
+ 10
+3300.0
+ 20
+760.0
+ 30
+0.0
+ 40
+100.0
+  1
+ВВГнг-LS 4×1.5
+100
+AcDbText
+  0
+INSERT
+  5
+5E
+330
+17
+100
+AcDbEntity
+  8
+0
+100
+AcDbBlockReference
+ 66
+1
+  2
+PANEL_BOX
+ 10
+0.0
+ 20
+-1000.0
+ 30
+0.0
+  0
+ATTRIB
+  5
+60
+330
+17
+100
+AcDbEntity
+  8
+0
+100
+AcDbText
+ 10
+300.0
+ 20
+-550.0
+ 30
+0.0
+ 40
+2.5
+  1
+ЩВК-1
+100
+AcDbAttribute
+  2
+PANEL_ID
+ 70
+0
+  0
+ATTRIB
+  5
+61
+330
+17
+100
+AcDbEntity
+  8
+0
+100
+AcDbText
+ 10
+300.0
+ 20
+-1150.0
+ 30
+0.0
+ 40
+2.5
+  1
+Щит вентиляции №1
+100
+AcDbAttribute
+  2
+PANEL_NAME
+ 70
+0
+  0
+ATTRIB
+  5
+62
+330
+17
+100
+AcDbEntity
+  8
+0
+100
+AcDbText
+ 10
+300.0
+ 20
+-1280.0
+ 30
+0.0
+ 40
+2.5
+  1
+P=7.6кВт I=13.6А
+100
+AcDbAttribute
+  2
+PANEL_LOAD
+ 70
+0
+  0
+SEQEND
+  5
+5F
+330
+5E
+100
+AcDbEntity
+  8
+0
+  0
+LINE
+  5
+63
+330
+17
+100
+AcDbEntity
+  8
+CABLES
+100
+AcDbLine
+ 10
+300.0
+ 20
+-600.0
+ 30
+0.0
+ 11
+2700.0
+ 21
+1000.0
+ 31
+0.0
+  0
+TEXT
+  5
+64
+330
+17
+100
+AcDbEntity
+  8
+LABELS
+100
+AcDbText
+ 10
+1500.0
+ 20
+260.0
+ 30
+0.0
+ 40
+100.0
+  1
+ВВГнг-LS 4×1.5
+100
+AcDbText
+  0
+INSERT
+  5
+65
+330
+17
+100
+AcDbEntity
+  8
+0
+100
+AcDbBlockReference
+ 66
+1
+  2
+PANEL_BOX
+ 10
+1200.0
+ 20
+-1000.0
+ 30
+0.0
+  0
+ATTRIB
+  5
+67
+330
+17
+100
+AcDbEntity
+  8
+0
+100
+AcDbText
+ 10
+1500.0
+ 20
+-550.0
+ 30
+0.0
+ 40
+2.5
+  1
+ЩДУ-1
+100
+AcDbAttribute
+  2
+PANEL_ID
+ 70
+0
+  0
+ATTRIB
+  5
+68
+330
+17
+100
+AcDbEntity
+  8
+0
+100
+AcDbText
+ 10
+1500.0
+ 20
+-1150.0
+ 30
+0.0
+ 40
+2.5
+  1
+Щит дымоудаления №1
+100
+AcDbAttribute
+  2
+PANEL_NAME
+ 70
+0
+  0
+ATTRIB
+  5
+69
+330
+17
+100
+AcDbEntity
+  8
+0
+100
+AcDbText
+ 10
+1500.0
+ 20
+-1280.0
+ 30
+0.0
+ 40
+2.5
+  1
+P=7.5кВт I=13.4А
+100
+AcDbAttribute
+  2
+PANEL_LOAD
+ 70
+0
+  0
+SEQEND
+  5
+66
+330
+65
+100
+AcDbEntity
+  8
+0
+  0
+LINE
+  5
+6A
+330
+17
+100
+AcDbEntity
+  8
+CABLES
+100
+AcDbLine
+ 10
+1500.0
+ 20
+-600.0
+ 30
+0.0
+ 11
+2700.0
+ 21
+1000.0
+ 31
+0.0
+  0
+TEXT
+  5
+6B
+330
+17
+100
+AcDbEntity
+  8
+LABELS
+100
+AcDbText
+ 10
+2100.0
+ 20
+260.0
+ 30
+0.0
+ 40
+100.0
+  1
+ВВГнг-FRLS 4×1.5
+100
+AcDbText
+  0
+TEXT
+  5
+6C
 330
 17
 100
@@ -3003,7 +3495,7 @@ AcDbText
  10
 0.0
  20
--2200.0
+-3200.0
  30
 0.0
  40
@@ -3015,7 +3507,7 @@ AcDbText
   0
 TEXT
   5
-58
+6D
 330
 17
 100
@@ -3027,7 +3519,7 @@ AcDbText
  10
 0.0
  20
--2500.0
+-3500.0
  30
 0.0
  40
@@ -3039,7 +3531,7 @@ AcDbText
   0
 TEXT
   5
-59
+6E
 330
 17
 100
@@ -3051,13 +3543,13 @@ AcDbText
  10
 0.0
  20
--2700.0
+-3700.0
  30
 0.0
  40
 100.0
   1
-Дата: 2026-04-26
+Дата: 2026-04-29
 100
 AcDbText
   0
@@ -4051,7 +4543,7 @@ CREATED_BY_EZDXF
   3
 WRITTEN_BY_EZDXF
 350
-5C
+71
   0
 DICTIONARYVAR
   5
@@ -4063,11 +4555,11 @@ DictionaryVariables
 280
 0
   1
-1.4.3 @ 2026-04-26T13:46:08.716161+00:00
+1.4.3 @ 2026-04-29T16:55:20.935923+00:00
   0
 DICTIONARYVAR
   5
-5C
+71
 330
 2D
 100
@@ -4075,7 +4567,7 @@ DictionaryVariables
 280
 0
   1
-1.4.3 @ 2026-04-26T13:46:08.719122+00:00
+1.4.3 @ 2026-04-29T16:55:20.939950+00:00
   0
 ENDSEC
   0
