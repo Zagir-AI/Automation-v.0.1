@@ -652,6 +652,14 @@ def calculate_project(project: dict) -> dict:
             "incoming_cable": vru_result["incoming_cable"],
         }
     }
+
+    if project.get("outdoor_networks"):
+        try:
+            from outdoor.calc_outdoor import calc_all_outdoor
+            result = calc_all_outdoor(result)
+        except Exception as e:
+            result["_results"]["outdoor_error"] = str(e)
+
     result["_meta"]["calc_done"] = True
     result["_meta"]["last_modified"] = datetime.date.today().isoformat()
 
