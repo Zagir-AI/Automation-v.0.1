@@ -282,20 +282,6 @@ def calc_consumer_current(consumer: dict) -> float:
     return round(i, 3)
 
 
-def select_cable(cable_cfg: dict) -> dict:
-    """
-    Подбор сечения кабеля по расчётному току.
-
-    cable_cfg: {"mark": "ВВГнг-LS", "cores": 4, "section_mm2": null или число,
-                "length_m": 25, "install": "лоток", "ambient_t": 25, "parallel": 1}
-    i_calc: расчётный ток линии
-    i_calc_start: пусковой ток (для проверки)
-
-    Возвращает обогащённый словарь с результатом.
-    """
-    result = dict(cable_cfg)  # копируем, не меняем оригинал
-    return result
-
 
 def select_cable_for_current(cable_cfg: dict, i_calc: float, i_start: float = 0) -> dict:
     """Полный подбор кабеля с проверкой по допустимому току."""
@@ -380,8 +366,8 @@ def calc_voltage_drop(cable_result: dict, i_calc: float, phases: int) -> float:
     mark = cable_result.get("mark", "ВВГнг-LS")
     material = get_conductor_material(mark)
     length_km = cable_result.get("length_m", 0) / 1000.0
-    cos_phi = cable_result.get("cos_phi", 0.85)
-    sin_phi = math.sqrt(1 - cos_phi**2)
+    cos_phi = min(max(cable_result.get("cos_phi", 0.85), 0.01), 1.0)
+    sin_phi = math.sqrt(max(0.0, 1 - cos_phi**2))
 
     r0, x0 = CABLE_RESISTANCE.get((material, section), (0.5, 0.08))
 
@@ -534,8 +520,10 @@ def calc_feeder(feeder: dict, building: dict | None = None, isc_ka: float = 10.0
 
     n_panels = len(panels_results)
     ku = get_simultaneous_factor(n_panels) if n_panels > 1 else 1.0
-    s_total = math.sqrt(p_total**2 + q_total**2) * ku
-    cos_phi_f = p_total / s_total if s_total > 0 else 0.85
+    p_ku = p_total * ku
+    q_ku = q_total * ku
+    s_total = math.sqrt(p_ku**2 + q_ku**2)
+    cos_phi_f = p_ku / s_total if s_total > 0 else 0.85
     cos_phi_f = min(max(cos_phi_f, 0.5), 1.0)
     i_feeder = s_total * 1000 / (math.sqrt(3) * U_LINE) if s_total > 0 else 0
 
@@ -544,7 +532,7 @@ def calc_feeder(feeder: dict, building: dict | None = None, isc_ka: float = 10.0
         "name": feeder["name"],
         "section": feeder.get("section", ""),
         "panels": panels_results,
-        "p_calc_kw": round(p_total * ku, 3),
+        "p_calc_kw": round(p_ku, 3),
         "s_calc_kva": round(s_total, 3),
         "cos_phi": round(cos_phi_f, 3),
         "ku": round(ku, 3),
