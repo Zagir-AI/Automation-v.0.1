@@ -364,7 +364,7 @@
     "calc_done": true
   },
   "_results": {
-    "calculated_at": "2026-05-03T18:35:38.607177",
+    "calculated_at": "2026-05-03T18:49:43.585768",
     "vru": {
       "id": "ВРУ-1",
       "name": "ВРУ-1",
@@ -1449,5 +1449,342 @@
     "ВВ-01": "КЛ-ЩВК1-02",
     "СДУ-01": "КЛ-ЩАПЗ1-01",
     "ОПС-01": "КЛ-ЩАПЗ1-02"
+  },
+  "_vru_snapshot": {
+    "id": "ВРУ-1",
+    "name": "ВРУ-1",
+    "bus_current_a": 250,
+    "isc_ka": 4.0,
+    "incoming_cable": {
+      "mark": "ВВГнг-LS",
+      "cores": 4,
+      "section_mm2": null,
+      "length_m": 25,
+      "install": "лоток",
+      "ambient_t": 25,
+      "parallel": 1
+    },
+    "feeders": [
+      {
+        "id": "Ф1",
+        "name": "Группа ЩО-1",
+        "section": "ЭОМ",
+        "panels": [
+          {
+            "id": "ЩО-1",
+            "name": "Щит освещения №1",
+            "category_pue": 3,
+            "cable": {
+              "mark": "ВВГнг-LS",
+              "cores": 4,
+              "section_mm2": null,
+              "length_m": 35,
+              "install": "лоток"
+            },
+            "consumers": [
+              {
+                "id": "ОС-01",
+                "name": "Освещение классов 1 эт.",
+                "type": "lighting",
+                "power_kw": 8.0,
+                "cos_phi": 0.95,
+                "phases": 3,
+                "cable": {
+                  "mark": "ВВГнг-LS",
+                  "cores": 4,
+                  "section_mm2": null,
+                  "length_m": 40,
+                  "install": "лоток"
+                }
+              },
+              {
+                "id": "ОС-02",
+                "name": "Освещение классов 2 эт.",
+                "type": "lighting",
+                "power_kw": 8.0,
+                "cos_phi": 0.95,
+                "phases": 3,
+                "cable": {
+                  "mark": "ВВГнг-LS",
+                  "cores": 4,
+                  "section_mm2": null,
+                  "length_m": 45,
+                  "install": "лоток"
+                }
+              },
+              {
+                "id": "ОС-03",
+                "name": "Освещение коридоров",
+                "type": "lighting",
+                "power_kw": 4.0,
+                "cos_phi": 0.95,
+                "phases": 3,
+                "cable": {
+                  "mark": "ВВГнг-LS",
+                  "cores": 4,
+                  "section_mm2": null,
+                  "length_m": 50,
+                  "install": "лоток"
+                }
+              },
+              {
+                "id": "ОС-04",
+                "name": "Освещение актового зала",
+                "type": "lighting",
+                "power_kw": 5.0,
+                "cos_phi": 0.95,
+                "phases": 3,
+                "cable": {
+                  "mark": "ВВГнг-LS",
+                  "cores": 4,
+                  "section_mm2": null,
+                  "length_m": 60,
+                  "install": "лоток"
+                }
+              },
+              {
+                "id": "АО-01",
+                "name": "Аварийное освещение",
+                "type": "lighting",
+                "power_kw": 2.0,
+                "cos_phi": 0.95,
+                "phases": 3,
+                "category_pue": 2,
+                "cable": {
+                  "mark": "ВВГнг-LS",
+                  "cores": 4,
+                  "section_mm2": null,
+                  "length_m": 55,
+                  "install": "лоток"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ф2",
+        "name": "Группа ЩС-1",
+        "section": "ЭОМ",
+        "panels": [
+          {
+            "id": "ЩС-1",
+            "name": "Щит силовой №1",
+            "category_pue": 3,
+            "cable": {
+              "mark": "ВВГнг-LS",
+              "cores": 4,
+              "section_mm2": null,
+              "length_m": 30,
+              "install": "лоток"
+            },
+            "consumers": [
+              {
+                "id": "РЗ-01",
+                "name": "Розетки учебные кабинеты",
+                "type": "sockets",
+                "power_kw": 8.0,
+                "cos_phi": 0.8,
+                "phases": 3,
+                "cable": {
+                  "mark": "ВВГнг-LS",
+                  "cores": 4,
+                  "section_mm2": null,
+                  "length_m": 45,
+                  "install": "лоток"
+                }
+              },
+              {
+                "id": "ИТ-01",
+                "name": "ИТ-оборудование (серверная)",
+                "type": "it_equipment",
+                "power_kw": 6.0,
+                "cos_phi": 0.8,
+                "phases": 3,
+                "cable": {
+                  "mark": "ВВГнг-LS",
+                  "cores": 4,
+                  "section_mm2": null,
+                  "length_m": 20,
+                  "install": "лоток"
+                }
+              },
+              {
+                "id": "КУХ-01",
+                "name": "Пищеблок (кухня)",
+                "type": "kitchen",
+                "power_kw": 12.0,
+                "cos_phi": 0.95,
+                "phases": 3,
+                "cable": {
+                  "mark": "ВВГнг-LS",
+                  "cores": 4,
+                  "section_mm2": null,
+                  "length_m": 70,
+                  "install": "лоток"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ф3",
+        "name": "Группа ЩОВ-1 (ОВ)",
+        "section": "ОВ",
+        "panels": [
+          {
+            "id": "ЩОВ-1",
+            "name": "Щит насосной станции",
+            "category_pue": 2,
+            "cable": {
+              "mark": "ВВГнг-LS",
+              "cores": 4,
+              "section_mm2": null,
+              "length_m": 60,
+              "install": "лоток"
+            },
+            "consumers": [
+              {
+                "id": "НО-01",
+                "name": "Насос отопления основной",
+                "type": "pump",
+                "power_kw": 3.0,
+                "cos_phi": 0.8,
+                "phases": 3,
+                "start_factor": 5.0,
+                "category_pue": 2,
+                "cable": {
+                  "mark": "ВВГнг-LS",
+                  "cores": 4,
+                  "section_mm2": null,
+                  "length_m": 10,
+                  "install": "лоток"
+                }
+              },
+              {
+                "id": "НО-02",
+                "name": "Насос отопления резервный",
+                "type": "pump",
+                "power_kw": 3.0,
+                "cos_phi": 0.8,
+                "phases": 3,
+                "start_factor": 5.0,
+                "category_pue": 2,
+                "reserve": true,
+                "cable": {
+                  "mark": "ВВГнг-LS",
+                  "cores": 4,
+                  "section_mm2": null,
+                  "length_m": 10,
+                  "install": "лоток"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ф4",
+        "name": "Группа ЩВК-1 (ВК)",
+        "section": "ВК",
+        "panels": [
+          {
+            "id": "ЩВК-1",
+            "name": "Щит вентиляции №1",
+            "category_pue": 3,
+            "cable": {
+              "mark": "ВВГнг-LS",
+              "cores": 4,
+              "section_mm2": null,
+              "length_m": 40,
+              "install": "лоток"
+            },
+            "consumers": [
+              {
+                "id": "ПВ-01",
+                "name": "Приточная вентустановка П1",
+                "type": "hvac",
+                "power_kw": 7.5,
+                "cos_phi": 0.85,
+                "phases": 3,
+                "start_factor": 3.0,
+                "cable": {
+                  "mark": "ВВГнг-LS",
+                  "cores": 4,
+                  "section_mm2": null,
+                  "length_m": 15,
+                  "install": "лоток"
+                }
+              },
+              {
+                "id": "ВВ-01",
+                "name": "Вытяжная вентустановка В1",
+                "type": "hvac",
+                "power_kw": 5.5,
+                "cos_phi": 0.85,
+                "phases": 3,
+                "start_factor": 3.0,
+                "cable": {
+                  "mark": "ВВГнг-LS",
+                  "cores": 4,
+                  "section_mm2": null,
+                  "length_m": 15,
+                  "install": "лоток"
+                }
+              }
+            ]
+          },
+          {
+            "id": "ЩАПЗ-1",
+            "name": "Щит автоматики пожарной защиты",
+            "category_pue": 1,
+            "has_avr": true,
+            "cable": {
+              "mark": "ВВГнг-FRLS",
+              "cores": 4,
+              "section_mm2": null,
+              "length_m": 50,
+              "install": "лоток"
+            },
+            "consumers": [
+              {
+                "id": "СДУ-01",
+                "name": "Системы дымоудаления",
+                "type": "hvac",
+                "power_kw": 5.5,
+                "cos_phi": 0.85,
+                "phases": 3,
+                "category_pue": 1,
+                "start_factor": 4.0,
+                "cable": {
+                  "mark": "ВВГнг-FRLS",
+                  "cores": 4,
+                  "section_mm2": null,
+                  "length_m": 25,
+                  "install": "лоток"
+                }
+              },
+              {
+                "id": "ОПС-01",
+                "name": "Охранно-пожарная сигнализация",
+                "type": "it_equipment",
+                "power_kw": 1.5,
+                "cos_phi": 0.8,
+                "phases": 1,
+                "category_pue": 1,
+                "cable": {
+                  "mark": "ВВГнг-FRLS",
+                  "cores": 3,
+                  "section_mm2": null,
+                  "length_m": 30,
+                  "install": "лоток"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
   }
 }
