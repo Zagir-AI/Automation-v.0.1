@@ -460,6 +460,50 @@ def cmd_summary(args):
         print(ok("Кабели: нарушений нет"))
 
 
+def cmd_number_cables(args):
+    """Автонумерация кабелей: КЛ-ЩО1-01, КЛ-ЩС1-02 и т.д."""
+    from dwg.number_cables import (update_cable_numbering, print_cable_numbering,
+                                   write_cable_numbers_to_dxf)
+
+    proj_dir = find_project_dir(args.path)
+    project  = load_project(proj_dir)
+    project  = _ensure_calc(project, proj_dir)
+
+    p_name = project.get("project", {}).get("name", "")
+    print(hdr(f"Нумерация кабелей: {p_name}"))
+
+    # Нумерация: по DXF (если передан) или по порядку в проекте
+    dxf_path = None
+    if getattr(args, "dxf", None):
+        from pathlib import Path as _P
+        dxf_path = _P(args.dxf)
+        if not dxf_path.exists():
+            print(warn(f"DXF не найден: {dxf_path} — используется порядок из проекта"))
+            dxf_path = None
+
+    project = update_cable_numbering(project, dxf_path)
+    save_project(project, proj_dir)
+
+    print_cable_numbering(project)
+
+    n = len(project.get("cable_numbering", {}))
+    print()
+    print(ok(f"Пронумеровано линий: {n}"))
+
+    # Записываем CABLE_NO в DXF-план если он существует
+    plan_dxf = proj_dir / "dwg" / "plan_electrical.dxf"
+    if plan_dxf.exists():
+        try:
+            write_cable_numbers_to_dxf(plan_dxf, project["cable_numbering"])
+            print(ok(f"Номера записаны в DXF: plan_electrical.dxf"))
+        except Exception as e:
+            print(warn(f"DXF обновить не удалось: {e}"))
+
+    print()
+    print(info("Кабельный журнал теперь покажет номера КЛ. Запусти:"))
+    print(f"  python cli.py docs {args.path} --type cable")
+
+
 def cmd_stamp(args):
     """Редактирование штампа проекта с автопересборкой документов."""
     proj_dir = find_project_dir(args.path)
@@ -890,6 +934,11 @@ def main():
     p_stamp.add_argument("--field", help="Поле для изменения (designer, checker, ...)")
     p_stamp.add_argument("--value", help="Новое значение поля")
 
+    # number-cables
+    p_nc = sub.add_parser("number-cables", help="Автонумерация кабелей КЛ-ЩО1-01 ...")
+    p_nc.add_argument("path", help="Путь к папке проекта или код")
+    p_nc.add_argument("--dxf", help="DXF-план для нумерации по координатам (опционально)")
+
     # change
     p_chg = sub.add_parser("change", help="Зарегистрировать ревизию (изменение) проекта")
     p_chg.add_argument("path",       help="Путь к папке проекта или код")
@@ -916,6 +965,7 @@ def main():
         "check-compensation": cmd_check_compensation,
         "import":             cmd_import,
         "stamp":              cmd_stamp,
+        "number-cables":      cmd_number_cables,
         "change":             cmd_change,
     }
 

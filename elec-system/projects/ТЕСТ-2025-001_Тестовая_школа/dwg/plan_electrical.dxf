@@ -489,7 +489,7 @@ $SKPOLY
   9
 $TDCREATE
  40
-2461164.775011574
+2461164.783761574
   9
 $TDUCREATE
  40
@@ -497,7 +497,7 @@ $TDUCREATE
   9
 $TDUPDATE
  40
-2461164.775011574
+2461164.783761574
   9
 $TDUUPDATE
  40
@@ -549,7 +549,7 @@ $SPLINESEGS
   9
 $HANDSEED
   5
-B0
+CF
   9
 $SURFTAB1
  70
@@ -933,7 +933,7 @@ $FINGERPRINTGUID
   9
 $VERSIONGUID
   2
-{CC9416FE-77B4-4D53-B76E-753D4D6C7F18}
+{FC2EE2F1-1934-41D0-A6C6-75150F9D1FC8}
   9
 $EXTNAMES
 290
@@ -2549,7 +2549,7 @@ ATTRIB
   5
 45
 330
-17
+43
 100
 AcDbEntity
   8
@@ -2577,7 +2577,7 @@ ATTRIB
   5
 46
 330
-17
+43
 100
 AcDbEntity
   8
@@ -2605,7 +2605,7 @@ ATTRIB
   5
 47
 330
-17
+43
 100
 AcDbEntity
   8
@@ -2633,7 +2633,7 @@ SEQEND
   5
 44
 330
-43
+17
 100
 AcDbEntity
   8
@@ -2665,7 +2665,7 @@ ATTRIB
   5
 4A
 330
-17
+48
 100
 AcDbEntity
   8
@@ -2693,7 +2693,7 @@ ATTRIB
   5
 4B
 330
-17
+48
 100
 AcDbEntity
   8
@@ -2717,11 +2717,39 @@ POWER_KW
  70
 0
   0
+ATTRIB
+  5
+C2
+330
+17
+100
+AcDbEntity
+  8
+0
+100
+AcDbText
+ 10
+0.0
+ 20
+0.0
+ 30
+0.0
+ 40
+2.5
+  1
+КЛ-ЩО1-01
+100
+AcDbAttribute
+  2
+CABLE_NO
+ 70
+0
+  0
 SEQEND
   5
 49
 330
-48
+17
 100
 AcDbEntity
   8
@@ -2801,7 +2829,7 @@ ATTRIB
   5
 50
 330
-17
+4E
 100
 AcDbEntity
   8
@@ -2829,7 +2857,7 @@ ATTRIB
   5
 51
 330
-17
+4E
 100
 AcDbEntity
   8
@@ -2853,11 +2881,39 @@ POWER_KW
  70
 0
   0
+ATTRIB
+  5
+C3
+330
+17
+100
+AcDbEntity
+  8
+0
+100
+AcDbText
+ 10
+0.0
+ 20
+0.0
+ 30
+0.0
+ 40
+2.5
+  1
+КЛ-ЩО1-02
+100
+AcDbAttribute
+  2
+CABLE_NO
+ 70
+0
+  0
 SEQEND
   5
 4F
 330
-4E
+17
 100
 AcDbEntity
   8
@@ -2937,7 +2993,7 @@ ATTRIB
   5
 56
 330
-17
+54
 100
 AcDbEntity
   8
@@ -2965,7 +3021,7 @@ ATTRIB
   5
 57
 330
-17
+54
 100
 AcDbEntity
   8
@@ -2989,11 +3045,39 @@ POWER_KW
  70
 0
   0
+ATTRIB
+  5
+C4
+330
+17
+100
+AcDbEntity
+  8
+0
+100
+AcDbText
+ 10
+0.0
+ 20
+0.0
+ 30
+0.0
+ 40
+2.5
+  1
+КЛ-ЩО1-03
+100
+AcDbAttribute
+  2
+CABLE_NO
+ 70
+0
+  0
 SEQEND
   5
 55
 330
-54
+17
 100
 AcDbEntity
   8
@@ -3073,7 +3157,7 @@ ATTRIB
   5
 5C
 330
-17
+5A
 100
 AcDbEntity
   8
@@ -3101,7 +3185,7 @@ ATTRIB
   5
 5D
 330
-17
+5A
 100
 AcDbEntity
   8
@@ -3125,11 +3209,39 @@ POWER_KW
  70
 0
   0
+ATTRIB
+  5
+C5
+330
+17
+100
+AcDbEntity
+  8
+0
+100
+AcDbText
+ 10
+0.0
+ 20
+0.0
+ 30
+0.0
+ 40
+2.5
+  1
+КЛ-ЩО1-04
+100
+AcDbAttribute
+  2
+CABLE_NO
+ 70
+0
+  0
 SEQEND
   5
 5B
 330
-5A
+17
 100
 AcDbEntity
   8
@@ -3209,7 +3321,7 @@ ATTRIB
   5
 62
 330
-17
+60
 100
 AcDbEntity
   8
@@ -3237,7 +3349,7 @@ ATTRIB
   5
 63
 330
-17
+60
 100
 AcDbEntity
   8
@@ -3261,11 +3373,39 @@ POWER_KW
  70
 0
   0
+ATTRIB
+  5
+C6
+330
+17
+100
+AcDbEntity
+  8
+0
+100
+AcDbText
+ 10
+0.0
+ 20
+0.0
+ 30
+0.0
+ 40
+2.5
+  1
+КЛ-ЩО1-05
+100
+AcDbAttribute
+  2
+CABLE_NO
+ 70
+0
+  0
 SEQEND
   5
 61
 330
-60
+17
 100
 AcDbEntity
   8
@@ -3345,7 +3485,7 @@ ATTRIB
   5
 68
 330
-17
+66
 100
 AcDbEntity
   8
@@ -3373,7 +3513,7 @@ ATTRIB
   5
 69
 330
-17
+66
 100
 AcDbEntity
   8
@@ -3401,7 +3541,7 @@ ATTRIB
   5
 6A
 330
-17
+66
 100
 AcDbEntity
   8
@@ -3429,7 +3569,7 @@ SEQEND
   5
 67
 330
-66
+17
 100
 AcDbEntity
   8
@@ -3461,7 +3601,7 @@ ATTRIB
   5
 6D
 330
-17
+6B
 100
 AcDbEntity
   8
@@ -3489,7 +3629,7 @@ ATTRIB
   5
 6E
 330
-17
+6B
 100
 AcDbEntity
   8
@@ -3513,11 +3653,39 @@ POWER_KW
  70
 0
   0
+ATTRIB
+  5
+C7
+330
+17
+100
+AcDbEntity
+  8
+0
+100
+AcDbText
+ 10
+0.0
+ 20
+0.0
+ 30
+0.0
+ 40
+2.5
+  1
+КЛ-ЩС1-01
+100
+AcDbAttribute
+  2
+CABLE_NO
+ 70
+0
+  0
 SEQEND
   5
 6C
 330
-6B
+17
 100
 AcDbEntity
   8
@@ -3597,7 +3765,7 @@ ATTRIB
   5
 73
 330
-17
+71
 100
 AcDbEntity
   8
@@ -3625,7 +3793,7 @@ ATTRIB
   5
 74
 330
-17
+71
 100
 AcDbEntity
   8
@@ -3649,11 +3817,39 @@ POWER_KW
  70
 0
   0
+ATTRIB
+  5
+C8
+330
+17
+100
+AcDbEntity
+  8
+0
+100
+AcDbText
+ 10
+0.0
+ 20
+0.0
+ 30
+0.0
+ 40
+2.5
+  1
+КЛ-ЩС1-02
+100
+AcDbAttribute
+  2
+CABLE_NO
+ 70
+0
+  0
 SEQEND
   5
 72
 330
-71
+17
 100
 AcDbEntity
   8
@@ -3733,7 +3929,7 @@ ATTRIB
   5
 79
 330
-17
+77
 100
 AcDbEntity
   8
@@ -3761,7 +3957,7 @@ ATTRIB
   5
 7A
 330
-17
+77
 100
 AcDbEntity
   8
@@ -3785,11 +3981,39 @@ POWER_KW
  70
 0
   0
+ATTRIB
+  5
+C9
+330
+17
+100
+AcDbEntity
+  8
+0
+100
+AcDbText
+ 10
+0.0
+ 20
+0.0
+ 30
+0.0
+ 40
+2.5
+  1
+КЛ-ЩС1-03
+100
+AcDbAttribute
+  2
+CABLE_NO
+ 70
+0
+  0
 SEQEND
   5
 78
 330
-77
+17
 100
 AcDbEntity
   8
@@ -3869,7 +4093,7 @@ ATTRIB
   5
 7F
 330
-17
+7D
 100
 AcDbEntity
   8
@@ -3897,7 +4121,7 @@ ATTRIB
   5
 80
 330
-17
+7D
 100
 AcDbEntity
   8
@@ -3925,7 +4149,7 @@ ATTRIB
   5
 81
 330
-17
+7D
 100
 AcDbEntity
   8
@@ -3953,7 +4177,7 @@ SEQEND
   5
 7E
 330
-7D
+17
 100
 AcDbEntity
   8
@@ -3985,7 +4209,7 @@ ATTRIB
   5
 84
 330
-17
+82
 100
 AcDbEntity
   8
@@ -4013,7 +4237,7 @@ ATTRIB
   5
 85
 330
-17
+82
 100
 AcDbEntity
   8
@@ -4037,11 +4261,39 @@ POWER_KW
  70
 0
   0
+ATTRIB
+  5
+CA
+330
+17
+100
+AcDbEntity
+  8
+0
+100
+AcDbText
+ 10
+0.0
+ 20
+0.0
+ 30
+0.0
+ 40
+2.5
+  1
+КЛ-ЩОВ1-01
+100
+AcDbAttribute
+  2
+CABLE_NO
+ 70
+0
+  0
 SEQEND
   5
 83
 330
-82
+17
 100
 AcDbEntity
   8
@@ -4121,7 +4373,7 @@ ATTRIB
   5
 8A
 330
-17
+88
 100
 AcDbEntity
   8
@@ -4149,7 +4401,7 @@ ATTRIB
   5
 8B
 330
-17
+88
 100
 AcDbEntity
   8
@@ -4177,7 +4429,7 @@ ATTRIB
   5
 8C
 330
-17
+88
 100
 AcDbEntity
   8
@@ -4205,7 +4457,7 @@ SEQEND
   5
 89
 330
-88
+17
 100
 AcDbEntity
   8
@@ -4237,7 +4489,7 @@ ATTRIB
   5
 8F
 330
-17
+8D
 100
 AcDbEntity
   8
@@ -4265,7 +4517,7 @@ ATTRIB
   5
 90
 330
-17
+8D
 100
 AcDbEntity
   8
@@ -4289,11 +4541,39 @@ POWER_KW
  70
 0
   0
+ATTRIB
+  5
+CB
+330
+17
+100
+AcDbEntity
+  8
+0
+100
+AcDbText
+ 10
+0.0
+ 20
+0.0
+ 30
+0.0
+ 40
+2.5
+  1
+КЛ-ЩВК1-01
+100
+AcDbAttribute
+  2
+CABLE_NO
+ 70
+0
+  0
 SEQEND
   5
 8E
 330
-8D
+17
 100
 AcDbEntity
   8
@@ -4373,7 +4653,7 @@ ATTRIB
   5
 95
 330
-17
+93
 100
 AcDbEntity
   8
@@ -4401,7 +4681,7 @@ ATTRIB
   5
 96
 330
-17
+93
 100
 AcDbEntity
   8
@@ -4425,11 +4705,39 @@ POWER_KW
  70
 0
   0
+ATTRIB
+  5
+CC
+330
+17
+100
+AcDbEntity
+  8
+0
+100
+AcDbText
+ 10
+0.0
+ 20
+0.0
+ 30
+0.0
+ 40
+2.5
+  1
+КЛ-ЩВК1-02
+100
+AcDbAttribute
+  2
+CABLE_NO
+ 70
+0
+  0
 SEQEND
   5
 94
 330
-93
+17
 100
 AcDbEntity
   8
@@ -4509,7 +4817,7 @@ ATTRIB
   5
 9B
 330
-17
+99
 100
 AcDbEntity
   8
@@ -4537,7 +4845,7 @@ ATTRIB
   5
 9C
 330
-17
+99
 100
 AcDbEntity
   8
@@ -4565,7 +4873,7 @@ ATTRIB
   5
 9D
 330
-17
+99
 100
 AcDbEntity
   8
@@ -4593,7 +4901,7 @@ SEQEND
   5
 9A
 330
-99
+17
 100
 AcDbEntity
   8
@@ -4625,7 +4933,7 @@ ATTRIB
   5
 A0
 330
-17
+9E
 100
 AcDbEntity
   8
@@ -4653,7 +4961,7 @@ ATTRIB
   5
 A1
 330
-17
+9E
 100
 AcDbEntity
   8
@@ -4677,11 +4985,39 @@ POWER_KW
  70
 0
   0
+ATTRIB
+  5
+CD
+330
+17
+100
+AcDbEntity
+  8
+0
+100
+AcDbText
+ 10
+0.0
+ 20
+0.0
+ 30
+0.0
+ 40
+2.5
+  1
+КЛ-ЩАПЗ1-01
+100
+AcDbAttribute
+  2
+CABLE_NO
+ 70
+0
+  0
 SEQEND
   5
 9F
 330
-9E
+17
 100
 AcDbEntity
   8
@@ -4761,7 +5097,7 @@ ATTRIB
   5
 A6
 330
-17
+A4
 100
 AcDbEntity
   8
@@ -4789,7 +5125,7 @@ ATTRIB
   5
 A7
 330
-17
+A4
 100
 AcDbEntity
   8
@@ -4813,11 +5149,39 @@ POWER_KW
  70
 0
   0
+ATTRIB
+  5
+CE
+330
+17
+100
+AcDbEntity
+  8
+0
+100
+AcDbText
+ 10
+0.0
+ 20
+0.0
+ 30
+0.0
+ 40
+2.5
+  1
+КЛ-ЩАПЗ1-02
+100
+AcDbAttribute
+  2
+CABLE_NO
+ 70
+0
+  0
 SEQEND
   5
 A5
 330
-A4
+17
 100
 AcDbEntity
   8
@@ -5957,7 +6321,7 @@ DictionaryVariables
 280
 0
   1
-1.4.3 @ 2026-05-03T18:36:01.616945+00:00
+1.4.3 @ 2026-05-03T18:48:37.761746+00:00
   0
 ENDSEC
   0
