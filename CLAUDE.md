@@ -172,6 +172,7 @@ python cli.py calc-outdoor projects/DEMO-2025-001_Офисный_центр
 # Проверки
 python cli.py check-selectivity projects/DEMO-2025-001_Офисный_центр
 python cli.py check-compensation projects/DEMO-2025-001_Офисный_центр
+python cli.py check-cables projects/DEMO-2025-001_Офисный_центр
 
 # Документы (все / по типу)
 python cli.py docs projects/DEMO-2025-001_Офисный_центр

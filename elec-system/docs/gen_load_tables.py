@@ -71,10 +71,11 @@ def _txt_load_table_by_panel(project: dict, docs_dir: Path) -> Path:
     lines.append(f"Дата: {date.today()}")
     lines.append("")
 
-    col = "{:<6} {:<35} {:<10} {:<6} {:<8} {:<8} {:<8} {:<6} {:<18} {:<8}"
+    col = "{:<6} {:<35} {:<10} {:<6} {:<8} {:<8} {:<8} {:<6} {:<18} {:<6} {:<14} {:<8}"
     hdr = col.format("Поз.", "Наименование", "Тип", "Кат.", "Pуст,кВт",
-                     "Кс", "Pрасч,кВт", "cosφ", "Кабель", "АВ,А")
-    sep = "-" * 120
+                     "Кс", "Pрасч,кВт", "cosφ", "Кабель", "АВ,А",
+                     "Lплан/расч,м", "ΔU,%")
+    sep = "-" * 140
 
     for panel in _iter_panels(vru):
         lines.append(f"\nЩИТ {panel['id']} — {panel['name']}")
@@ -91,6 +92,11 @@ def _txt_load_table_by_panel(project: dict, docs_dir: Path) -> Path:
                              f"{cable.get('section_mm2','')}мм²")
             br = c.get("breaker", {})
             br_str = str(br.get("rating", "—")) if br else "—"
+            l_plan = cable.get("length_m_plan", cable.get("length_m", "—"))
+            l_calc = cable.get("length_m_calc", "—")
+            l_str  = f"{l_plan}/{l_calc}" if l_calc != "—" else str(l_plan)
+            du     = cable.get("voltage_drop_pct", "—")
+            du_str = f"⚠{du}" if (not cable.get("du_ok", True)) else str(du)
             lines.append(col.format(
                 c.get("id", ""),
                 c.get("name", "")[:35],
@@ -102,6 +108,8 @@ def _txt_load_table_by_panel(project: dict, docs_dir: Path) -> Path:
                 f"{c.get('cos_phi', 1):.2f}",
                 cable_str[:18],
                 br_str,
+                l_str[:14],
+                du_str,
             ))
 
         lines.append(sep)
@@ -111,12 +119,24 @@ def _txt_load_table_by_panel(project: dict, docs_dir: Path) -> Path:
             "",
             f"{panel.get('p_calc_kw', 0):.2f}",
             f"{panel.get('cos_phi', 1):.2f}",
-            "", ""
+            "", "", "", ""
         ))
+
+    # Нарушения ΔU
+    du_violations = [
+        f"  {c.get('id','')} {c.get('name','')[:35]} — ΔU={c['cable'].get('voltage_drop_pct',0)}% > {c['cable'].get('du_limit_pct',5)}%"
+        for p in _iter_panels(vru)
+        for c in _iter_consumers(p)
+        if not c.get("cable", {}).get("du_ok", True)
+    ]
+    if du_violations:
+        lines.append("")
+        lines.append("⚠ НАРУШЕНИЯ ΔU:")
+        lines.extend(du_violations)
 
     # Итого по ВРУ
     lines.append("")
-    lines.append("=" * 120)
+    lines.append("=" * 140)
     lines.append(f"ИТОГО по ВРУ:  "
                  f"Pуст={vru.get('p_installed_kw', 0):.2f} кВт  "
                  f"Pрасч={vru.get('p_calc_kw', 0):.2f} кВт  "
@@ -261,8 +281,8 @@ def _docx_load_table_by_panel(project: dict, docs_dir: Path) -> Path:
     doc.add_paragraph("")
 
     headers = ["Поз.", "Наименование", "Тип", "Кат.", "Pуст\nкВт", "Кс",
-               "Pрасч\nкВт", "cosφ", "Кабель", "АВ, А"]
-    widths  = [1.2, 5.5, 2.0, 1.0, 1.5, 1.0, 1.5, 1.2, 4.0, 1.5]
+               "Pрасч\nкВт", "cosφ", "Кабель", "АВ, А", "L план/расч, м", "ΔU, %"]
+    widths  = [1.2, 5.0, 2.0, 1.0, 1.5, 1.0, 1.5, 1.2, 3.5, 1.2, 2.5, 1.5]
 
     for panel in _iter_panels(vru):
         doc.add_paragraph(f"Щит {panel['id']} — {panel['name']}",
@@ -282,6 +302,11 @@ def _docx_load_table_by_panel(project: dict, docs_dir: Path) -> Path:
                              f"{cable.get('section_mm2','')}мм²")
             br = c.get("breaker", {})
             br_str = str(br.get("rating", "—")) if br else "—"
+            l_plan = cable.get("length_m_plan", cable.get("length_m", "—"))
+            l_calc = cable.get("length_m_calc", "—")
+            l_str  = f"{l_plan}/{l_calc}" if l_calc != "—" else str(l_plan)
+            du     = cable.get("voltage_drop_pct", "—")
+            du_str = f"⚠{du}" if (not cable.get("du_ok", True)) else str(du)
             _add_data_row(table, [
                 c.get("id", ""),
                 c.get("name", ""),
@@ -293,6 +318,8 @@ def _docx_load_table_by_panel(project: dict, docs_dir: Path) -> Path:
                 f"{c.get('cos_phi', 1):.2f}",
                 cable_str,
                 br_str,
+                l_str,
+                du_str,
             ])
 
         # Итого по щиту
@@ -301,7 +328,7 @@ def _docx_load_table_by_panel(project: dict, docs_dir: Path) -> Path:
             f"{panel.get('p_installed_kw', 0):.2f}", "",
             f"{panel.get('p_calc_kw', 0):.2f}",
             f"{panel.get('cos_phi', 1):.2f}",
-            "", ""
+            "", "", "", ""
         ], bold=True)
 
         doc.add_paragraph("")
