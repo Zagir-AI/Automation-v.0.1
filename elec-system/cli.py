@@ -13,6 +13,7 @@ cli.py — главная точка входа в систему.
   python cli.py check-compensation <путь>             — проверить КРМ
   python cli.py import <путь> dwg|table <файл>        — импорт из DXF или Excel
   python cli.py validate <путь>                        — проверить JSON
+  python cli.py change <путь> [--desc "..."] [--reason 01-04] — зарегистрировать ревизию
   python cli.py list                                   — список проектов
 """
 
@@ -306,6 +307,7 @@ def cmd_validate(args):
 def cmd_calc(args):
     """Полный расчёт ВРУ."""
     from calc.engine import calculate_project
+    from changes.detector import detect_changes
 
     proj_dir = find_project_dir(args.path)
     project = load_project(proj_dir)
@@ -313,7 +315,28 @@ def cmd_calc(args):
     p_name = project.get("project", {}).get("name", "")
     print(hdr(f"Расчёт: {p_name}"))
 
+    # Сравниваем с прошлым снапшотом — что изменилось с прошлого расчёта
+    old_snapshot = project.get("_vru_snapshot")
+    if old_snapshot:
+        changed_items = detect_changes({"vru": old_snapshot}, project)
+        if changed_items:
+            print(f"  {C.CYAN}Изменения с прошлого расчёта:{C.RESET} {len(changed_items)} позиций")
+            for it in changed_items[:6]:
+                fld = it["field"]
+                if fld == "new_consumer":
+                    print(f"    + {it['id']} добавлен")
+                elif fld == "deleted_consumer":
+                    print(f"    − {it['id']} удалён")
+                else:
+                    print(f"    {it['id']}: {fld}  {it['old']} → {it['new']}")
+            if len(changed_items) > 6:
+                print(f"    ... ещё {len(changed_items) - 6}")
+            print(f"  {C.GRAY}Для регистрации ревизии: python cli.py change {args.path}{C.RESET}")
+            print()
+
     result = calculate_project(project)
+    # Обновляем снапшот ВРУ для следующего сравнения
+    result["_vru_snapshot"] = copy.deepcopy(result["vru"])
     save_project(result, proj_dir)
 
     s   = result["_results"]["summary"]
@@ -654,6 +677,57 @@ def cmd_check_compensation(args):
     save_project(project, proj_dir)
 
 
+def cmd_change(args):
+    """Регистрация ревизии (изменения) проекта — трапеция ГОСТ 21.1101."""
+    from changes.detector import register_change, REASON_CODES
+
+    proj_dir = find_project_dir(args.path)
+    project  = load_project(proj_dir)
+    p_name   = project.get("project", {}).get("name", "")
+    rev_cur  = project.get("project", {}).get("revision", 0)
+
+    print(hdr(f"Регистрация изменения: {p_name}  (текущая ред. {rev_cur})"))
+
+    # Описание
+    desc = getattr(args, "desc", None) or ""
+    if not desc:
+        print("  Коды причин:")
+        for code, text in REASON_CODES.items():
+            print(f"    {code} — {text}")
+        desc = _prompt("Описание изменения", required=True)
+
+    # Код причины
+    reason = getattr(args, "reason", None) or ""
+    if not reason:
+        reason = _prompt("Код причины (01–04)", default="04")
+    reason = reason.strip().lstrip("0") or "4"
+    reason = reason.zfill(2)
+    if reason not in REASON_CODES:
+        reason = "04"
+
+    # Категория
+    category = getattr(args, "category", None) or "general"
+
+    updated = register_change(
+        project,
+        description=desc,
+        reason_code=reason,
+        category=category,
+    )
+    save_project(updated, proj_dir)
+
+    new_rev = updated["project"]["revision"]
+    reason_text = REASON_CODES.get(reason, reason)
+    print(ok(f"Ревизия {new_rev} зарегистрирована"))
+    print(f"  Описание: {desc}")
+    print(f"  Причина:  {reason} — {reason_text}")
+    print(f"  Затронуто: {', '.join(updated['changes'][-1]['affected_docs'])}")
+    print()
+    print(warn("Выполни пересчёт и перегенерируй документы:"))
+    print(f"  python cli.py calc {args.path}")
+    print(f"  python cli.py docs {args.path}")
+
+
 def cmd_import(args):
     """Импорт потребителей из DXF или таблицы Excel."""
     proj_dir = find_project_dir(args.path)
@@ -816,6 +890,16 @@ def main():
     p_stamp.add_argument("--field", help="Поле для изменения (designer, checker, ...)")
     p_stamp.add_argument("--value", help="Новое значение поля")
 
+    # change
+    p_chg = sub.add_parser("change", help="Зарегистрировать ревизию (изменение) проекта")
+    p_chg.add_argument("path",       help="Путь к папке проекта или код")
+    p_chg.add_argument("--desc",     help="Описание изменения")
+    p_chg.add_argument("--reason",   default="04",
+                        help="Код причины: 01 ошибка, 02 экспертиза, 03 задание, 04 иное [04]")
+    p_chg.add_argument("--category", default="general",
+                        choices=["cable","panel","load","general","calc","drawing"],
+                        help="Категория изменения [general]")
+
     args = parser.parse_args()
 
     commands = {
@@ -832,6 +916,7 @@ def main():
         "check-compensation": cmd_check_compensation,
         "import":             cmd_import,
         "stamp":              cmd_stamp,
+        "change":             cmd_change,
     }
 
     if args.command in commands:

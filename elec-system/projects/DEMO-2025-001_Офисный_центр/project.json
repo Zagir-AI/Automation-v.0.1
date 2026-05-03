@@ -16,8 +16,8 @@
     "gap": "",
     "org": "ООО ЭлектроПроект",
     "breaker_series": "IEK",
-    "revision": 0,
-    "date": "2025-04-18",
+    "revision": 1,
+    "date": "2026-05-03",
     "notes": "Тестовый демо-объект для проверки расчётного движка"
   },
   "building": {
@@ -430,15 +430,29 @@
       }
     ]
   },
-  "changes": [],
+  "changes": [
+    {
+      "rev": 1,
+      "date": "2026-05-03",
+      "author": "Смирнов А.А.",
+      "description": "Проверочная ревизия для демонстрации механизма изменений",
+      "reason_code": "04",
+      "reason_text": "Иное",
+      "category": "general",
+      "affected_docs": [
+        "Все разделы"
+      ],
+      "items": []
+    }
+  ],
   "_meta": {
     "schema_version": "1.1",
     "created": "2025-04-18",
     "last_modified": "2026-05-03",
-    "calc_done": true
+    "calc_done": false
   },
   "_results": {
-    "calculated_at": "2026-05-03T18:33:50.941863",
+    "calculated_at": "2026-05-03T18:43:29.590220",
     "vru": {
       "id": "ВРУ-1",
       "name": "ВРУ-1",
@@ -1600,5 +1614,410 @@
     "compliance_ok": true,
     "violations": 0,
     "last_check": "2026-04-26"
+  },
+  "_vru_snapshot": {
+    "id": "ВРУ-1",
+    "name": "ВРУ-1",
+    "bus_current_a": 250,
+    "isc_ka": 3.0,
+    "incoming_cable": {
+      "mark": "ВВГнг-LS",
+      "cores": 4,
+      "section_mm2": null,
+      "length_m": 30,
+      "install": "лоток",
+      "ambient_t": 25,
+      "parallel": 1
+    },
+    "feeders": [
+      {
+        "id": "Ф1",
+        "name": "Группа ЩО-1",
+        "section": "Освещение",
+        "panels": [
+          {
+            "id": "ЩО-1",
+            "name": "Щит освещения №1",
+            "floor": "1",
+            "cable": {
+              "mark": "ВВГнг-LS",
+              "cores": 4,
+              "section_mm2": null,
+              "length_m": 25,
+              "install": "лоток",
+              "ambient_t": 25,
+              "parallel": 1
+            },
+            "consumers": [
+              {
+                "id": "ОС-01",
+                "name": "Освещение офисов",
+                "type": "lighting",
+                "power_kw": 3.0,
+                "demand_factor": 0.9,
+                "cos_phi": 0.95,
+                "phases": 3,
+                "start_factor": 1.0,
+                "cable": {
+                  "mark": "ВВГнг-LS",
+                  "cores": 3,
+                  "section_mm2": null,
+                  "length_m": 30,
+                  "install": "лоток",
+                  "ambient_t": 25,
+                  "parallel": 1
+                }
+              },
+              {
+                "id": "ОС-02",
+                "name": "Освещение коридоров и холлов",
+                "type": "lighting",
+                "power_kw": 2.0,
+                "demand_factor": 0.9,
+                "cos_phi": 0.95,
+                "phases": 3,
+                "start_factor": 1.0,
+                "cable": {
+                  "mark": "ВВГнг-LS",
+                  "cores": 3,
+                  "section_mm2": null,
+                  "length_m": 25,
+                  "install": "лоток",
+                  "ambient_t": 25,
+                  "parallel": 1
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ф2",
+        "name": "Группа ЩС-1",
+        "section": "Силовые сети",
+        "panels": [
+          {
+            "id": "ЩС-1",
+            "name": "Щит силовой №1",
+            "floor": "1",
+            "cable": {
+              "mark": "ВВГнг-LS",
+              "cores": 4,
+              "section_mm2": null,
+              "length_m": 30,
+              "install": "лоток",
+              "ambient_t": 25,
+              "parallel": 1
+            },
+            "consumers": [
+              {
+                "id": "РЗ-01",
+                "name": "Розетки зона А",
+                "type": "sockets",
+                "power_kw": 4.0,
+                "demand_factor": 0.5,
+                "cos_phi": 0.8,
+                "phases": 3,
+                "start_factor": 1.0,
+                "cable": {
+                  "mark": "ВВГнг-LS",
+                  "cores": 3,
+                  "section_mm2": null,
+                  "length_m": 20,
+                  "install": "лоток",
+                  "ambient_t": 25,
+                  "parallel": 1
+                }
+              },
+              {
+                "id": "РЗ-02",
+                "name": "Розетки зона Б",
+                "type": "sockets",
+                "power_kw": 4.0,
+                "demand_factor": 0.5,
+                "cos_phi": 0.8,
+                "phases": 3,
+                "start_factor": 1.0,
+                "cable": {
+                  "mark": "ВВГнг-LS",
+                  "cores": 3,
+                  "section_mm2": null,
+                  "length_m": 35,
+                  "install": "лоток",
+                  "ambient_t": 25,
+                  "parallel": 1
+                }
+              },
+              {
+                "id": "ИТ-01",
+                "name": "ИТ-оборудование серверная",
+                "type": "it_equipment",
+                "power_kw": 5.0,
+                "demand_factor": 0.9,
+                "cos_phi": 0.8,
+                "phases": 3,
+                "start_factor": 1.0,
+                "cable": {
+                  "mark": "ВВГнг-LS",
+                  "cores": 3,
+                  "section_mm2": null,
+                  "length_m": 15,
+                  "install": "лоток",
+                  "ambient_t": 25,
+                  "parallel": 1
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ф3",
+        "name": "Группа ЩК-1",
+        "section": "Климатические системы",
+        "panels": [
+          {
+            "id": "ЩК-1",
+            "name": "Щит климатический №1",
+            "floor": "1",
+            "cable": {
+              "mark": "ВВГнг-LS",
+              "cores": 4,
+              "section_mm2": null,
+              "length_m": 40,
+              "install": "лоток",
+              "ambient_t": 25,
+              "parallel": 1
+            },
+            "consumers": [
+              {
+                "id": "КД-01",
+                "name": "Кондиционеры и вентиляция",
+                "type": "hvac",
+                "power_kw": 10.0,
+                "demand_factor": 0.8,
+                "cos_phi": 0.85,
+                "phases": 3,
+                "start_factor": 3.0,
+                "cable": {
+                  "mark": "ВВГнг-LS",
+                  "cores": 4,
+                  "section_mm2": null,
+                  "length_m": 40,
+                  "install": "лоток",
+                  "ambient_t": 25,
+                  "parallel": 1
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ф4",
+        "name": "Группа ЩОВ-1 (ОВ)",
+        "section": "ОВ",
+        "panels": [
+          {
+            "id": "ЩОВ-1",
+            "name": "Щит отопления №1",
+            "type": "heating",
+            "floor": "1",
+            "category_pue": 2,
+            "has_avr": false,
+            "cable": {
+              "mark": "ВВГнг-LS",
+              "cores": 4,
+              "section_mm2": null,
+              "length_m": 30,
+              "install": "лоток",
+              "ambient_t": 25,
+              "parallel": 1
+            },
+            "breaker": {},
+            "consumers": [
+              {
+                "id": "НО-01",
+                "name": "Насос отопления основной",
+                "type": "pump",
+                "section": "ОВ",
+                "power_kw": 3.0,
+                "demand_factor": 0.8,
+                "cos_phi": 0.85,
+                "phases": 3,
+                "start_factor": 5.0,
+                "category_pue": 2,
+                "reserve": false,
+                "cable": {
+                  "mark": "ВВГнг-LS",
+                  "cores": 4,
+                  "section_mm2": null,
+                  "length_m": 20,
+                  "install": "лоток",
+                  "ambient_t": 25,
+                  "parallel": 1
+                }
+              },
+              {
+                "id": "НО-02",
+                "name": "Насос отопления резервный",
+                "type": "pump",
+                "section": "ОВ",
+                "power_kw": 3.0,
+                "demand_factor": 0.8,
+                "cos_phi": 0.85,
+                "phases": 3,
+                "start_factor": 5.0,
+                "category_pue": 2,
+                "reserve": true,
+                "reserve_scheme": "avr",
+                "cable": {
+                  "mark": "ВВГнг-LS",
+                  "cores": 4,
+                  "section_mm2": null,
+                  "length_m": 20,
+                  "install": "лоток",
+                  "ambient_t": 25,
+                  "parallel": 1
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ф5",
+        "name": "Группа ЩВК-1 (ВК)",
+        "section": "ВК",
+        "panels": [
+          {
+            "id": "ЩВК-1",
+            "name": "Щит вентиляции №1",
+            "type": "ventilation",
+            "floor": "1",
+            "category_pue": 2,
+            "has_avr": false,
+            "cable": {
+              "mark": "ВВГнг-LS",
+              "cores": 4,
+              "section_mm2": null,
+              "length_m": 35,
+              "install": "лоток",
+              "ambient_t": 25,
+              "parallel": 1
+            },
+            "breaker": {},
+            "consumers": [
+              {
+                "id": "ПВ-01",
+                "name": "Приточная вентустановка",
+                "type": "ventilation_unit",
+                "section": "ВК",
+                "power_kw": 5.5,
+                "demand_factor": 0.8,
+                "cos_phi": 0.85,
+                "phases": 3,
+                "start_factor": 4.0,
+                "category_pue": 2,
+                "cable": {
+                  "mark": "ВВГнг-LS",
+                  "cores": 4,
+                  "section_mm2": null,
+                  "length_m": 25,
+                  "install": "лоток",
+                  "ambient_t": 25,
+                  "parallel": 1
+                }
+              },
+              {
+                "id": "ВВ-01",
+                "name": "Вытяжная вентустановка",
+                "type": "ventilation_unit",
+                "section": "ВК",
+                "power_kw": 4.0,
+                "demand_factor": 0.8,
+                "cos_phi": 0.85,
+                "phases": 3,
+                "start_factor": 4.0,
+                "category_pue": 2,
+                "cable": {
+                  "mark": "ВВГнг-LS",
+                  "cores": 4,
+                  "section_mm2": null,
+                  "length_m": 30,
+                  "install": "лоток",
+                  "ambient_t": 25,
+                  "parallel": 1
+                }
+              }
+            ]
+          },
+          {
+            "id": "ЩДУ-1",
+            "name": "Щит дымоудаления №1",
+            "type": "smoke_exhaust",
+            "floor": "1",
+            "category_pue": 1,
+            "has_avr": true,
+            "cable": {
+              "mark": "ВВГнг-FRLS",
+              "cores": 4,
+              "section_mm2": null,
+              "length_m": 40,
+              "install": "лоток",
+              "ambient_t": 25,
+              "parallel": 1
+            },
+            "breaker": {},
+            "consumers": [
+              {
+                "id": "ВДУ-01",
+                "name": "Вентилятор дымоудаления",
+                "type": "smoke_fan",
+                "section": "ВК",
+                "power_kw": 7.5,
+                "demand_factor": 1.0,
+                "cos_phi": 0.85,
+                "phases": 3,
+                "start_factor": 6.0,
+                "category_pue": 1,
+                "cable": {
+                  "mark": "ВВГнг-FRLS",
+                  "cores": 4,
+                  "section_mm2": null,
+                  "length_m": 35,
+                  "install": "лоток",
+                  "ambient_t": 25,
+                  "parallel": 1
+                }
+              },
+              {
+                "id": "ВДУ-02",
+                "name": "Вентилятор дымоудаления резервный",
+                "type": "smoke_fan",
+                "section": "ВК",
+                "power_kw": 7.5,
+                "demand_factor": 1.0,
+                "cos_phi": 0.85,
+                "phases": 3,
+                "start_factor": 6.0,
+                "category_pue": 1,
+                "reserve": true,
+                "reserve_scheme": "avr",
+                "cable": {
+                  "mark": "ВВГнг-FRLS",
+                  "cores": 4,
+                  "section_mm2": null,
+                  "length_m": 35,
+                  "install": "лоток",
+                  "ambient_t": 25,
+                  "parallel": 1
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
   }
 }
