@@ -390,44 +390,38 @@ def calc_panel(panel: dict, building: dict | None = None, isc_ka: float = 10.0) 
     Расчёт щита: нагрузки, кабели, автоматы всех потребителей.
 
     building: project["building"] — для расчёта длин кабелей по floor_height.
-    isc_ka: ток КЗ на шинах питания, кА (для термической стойкости и чувствительности).
+    isc_ka: ток КЗ на шинах ПИТАНИЯ (ВРУ/фидер), кА. Для потребителей
+            используется пониженный Iкз на шинах самого щита, вычисленный
+            через импеданс питающего кабеля (_calc_isc_end).
     reserve=True потребители: кабель и автомат подбираются, но НЕ суммируются в нагрузку.
     """
     consumers = panel.get("consumers", [])
-    results_consumers = []
-
     p_calc_total = 0.0
     q_calc_total = 0.0
 
+    # ── ПРОХОД 1: кабели и автоматы потребителей (без КЗ-проверок) ──────
+    # КЗ-проверки добавим позже — после того как узнаем Iкз на шинах щита.
+    pass1 = []
     for c in consumers:
         is_reserve = c.get("reserve", False)
         i_calc  = calc_consumer_current(c)
         i_start = i_calc * c.get("start_factor", 1.0)
 
-        # Сначала автомат — чтобы использовать его номинал для выбора кабеля (ПУЭ 3.1.4)
         breaker_result = select_breaker_for_consumer(c, i_calc)
 
-        # Кабель: I_доп ≥ max(Iр, I_ном_АВ) — кабель должен выдерживать ток защиты
         cable_cfg = dict(c.get("cable", {}))
         cable_cfg["cos_phi"] = c.get("cos_phi", 0.85)
         eff_len = effective_cable_length(cable_cfg, building)
         cable_cfg_calc = {**cable_cfg, "length_m": eff_len}
         i_cable_min = max(i_calc, breaker_result.get("rating", i_calc))
         cable_result = select_cable_for_current(cable_cfg_calc, i_cable_min, i_start)
-        cable_result["length_m_plan"]   = cable_cfg.get("length_m", 0)
-        cable_result["length_m_calc"]   = eff_len
-        cable_result["routing_note"]    = routing_note(cable_cfg, building)
+        cable_result["length_m_plan"] = cable_cfg.get("length_m", 0)
+        cable_result["length_m_calc"] = eff_len
+        cable_result["routing_note"]  = routing_note(cable_cfg, building)
 
-        # ΔU — увеличить сечение если превышает допуск (ПУЭ 7.1.67/7.1.60)
         du_max = _du_limit(c.get("type", "default"))
         cable_result = _upgrade_section_for_du(cable_result, i_calc, c.get("phases", 3), du_max)
-        # КЗ: термическая стойкость + чувствительность защиты (ПУЭ 1.4.17, ПУЭ 3.1.8)
-        cable_result = _add_kz_checks(cable_result, i_calc, c.get("phases", 3),
-                                      breaker_result.get("rating", 6),
-                                      breaker_result.get("char", "C"),
-                                      isc_ka)
 
-        # Суммируем только не-резервных потребителей
         if not is_reserve:
             p_kw    = c["power_kw"] * c.get("demand_factor",
                       DEFAULT_DEMAND_FACTORS.get(c.get("type","default"), 0.70))
@@ -438,6 +432,54 @@ def calc_panel(panel: dict, building: dict | None = None, isc_ka: float = 10.0) 
         else:
             p_kw = 0.0
 
+        pass1.append((c, is_reserve, i_calc, i_start, breaker_result, cable_result, p_kw))
+
+    # ── Питающий кабель щита ─────────────────────────────────────────────
+    n = len(consumers)
+    ku = get_simultaneous_factor(n)
+    p_ku = p_calc_total * ku
+    q_ku = q_calc_total * ku
+    s_calc = math.sqrt(p_ku**2 + q_ku**2)
+    cos_phi_panel = p_ku / s_calc if s_calc > 0 else 0.85
+    cos_phi_panel = min(max(cos_phi_panel, 0.5), 1.0)
+
+    i_panel = s_calc * 1000 / (math.sqrt(3) * U_LINE) if n > 0 else 0
+    i_panel = round(i_panel, 2)
+
+    panel_breaker = select_panel_breaker(i_panel)
+
+    panel_cable_cfg = dict(panel.get("cable", {}))
+    panel_cable_cfg.setdefault("cos_phi", cos_phi_panel)
+    p_eff_len = effective_cable_length(panel_cable_cfg, building)
+    panel_cable_cfg_calc = {**panel_cable_cfg, "length_m": p_eff_len}
+    i_cable_min = max(i_panel, panel_breaker.get("rating", i_panel))
+    panel_cable_result = select_cable_for_current(panel_cable_cfg_calc, i_cable_min)
+    panel_cable_result["length_m_plan"] = panel_cable_cfg.get("length_m", 0)
+    panel_cable_result["length_m_calc"] = p_eff_len
+    panel_cable_result["routing_note"]  = routing_note(panel_cable_cfg, building)
+    panel_cable_result = _upgrade_section_for_du(panel_cable_result, i_panel, 3, _du_limit("panel"))
+    # Питающий кабель щита проверяется при Iкз источника (ВРУ/фидер)
+    panel_cable_result = _add_kz_checks(panel_cable_result, i_panel, 3,
+                                        panel_breaker.get("rating", 6),
+                                        panel_breaker.get("char", "C"),
+                                        isc_ka)
+
+    # Iкз на шинах щита: ниже, чем на шинах ВРУ, из-за импеданса питающего кабеля
+    isc_ka_panel = _calc_isc_end(
+        isc_ka,
+        panel_cable_result.get("mark", "ВВГнг-LS"),
+        panel_cable_result.get("section_mm2", 1.5),
+        p_eff_len,
+    ) / 1000  # А → кА
+    isc_ka_consumers = max(isc_ka_panel, 0.01)
+
+    # ── ПРОХОД 2: КЗ-проверки потребителей с Iкз на шинах щита ─────────
+    results_consumers = []
+    for c, is_reserve, i_calc, i_start, breaker_result, cable_result, p_kw in pass1:
+        cable_result = _add_kz_checks(cable_result, i_calc, c.get("phases", 3),
+                                      breaker_result.get("rating", 6),
+                                      breaker_result.get("char", "C"),
+                                      isc_ka_consumers)
         results_consumers.append({
             "id":           c["id"],
             "name":         c["name"],
@@ -451,37 +493,11 @@ def calc_panel(panel: dict, building: dict | None = None, isc_ka: float = 10.0) 
             "phases":       c.get("phases", 3),
             "cos_phi":      c.get("cos_phi", 0.85),
             "i_calc_a":     i_calc,
-            "i_start_a":    round(i_calc * c.get("start_factor", 1.0), 2),
+            "i_start_a":    round(i_start, 2),
             "cable":        cable_result,
             "breaker":      breaker_result,
             "category_pue": c.get("category_pue", panel.get("category_pue", 3)),
         })
-
-    # Суммарный расчётный ток щита
-    n = len(consumers)
-    ku = get_simultaneous_factor(n)
-    p_ku = p_calc_total * ku
-    q_ku = q_calc_total * ku
-    s_calc = math.sqrt(p_ku**2 + q_ku**2)
-    cos_phi_panel = p_ku / s_calc if s_calc > 0 else 0.85
-    cos_phi_panel = min(max(cos_phi_panel, 0.5), 1.0)
-
-    i_panel = s_calc * 1000 / (math.sqrt(3) * U_LINE) if n > 0 else 0
-    i_panel = round(i_panel, 2)
-
-    # Сначала автомат щита — потом кабель под него (ПУЭ 3.1.4)
-    panel_breaker = select_panel_breaker(i_panel)
-
-    # Питающий кабель щита: I_доп ≥ max(Iр, I_ном_АВ)
-    panel_cable_cfg = dict(panel.get("cable", {}))
-    panel_cable_cfg.setdefault("cos_phi", cos_phi_panel)
-    i_cable_min = max(i_panel, panel_breaker.get("rating", i_panel))
-    panel_cable_result = select_cable_for_current(panel_cable_cfg, i_cable_min)
-    panel_cable_result = _upgrade_section_for_du(panel_cable_result, i_panel, 3, _du_limit("panel"))
-    panel_cable_result = _add_kz_checks(panel_cable_result, i_panel, 3,
-                                        panel_breaker.get("rating", 6),
-                                        panel_breaker.get("char", "C"),
-                                        isc_ka)
 
     return {
         "id": panel["id"],

@@ -29,7 +29,7 @@
     "id": "ВРУ-1",
     "name": "ВРУ-1",
     "bus_current_a": 250,
-    "isc_ka": 10,
+    "isc_ka": 3.0,
     "incoming_cable": {
       "mark": "ВВГнг-LS",
       "cores": 4,
@@ -434,11 +434,11 @@
   "_meta": {
     "schema_version": "1.1",
     "created": "2025-04-18",
-    "last_modified": "2026-04-29",
+    "last_modified": "2026-05-03",
     "calc_done": true
   },
   "_results": {
-    "calculated_at": "2026-04-29T16:55:09.248473",
+    "calculated_at": "2026-05-03T18:33:50.941863",
     "vru": {
       "id": "ВРУ-1",
       "name": "ВРУ-1",
@@ -488,12 +488,12 @@
                     "du_limit_pct": 2.5,
                     "du_ok": true,
                     "section_upgraded_for_du": false,
-                    "kz_thermal_ok": false,
-                    "kz_thermal_s_min_mm2": 16,
+                    "kz_thermal_ok": true,
+                    "kz_thermal_s_min_mm2": 1.5,
                     "kz_sens_ok": true,
-                    "kz_sens_i_end_a": 224,
+                    "kz_sens_i_end_a": 120,
                     "kz_sens_i_trip_min_a": 30,
-                    "isc_ka_source": 10.0
+                    "isc_ka_source": 0.2525
                   },
                   "breaker": {
                     "rating": 6,
@@ -539,12 +539,12 @@
                     "du_limit_pct": 2.5,
                     "du_ok": true,
                     "section_upgraded_for_du": false,
-                    "kz_thermal_ok": false,
-                    "kz_thermal_s_min_mm2": 16,
+                    "kz_thermal_ok": true,
+                    "kz_thermal_s_min_mm2": 1.5,
                     "kz_sens_ok": true,
-                    "kz_sens_i_end_a": 268,
+                    "kz_sens_i_end_a": 131,
                     "kz_sens_i_trip_min_a": 30,
-                    "isc_ka_source": 10.0
+                    "isc_ka_source": 0.2525
                   },
                   "breaker": {
                     "rating": 6,
@@ -567,7 +567,7 @@
                 "mark": "ВВГнг-LS",
                 "cores": 4,
                 "section_mm2": 1.5,
-                "length_m": 25,
+                "length_m": 30.0,
                 "install": "лоток",
                 "ambient_t": 25,
                 "parallel": 1,
@@ -578,16 +578,19 @@
                 "install_key": "tray",
                 "k_temp": 1.0,
                 "auto_selected": true,
-                "voltage_drop_pct": 1.04,
+                "length_m_plan": 25,
+                "length_m_calc": 30.0,
+                "routing_note": "план 25м + запас 20%",
+                "voltage_drop_pct": 1.25,
                 "du_limit_pct": 5.0,
                 "du_ok": true,
                 "section_upgraded_for_du": false,
                 "kz_thermal_ok": false,
-                "kz_thermal_s_min_mm2": 16,
+                "kz_thermal_s_min_mm2": 4,
                 "kz_sens_ok": true,
-                "kz_sens_i_end_a": 320,
+                "kz_sens_i_end_a": 252,
                 "kz_sens_i_trip_min_a": 50,
-                "isc_ka_source": 10.0
+                "isc_ka_source": 3.0
               },
               "breaker": {
                 "rating": 10,
@@ -649,12 +652,12 @@
                     "du_limit_pct": 5.0,
                     "du_ok": true,
                     "section_upgraded_for_du": false,
-                    "kz_thermal_ok": false,
-                    "kz_thermal_s_min_mm2": 16,
+                    "kz_thermal_ok": true,
+                    "kz_thermal_s_min_mm2": 1.5,
                     "kz_sens_ok": true,
-                    "kz_sens_i_end_a": 333,
+                    "kz_sens_i_end_a": 171,
                     "kz_sens_i_trip_min_a": 30,
-                    "isc_ka_source": 10.0
+                    "isc_ka_source": 0.3396
                   },
                   "breaker": {
                     "rating": 6,
@@ -700,12 +703,12 @@
                     "du_limit_pct": 5.0,
                     "du_ok": true,
                     "section_upgraded_for_du": false,
-                    "kz_thermal_ok": false,
-                    "kz_thermal_s_min_mm2": 16,
+                    "kz_thermal_ok": true,
+                    "kz_thermal_s_min_mm2": 1.5,
                     "kz_sens_ok": true,
-                    "kz_sens_i_end_a": 193,
+                    "kz_sens_i_end_a": 124,
                     "kz_sens_i_trip_min_a": 30,
-                    "isc_ka_source": 10.0
+                    "isc_ka_source": 0.3396
                   },
                   "breaker": {
                     "rating": 6,
@@ -751,12 +754,12 @@
                     "du_limit_pct": 5.0,
                     "du_ok": true,
                     "section_upgraded_for_du": false,
-                    "kz_thermal_ok": false,
-                    "kz_thermal_s_min_mm2": 16,
+                    "kz_thermal_ok": true,
+                    "kz_thermal_s_min_mm2": 1.5,
                     "kz_sens_ok": true,
-                    "kz_sens_i_end_a": 439,
+                    "kz_sens_i_end_a": 195,
                     "kz_sens_i_trip_min_a": 50,
-                    "isc_ka_source": 10.0
+                    "isc_ka_source": 0.3396
                   },
                   "breaker": {
                     "rating": 10,
@@ -779,7 +782,7 @@
                 "mark": "ВВГнг-LS",
                 "cores": 4,
                 "section_mm2": 2.5,
-                "length_m": 30,
+                "length_m": 36.0,
                 "install": "лоток",
                 "ambient_t": 25,
                 "parallel": 1,
@@ -790,16 +793,19 @@
                 "install_key": "tray",
                 "k_temp": 1.0,
                 "auto_selected": true,
-                "voltage_drop_pct": 1.42,
+                "length_m_plan": 30,
+                "length_m_calc": 36.0,
+                "routing_note": "план 30м + запас 20%",
+                "voltage_drop_pct": 1.71,
                 "du_limit_pct": 5.0,
                 "du_ok": true,
                 "section_upgraded_for_du": false,
                 "kz_thermal_ok": false,
-                "kz_thermal_s_min_mm2": 16,
+                "kz_thermal_s_min_mm2": 4,
                 "kz_sens_ok": true,
-                "kz_sens_i_end_a": 439,
+                "kz_sens_i_end_a": 339,
                 "kz_sens_i_trip_min_a": 100,
-                "isc_ka_source": 10.0
+                "isc_ka_source": 3.0
               },
               "breaker": {
                 "rating": 20,
@@ -861,12 +867,12 @@
                     "du_limit_pct": 5.0,
                     "du_ok": true,
                     "section_upgraded_for_du": false,
-                    "kz_thermal_ok": false,
-                    "kz_thermal_s_min_mm2": 16,
-                    "kz_sens_ok": true,
-                    "kz_sens_i_end_a": 169,
+                    "kz_thermal_ok": true,
+                    "kz_thermal_s_min_mm2": 1.5,
+                    "kz_sens_ok": false,
+                    "kz_sens_i_end_a": 83,
                     "kz_sens_i_trip_min_a": 160,
-                    "isc_ka_source": 10.0
+                    "isc_ka_source": 0.16290000000000002
                   },
                   "breaker": {
                     "rating": 16,
@@ -889,7 +895,7 @@
                 "mark": "ВВГнг-LS",
                 "cores": 4,
                 "section_mm2": 1.5,
-                "length_m": 40,
+                "length_m": 48.0,
                 "install": "лоток",
                 "ambient_t": 25,
                 "parallel": 1,
@@ -900,16 +906,19 @@
                 "install_key": "tray",
                 "k_temp": 1.0,
                 "auto_selected": true,
-                "voltage_drop_pct": 2.96,
+                "length_m_plan": 40,
+                "length_m_calc": 48.0,
+                "routing_note": "план 40м + запас 20%",
+                "voltage_drop_pct": 3.55,
                 "du_limit_pct": 5.0,
                 "du_ok": true,
                 "section_upgraded_for_du": false,
                 "kz_thermal_ok": false,
-                "kz_thermal_s_min_mm2": 16,
+                "kz_thermal_s_min_mm2": 4,
                 "kz_sens_ok": true,
-                "kz_sens_i_end_a": 202,
+                "kz_sens_i_end_a": 162,
                 "kz_sens_i_trip_min_a": 80,
-                "isc_ka_source": 10.0
+                "isc_ka_source": 3.0
               },
               "breaker": {
                 "rating": 16,
@@ -971,12 +980,12 @@
                     "du_limit_pct": 5.0,
                     "du_ok": true,
                     "section_upgraded_for_du": false,
-                    "kz_thermal_ok": false,
-                    "kz_thermal_s_min_mm2": 16,
+                    "kz_thermal_ok": true,
+                    "kz_thermal_s_min_mm2": 1.5,
                     "kz_sens_ok": true,
-                    "kz_sens_i_end_a": 333,
+                    "kz_sens_i_end_a": 131,
                     "kz_sens_i_trip_min_a": 60,
-                    "isc_ka_source": 10.0
+                    "isc_ka_source": 0.2134
                   },
                   "breaker": {
                     "rating": 6,
@@ -1022,12 +1031,12 @@
                     "du_limit_pct": 5.0,
                     "du_ok": true,
                     "section_upgraded_for_du": false,
-                    "kz_thermal_ok": false,
-                    "kz_thermal_s_min_mm2": 16,
+                    "kz_thermal_ok": true,
+                    "kz_thermal_s_min_mm2": 1.5,
                     "kz_sens_ok": true,
-                    "kz_sens_i_end_a": 333,
+                    "kz_sens_i_end_a": 131,
                     "kz_sens_i_trip_min_a": 60,
-                    "isc_ka_source": 10.0
+                    "isc_ka_source": 0.2134
                   },
                   "breaker": {
                     "rating": 6,
@@ -1050,7 +1059,7 @@
                 "mark": "ВВГнг-LS",
                 "cores": 4,
                 "section_mm2": 1.5,
-                "length_m": 30,
+                "length_m": 36.0,
                 "install": "лоток",
                 "ambient_t": 25,
                 "parallel": 1,
@@ -1061,16 +1070,19 @@
                 "install_key": "tray",
                 "k_temp": 1.0,
                 "auto_selected": true,
-                "voltage_drop_pct": 0.67,
+                "length_m_plan": 30,
+                "length_m_calc": 36.0,
+                "routing_note": "план 30м + запас 20%",
+                "voltage_drop_pct": 0.8,
                 "du_limit_pct": 5.0,
                 "du_ok": true,
                 "section_upgraded_for_du": false,
                 "kz_thermal_ok": false,
-                "kz_thermal_s_min_mm2": 16,
+                "kz_thermal_s_min_mm2": 4,
                 "kz_sens_ok": true,
-                "kz_sens_i_end_a": 268,
+                "kz_sens_i_end_a": 213,
                 "kz_sens_i_trip_min_a": 30,
-                "isc_ka_source": 10.0
+                "isc_ka_source": 3.0
               },
               "breaker": {
                 "rating": 6,
@@ -1132,12 +1144,12 @@
                     "du_limit_pct": 5.0,
                     "du_ok": true,
                     "section_upgraded_for_du": false,
-                    "kz_thermal_ok": false,
-                    "kz_thermal_s_min_mm2": 16,
+                    "kz_thermal_ok": true,
+                    "kz_thermal_s_min_mm2": 1.5,
                     "kz_sens_ok": true,
-                    "kz_sens_i_end_a": 268,
+                    "kz_sens_i_end_a": 110,
                     "kz_sens_i_trip_min_a": 100,
-                    "isc_ka_source": 10.0
+                    "isc_ka_source": 0.18480000000000002
                   },
                   "breaker": {
                     "rating": 10,
@@ -1183,12 +1195,12 @@
                     "du_limit_pct": 5.0,
                     "du_ok": true,
                     "section_upgraded_for_du": false,
-                    "kz_thermal_ok": false,
-                    "kz_thermal_s_min_mm2": 16,
+                    "kz_thermal_ok": true,
+                    "kz_thermal_s_min_mm2": 1.5,
                     "kz_sens_ok": true,
-                    "kz_sens_i_end_a": 224,
+                    "kz_sens_i_end_a": 102,
                     "kz_sens_i_trip_min_a": 100,
-                    "isc_ka_source": 10.0
+                    "isc_ka_source": 0.18480000000000002
                   },
                   "breaker": {
                     "rating": 10,
@@ -1211,7 +1223,7 @@
                 "mark": "ВВГнг-LS",
                 "cores": 4,
                 "section_mm2": 1.5,
-                "length_m": 35,
+                "length_m": 42.0,
                 "install": "лоток",
                 "ambient_t": 25,
                 "parallel": 1,
@@ -1222,16 +1234,19 @@
                 "install_key": "tray",
                 "k_temp": 1.0,
                 "auto_selected": true,
-                "voltage_drop_pct": 2.46,
+                "length_m_plan": 35,
+                "length_m_calc": 42.0,
+                "routing_note": "план 35м + запас 20%",
+                "voltage_drop_pct": 2.95,
                 "du_limit_pct": 5.0,
                 "du_ok": true,
                 "section_upgraded_for_du": false,
                 "kz_thermal_ok": false,
-                "kz_thermal_s_min_mm2": 16,
+                "kz_thermal_s_min_mm2": 4,
                 "kz_sens_ok": true,
-                "kz_sens_i_end_a": 230,
+                "kz_sens_i_end_a": 184,
                 "kz_sens_i_trip_min_a": 80,
-                "isc_ka_source": 10.0
+                "isc_ka_source": 3.0
               },
               "breaker": {
                 "rating": 16,
@@ -1281,12 +1296,12 @@
                     "du_limit_pct": 5.0,
                     "du_ok": true,
                     "section_upgraded_for_du": false,
-                    "kz_thermal_ok": false,
-                    "kz_thermal_s_min_mm2": 16,
-                    "kz_sens_ok": true,
-                    "kz_sens_i_end_a": 193,
+                    "kz_thermal_ok": true,
+                    "kz_thermal_s_min_mm2": 1.5,
+                    "kz_sens_ok": false,
+                    "kz_sens_i_end_a": 89,
                     "kz_sens_i_trip_min_a": 160,
-                    "isc_ka_source": 10.0
+                    "isc_ka_source": 0.16290000000000002
                   },
                   "breaker": {
                     "rating": 16,
@@ -1332,12 +1347,12 @@
                     "du_limit_pct": 5.0,
                     "du_ok": true,
                     "section_upgraded_for_du": false,
-                    "kz_thermal_ok": false,
-                    "kz_thermal_s_min_mm2": 16,
-                    "kz_sens_ok": true,
-                    "kz_sens_i_end_a": 193,
+                    "kz_thermal_ok": true,
+                    "kz_thermal_s_min_mm2": 1.5,
+                    "kz_sens_ok": false,
+                    "kz_sens_i_end_a": 89,
                     "kz_sens_i_trip_min_a": 160,
-                    "isc_ka_source": 10.0
+                    "isc_ka_source": 0.16290000000000002
                   },
                   "breaker": {
                     "rating": 16,
@@ -1360,7 +1375,7 @@
                 "mark": "ВВГнг-FRLS",
                 "cores": 4,
                 "section_mm2": 1.5,
-                "length_m": 40,
+                "length_m": 48.0,
                 "install": "лоток",
                 "ambient_t": 25,
                 "parallel": 1,
@@ -1371,16 +1386,19 @@
                 "install_key": "tray",
                 "k_temp": 1.0,
                 "auto_selected": true,
-                "voltage_drop_pct": 2.78,
+                "length_m_plan": 40,
+                "length_m_calc": 48.0,
+                "routing_note": "план 40м + запас 20%",
+                "voltage_drop_pct": 3.33,
                 "du_limit_pct": 5.0,
                 "du_ok": true,
                 "section_upgraded_for_du": false,
                 "kz_thermal_ok": false,
-                "kz_thermal_s_min_mm2": 16,
+                "kz_thermal_s_min_mm2": 4,
                 "kz_sens_ok": true,
-                "kz_sens_i_end_a": 202,
+                "kz_sens_i_end_a": 162,
                 "kz_sens_i_trip_min_a": 80,
-                "isc_ka_source": 10.0
+                "isc_ka_source": 3.0
               },
               "breaker": {
                 "rating": 16,
@@ -1424,11 +1442,11 @@
         "du_ok": true,
         "section_upgraded_for_du": false,
         "kz_thermal_ok": true,
-        "kz_thermal_s_min_mm2": 16,
+        "kz_thermal_s_min_mm2": 4,
         "kz_sens_ok": true,
-        "kz_sens_i_end_a": 3197,
+        "kz_sens_i_end_a": 1831,
         "kz_sens_i_trip_min_a": 400,
-        "isc_ka_source": 10.0
+        "isc_ka_source": 3.0
       },
       "breaker": {
         "rating": 80,
@@ -1464,11 +1482,11 @@
         "du_ok": true,
         "section_upgraded_for_du": false,
         "kz_thermal_ok": true,
-        "kz_thermal_s_min_mm2": 16,
+        "kz_thermal_s_min_mm2": 4,
         "kz_sens_ok": true,
-        "kz_sens_i_end_a": 3197,
+        "kz_sens_i_end_a": 1831,
         "kz_sens_i_trip_min_a": 400,
-        "isc_ka_source": 10.0
+        "isc_ka_source": 3.0
       }
     },
     "outdoor_networks": [
