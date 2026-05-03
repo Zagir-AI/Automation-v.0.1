@@ -385,6 +385,21 @@ def _docx_load_summary(project: dict, docs_dir: Path) -> Path:
         krm = comp.get("selected_krm", {})
         rows_data.append(("КРМ", f"{krm.get('model','')} ({krm.get('power_kvar','')} кВАр)"))
 
+    # Подсчёт нарушений кабелей
+    n_du = n_kzt = n_kzs = 0
+    for feeder in vru.get("feeders", []):
+        for panel in feeder.get("panels", []):
+            for cb in ([panel.get("cable", {})]
+                       + [c.get("cable", {}) for c in panel.get("consumers", [])]):
+                if not cb.get("du_ok", True):         n_du  += 1
+                if not cb.get("kz_thermal_ok", True): n_kzt += 1
+                if not cb.get("kz_sens_ok", True):    n_kzs += 1
+
+    rows_data.append(("", ""))
+    rows_data.append(("Нарушения ΔU",              f"{n_du} линий"  if n_du  else "нет"))
+    rows_data.append(("Нарушения термо-КЗ",        f"{n_kzt} линий" if n_kzt else "нет"))
+    rows_data.append(("Нарушения чувствит. защиты",f"{n_kzs} линий" if n_kzs else "нет"))
+
     for label, value in rows_data:
         _add_data_row(table, [label, value])
 

@@ -419,23 +419,22 @@ def cmd_summary(args):
         print(f"  Вводной кабель:    {cable['mark']} {cable['cores']}×{cable['section_mm2']} мм²")
 
     print()
-    warnings_found = 0
+    n_du = n_kzt = n_kzs = 0
     for feeder in vru.get("feeders", []):
         for panel in feeder.get("panels", []):
-            cb = panel.get("cable", {})
-            if cb.get("voltage_drop_pct", 0) > 5.0:
-                print(warn(f"  {panel['id']} — потеря напряжения {cb['voltage_drop_pct']}% > 5%"))
-                warnings_found += 1
-            if not cb.get("ok"):
-                print(err(f"  {panel['id']} — {cb.get('error','ошибка подбора кабеля')}"))
-            for c in panel.get("consumers", []):
-                ccb = c.get("cable", {})
-                if ccb.get("voltage_drop_pct", 0) > 5.0:
-                    print(warn(f"    {c['id']} — ΔU={ccb['voltage_drop_pct']}%"))
-                    warnings_found += 1
+            if not panel.get("cable", {}).get("ok"):
+                print(err(f"  {panel['id']} — {panel['cable'].get('error','ошибка подбора кабеля')}"))
+            for cb in ([panel.get("cable", {})]
+                       + [c.get("cable", {}) for c in panel.get("consumers", [])]):
+                if not cb.get("du_ok", True):         n_du  += 1
+                if not cb.get("kz_thermal_ok", True): n_kzt += 1
+                if not cb.get("kz_sens_ok", True):    n_kzs += 1
 
-    if warnings_found == 0:
-        print(ok("Предупреждений нет"))
+    if n_du or n_kzt or n_kzs:
+        print(warn(f"Кабели: {n_du} ΔU | {n_kzt} термо-КЗ | {n_kzs} чувств."
+                   f"  →  python cli.py check-cables {args.path}"))
+    else:
+        print(ok("Кабели: нарушений нет"))
 
 
 def cmd_stamp(args):

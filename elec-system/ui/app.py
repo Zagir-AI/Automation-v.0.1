@@ -202,8 +202,8 @@ with col_btns:
 
 
 # Вкладки
-tab_summary, tab_data, tab_results, tab_changes, tab_docs = st.tabs([
-    "📊 Сводка", "✏️ Данные", "🔢 Расчёт", "📝 Изменения", "📁 Документы"
+tab_summary, tab_data, tab_results, tab_cables, tab_changes, tab_docs = st.tabs([
+    "📊 Сводка", "✏️ Данные", "🔢 Расчёт", "⚡ Кабели", "📝 Изменения", "📁 Документы"
 ])
 
 
@@ -322,6 +322,63 @@ with tab_results:
                             "Автомат": f"{cb.get('rating','')}А {cb.get('char','')}",
                         })
                     st.dataframe(data, width="stretch", hide_index=True)
+
+
+# ── Вкладка: Кабели ─────────────────────────────────────────────────
+
+with tab_cables:
+    if not calc_done or not results:
+        st.warning("Нет результатов расчёта.")
+    else:
+        vru_r = results.get("vru", {})
+        du_err, kzt_err, kzs_err = [], [], []
+
+        for feeder in vru_r.get("feeders", []):
+            for panel in feeder.get("panels", []):
+                for obj_id, obj_name, cb in (
+                    [(panel["id"], panel["name"], panel.get("cable", {}))]
+                    + [(c["id"], c["name"], c.get("cable", {}))
+                       for c in panel.get("consumers", [])]
+                ):
+                    if not cb.get("du_ok", True):
+                        du_err.append({
+                            "ID": obj_id, "Наименование": obj_name,
+                            "ΔU, %": cb.get("voltage_drop_pct"),
+                            "Лимит, %": cb.get("du_limit_pct"),
+                            "Кабель": f"{cb.get('mark','')} {cb.get('cores','')}×{cb.get('section_mm2','')}мм²",
+                            "L расч, м": cb.get("length_m_calc", cb.get("length_m", "")),
+                        })
+                    if not cb.get("kz_thermal_ok", True):
+                        kzt_err.append({
+                            "ID": obj_id, "Наименование": obj_name,
+                            "Sфакт, мм²": cb.get("section_mm2"),
+                            "Sмин, мм²": cb.get("kz_thermal_s_min_mm2"),
+                            "Iкз_ист, кА": cb.get("isc_ka_source"),
+                        })
+                    if not cb.get("kz_sens_ok", True):
+                        kzs_err.append({
+                            "ID": obj_id, "Наименование": obj_name,
+                            "Iкз_конец, А": cb.get("kz_sens_i_end_a"),
+                            "Iоткл_мин, А": cb.get("kz_sens_i_trip_min_a"),
+                        })
+
+        c1, c2, c3 = st.columns(3)
+        c1.metric("Нарушения ΔU",        len(du_err))
+        c2.metric("Термо-КЗ",            len(kzt_err))
+        c3.metric("Чувствит. защиты",    len(kzs_err))
+        st.divider()
+
+        if du_err:
+            st.error(f"Превышение ΔU — {len(du_err)} линий")
+            st.dataframe(du_err, width="stretch", hide_index=True)
+        if kzt_err:
+            st.warning(f"Термостойкость при КЗ — {len(kzt_err)} линий")
+            st.dataframe(kzt_err, width="stretch", hide_index=True)
+        if kzs_err:
+            st.warning(f"Чувствительность защиты — {len(kzs_err)} линий")
+            st.dataframe(kzs_err, width="stretch", hide_index=True)
+        if not du_err and not kzt_err and not kzs_err:
+            st.success("Нарушений нет")
 
 
 # ── Вкладка: Изменения ───────────────────────────────────────────────
