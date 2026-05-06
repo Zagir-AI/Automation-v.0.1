@@ -234,6 +234,21 @@ with tab_summary:
                 st.info(f"**Вводной автомат:** АВ {br['rating']}А хар.{br.get('char','C')} "
                         f"({br.get('type','')})")
 
+        # Категория здания (ПУЭ гл.1.2)
+        bld = project.get("_building", {})
+        if bld:
+            cat = bld.get("category_pue", "?")
+            vru_desc = bld.get("vru_description", "—")
+            compliance = bld.get("compliance_ok", True)
+            n_viol = bld.get("violations", 0)
+            c_cat, c_scheme, c_comp = st.columns(3)
+            c_cat.metric("Категория здания (ПУЭ)", cat)
+            c_scheme.metric("Схема ВРУ", vru_desc)
+            if compliance:
+                c_comp.success("✓ Категорийность OK")
+            else:
+                c_comp.error(f"⚠ Нарушений кат.: {n_viol}")
+
         # Таблица щитов
         st.subheader("Щиты")
         for feeder in vru_r.get("feeders", []):

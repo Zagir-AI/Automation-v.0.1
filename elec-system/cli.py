@@ -268,23 +268,76 @@ def cmd_validate(args):
     errors = []
     warnings = []
 
+    # ── Обязательные поля проекта ────────────────────────────────────
     for field in ["name", "code", "stage"]:
         if not project.get("project", {}).get(field):
             errors.append(f"project.{field} — не заполнено")
+
+    # ── isc_ka ───────────────────────────────────────────────────────
+    isc = project.get("vru", {}).get("isc_ka", 10.0)
+    if not (0.1 <= isc <= 50):
+        warnings.append(f"vru.isc_ka = {isc} кА — вне диапазона 0.1–50 кА")
 
     vru = project.get("vru", {})
     if not vru.get("feeders"):
         warnings.append("vru.feeders — пустой список, добавь группы")
 
+    # ── Сбор ID для проверки дублей + проверка значений ─────────────
+    all_consumer_ids: list = []
+    all_panel_ids: list = []
+
     for feeder in vru.get("feeders", []):
         for panel in feeder.get("panels", []):
+            pid = panel.get("id", "")
+            if pid:
+                all_panel_ids.append(pid)
+
             for c in panel.get("consumers", []):
+                cid = c.get("id", "")
+                if cid:
+                    all_consumer_ids.append(cid)
+
                 if not c.get("power_kw"):
-                    errors.append(f"  {c.get('id','?')} — нет мощности power_kw")
-                if c.get("power_kw", 0) <= 0:
-                    errors.append(f"  {c.get('id','?')} — power_kw должна быть > 0")
+                    errors.append(f"  {cid or '?'} — нет мощности power_kw")
+                elif c.get("power_kw", 0) <= 0:
+                    errors.append(f"  {cid or '?'} — power_kw должна быть > 0")
+
                 if not c.get("cable"):
-                    warnings.append(f"  {c.get('id','?')} — нет данных кабеля")
+                    warnings.append(f"  {cid or '?'} — нет данных кабеля")
+
+                if not str(c.get("name", "")).strip():
+                    errors.append(f"  {cid or '?'} — пустое наименование")
+
+                cp = c.get("cos_phi")
+                if cp is not None and not (0 < float(cp) <= 1.0):
+                    errors.append(f"  {cid or '?'} — cos_phi={cp} вне диапазона (0; 1]")
+
+                df = c.get("demand_factor")
+                if df is not None and not (0 < float(df) <= 1.0):
+                    errors.append(f"  {cid or '?'} — demand_factor={df} вне диапазона (0; 1]")
+
+    # Дубли потребителей
+    seen_c: set = set()
+    for cid in all_consumer_ids:
+        if cid in seen_c:
+            errors.append(f"Дублирующийся ID потребителя: {cid}")
+        seen_c.add(cid)
+
+    # Дубли щитов
+    seen_p: set = set()
+    for pid in all_panel_ids:
+        if pid in seen_p:
+            errors.append(f"Дублирующийся ID щита: {pid}")
+        seen_p.add(pid)
+
+    # ── Категорийное соответствие (ПУЭ гл.1.2) ──────────────────────
+    try:
+        from rules.category_rules import check_all_compliance
+        violations = check_all_compliance(project)
+        for v in violations:
+            errors.append(f"  {v['message']}")
+    except Exception:
+        pass
 
     p_name = project.get("project", {}).get("name", "")
     print(hdr(f"Проверка: {p_name}"))
