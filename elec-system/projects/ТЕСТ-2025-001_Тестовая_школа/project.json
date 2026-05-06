@@ -360,11 +360,11 @@
   "_meta": {
     "schema_version": "1.0",
     "created": "2026-04-18",
-    "last_modified": "2026-05-03",
+    "last_modified": "2026-05-06",
     "calc_done": true
   },
   "_results": {
-    "calculated_at": "2026-05-03T18:49:43.585768",
+    "calculated_at": "2026-05-06T03:29:03.113274",
     "vru": {
       "id": "ВРУ-1",
       "name": "ВРУ-1",
@@ -1786,5 +1786,14 @@
         ]
       }
     ]
+  },
+  "_building": {
+    "category_pue": 1,
+    "vru_scheme": "avr",
+    "vru_description": "Два независимых ввода + АВР",
+    "has_avr": true,
+    "compliance_ok": false,
+    "violations": 1,
+    "last_check": "2026-05-06"
   }
 }

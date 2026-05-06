@@ -459,6 +459,19 @@ def cmd_summary(args):
     else:
         print(ok("Кабели: нарушений нет"))
 
+    # Категорийность здания
+    bld = project.get("_building", {})
+    if bld:
+        cat  = bld.get("category_pue", "?")
+        desc = bld.get("vru_description", "")
+        ok_flag = bld.get("compliance_ok", True)
+        viol    = bld.get("violations", 0)
+        cat_str = f"Категория здания: {cat} — {desc}"
+        if ok_flag:
+            print(ok(cat_str))
+        else:
+            print(warn(f"{cat_str}  ⚠ {viol} нарушений кат. ПУЭ"))
+
 
 def cmd_number_cables(args):
     """Автонумерация кабелей: КЛ-ЩО1-01, КЛ-ЩС1-02 и т.д."""
@@ -502,6 +515,57 @@ def cmd_number_cables(args):
     print()
     print(info("Кабельный журнал теперь покажет номера КЛ. Запусти:"))
     print(f"  python cli.py docs {args.path} --type cable")
+
+
+def cmd_sld(args):
+    """Генерация однолинейной схемы в DXF."""
+    from dwg.create_test_sld import create_test_sld
+
+    proj_dir = find_project_dir(args.path)
+    project  = load_project(proj_dir)
+    project  = _ensure_calc(project, proj_dir)
+
+    p_name = project.get("project", {}).get("name", "")
+    print(hdr(f"Однолинейная схема: {p_name}"))
+
+    dwg_dir = proj_dir / "dwg"
+    dwg_dir.mkdir(exist_ok=True)
+
+    out = create_test_sld(project, dwg_dir)
+    print(ok(f"Однолинейка: {out.name}"))
+    print(info(f"Файл: {out}"))
+
+
+def cmd_update_attribs(args):
+    """Синхронизация атрибутов блоков DXF с результатами расчёта."""
+    from dwg.update_attribs import update_attribs, add_changes_trapezoid
+
+    proj_dir = find_project_dir(args.path)
+    project  = load_project(proj_dir)
+    project  = _ensure_calc(project, proj_dir)
+
+    p_name = project.get("project", {}).get("name", "")
+    print(hdr(f"Обновление атрибутов DXF: {p_name}"))
+
+    dwg_dir = proj_dir / "dwg"
+    updated_total = 0
+
+    for dxf_file in sorted(dwg_dir.glob("*.dxf")):
+        n = update_attribs(project, str(dxf_file))
+        if n > 0:
+            print(ok(f"{dxf_file.name}: обновлено {n} блоков"))
+            updated_total += n
+
+            # Трапеция изменений если есть ревизии
+            if project.get("project", {}).get("revision", 0) > 0:
+                if add_changes_trapezoid(project, str(dxf_file)):
+                    print(info(f"  Трапеция изменений добавлена (рев. {project['project']['revision']})"))
+
+    if updated_total == 0:
+        print(warn("DXF-файлы не найдены или блоков с ID_TAG нет"))
+    else:
+        print()
+        print(ok(f"Итого обновлено блоков: {updated_total}"))
 
 
 def cmd_stamp(args):
@@ -934,6 +998,14 @@ def main():
     p_stamp.add_argument("--field", help="Поле для изменения (designer, checker, ...)")
     p_stamp.add_argument("--value", help="Новое значение поля")
 
+    # sld
+    p_sld = sub.add_parser("sld", help="Генерировать однолинейную схему (DXF)")
+    p_sld.add_argument("path", help="Путь к папке проекта или код")
+
+    # update-attribs
+    p_ua = sub.add_parser("update-attribs", help="Синхронизировать атрибуты блоков DXF")
+    p_ua.add_argument("path", help="Путь к папке проекта или код")
+
     # number-cables
     p_nc = sub.add_parser("number-cables", help="Автонумерация кабелей КЛ-ЩО1-01 ...")
     p_nc.add_argument("path", help="Путь к папке проекта или код")
@@ -965,6 +1037,8 @@ def main():
         "check-compensation": cmd_check_compensation,
         "import":             cmd_import,
         "stamp":              cmd_stamp,
+        "sld":                cmd_sld,
+        "update-attribs":     cmd_update_attribs,
         "number-cables":      cmd_number_cables,
         "change":             cmd_change,
     }

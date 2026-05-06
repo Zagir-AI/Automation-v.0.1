@@ -664,6 +664,13 @@ def calculate_project(project: dict) -> dict:
         except Exception as e:
             result["_results"]["outdoor_error"] = str(e)
 
+    # Категорийность здания и схема ВРУ (ПУЭ гл.1.2)
+    try:
+        from rules.category_rules import update_building_meta
+        result = update_building_meta(result)
+    except Exception:
+        pass
+
     result["_meta"]["calc_done"] = True
     result["_meta"]["last_modified"] = datetime.date.today().isoformat()
 
