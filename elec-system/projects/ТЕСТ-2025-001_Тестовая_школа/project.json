@@ -124,6 +124,7 @@
             "id": "ЩАО-1",
             "name": "Щит аварийного освещения",
             "category_pue": 2,
+            "breaker_min_rating": 10,
             "cable": {
               "mark": "ВВГнг-LS",
               "cores": 4,
@@ -227,6 +228,7 @@
             "id": "ЩОВ-1",
             "name": "Щит насосной станции",
             "category_pue": 2,
+            "breaker_min_rating": 10,
             "cable": {
               "mark": "ВВГнг-LS",
               "cores": 4,
@@ -330,6 +332,7 @@
             "name": "Щит автоматики пожарной защиты",
             "category_pue": 1,
             "has_avr": true,
+            "breaker_min_rating": 16,
             "cable": {
               "mark": "ВВГнг-FRLS",
               "cores": 4,
@@ -385,7 +388,7 @@
     "calc_done": true
   },
   "_results": {
-    "calculated_at": "2026-05-06T04:42:50.924304",
+    "calculated_at": "2026-05-06T04:49:52.362954",
     "vru": {
       "id": "ВРУ-1",
       "name": "ВРУ-1",
@@ -720,7 +723,7 @@
                 "length_m": 42.0,
                 "install": "лоток",
                 "cos_phi": 0.95,
-                "i_calc": 6,
+                "i_calc": 10,
                 "i_allowed": 17.0,
                 "ok": true,
                 "install_key": "tray",
@@ -737,15 +740,15 @@
                 "kz_thermal_s_min_mm2": 6,
                 "kz_sens_ok": true,
                 "kz_sens_i_end_a": 187,
-                "kz_sens_i_trip_min_a": 30,
+                "kz_sens_i_trip_min_a": 50,
                 "isc_ka_source": 4.0
               },
               "breaker": {
-                "rating": 6,
+                "rating": 10,
                 "char": "C",
                 "poles": 3,
-                "type": "АВ 6А хар.C 3П",
-                "i_calc": 2.88
+                "type": "АВ 10А хар.C 3П",
+                "i_calc": 9.09
               }
             }
           ],
@@ -1085,7 +1088,7 @@
                 "length_m": 72.0,
                 "install": "лоток",
                 "cos_phi": 0.8000000000000002,
-                "i_calc": 6,
+                "i_calc": 10,
                 "i_allowed": 17.0,
                 "ok": true,
                 "install_key": "tray",
@@ -1102,15 +1105,15 @@
                 "kz_thermal_s_min_mm2": 6,
                 "kz_sens_ok": true,
                 "kz_sens_i_end_a": 111,
-                "kz_sens_i_trip_min_a": 30,
+                "kz_sens_i_trip_min_a": 50,
                 "isc_ka_source": 4.0
               },
               "breaker": {
-                "rating": 6,
+                "rating": 10,
                 "char": "C",
                 "poles": 3,
-                "type": "АВ 6А хар.C 3П",
-                "i_calc": 4.27
+                "type": "АВ 10А хар.C 3П",
+                "i_calc": 9.09
               }
             }
           ],
@@ -1389,7 +1392,7 @@
                 "length_m": 60.0,
                 "install": "лоток",
                 "cos_phi": 0.83831867649522,
-                "i_calc": 13,
+                "i_calc": 16,
                 "i_allowed": 17.0,
                 "ok": true,
                 "install_key": "tray",
@@ -1406,15 +1409,15 @@
                 "kz_thermal_s_min_mm2": 6,
                 "kz_sens_ok": true,
                 "kz_sens_i_end_a": 133,
-                "kz_sens_i_trip_min_a": 65,
+                "kz_sens_i_trip_min_a": 80,
                 "isc_ka_source": 4.0
               },
               "breaker": {
-                "rating": 13,
+                "rating": 16,
                 "char": "C",
                 "poles": 3,
-                "type": "АВ 13А хар.C 3П",
-                "i_calc": 10.42
+                "type": "АВ 16А хар.C 3П",
+                "i_calc": 14.55
               }
             }
           ],
@@ -1636,6 +1639,7 @@
             "id": "ЩАО-1",
             "name": "Щит аварийного освещения",
             "category_pue": 2,
+            "breaker_min_rating": 10,
             "cable": {
               "mark": "ВВГнг-LS",
               "cores": 4,
@@ -1739,6 +1743,7 @@
             "id": "ЩОВ-1",
             "name": "Щит насосной станции",
             "category_pue": 2,
+            "breaker_min_rating": 10,
             "cable": {
               "mark": "ВВГнг-LS",
               "cores": 4,
@@ -1842,6 +1847,7 @@
             "name": "Щит автоматики пожарной защиты",
             "category_pue": 1,
             "has_avr": true,
+            "breaker_min_rating": 16,
             "cable": {
               "mark": "ВВГнг-FRLS",
               "cores": 4,

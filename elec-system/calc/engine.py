@@ -447,6 +447,10 @@ def calc_panel(panel: dict, building: dict | None = None, isc_ka: float = 10.0) 
     i_panel = round(i_panel, 2)
 
     panel_breaker = select_panel_breaker(i_panel)
+    # Enforce engineer-specified minimum (e.g. for selectivity compliance)
+    br_min = int(panel.get("breaker_min_rating", 0))
+    if br_min and panel_breaker["rating"] < br_min:
+        panel_breaker = select_panel_breaker(br_min / 1.1)
 
     panel_cable_cfg = dict(panel.get("cable", {}))
     panel_cable_cfg.setdefault("cos_phi", cos_phi_panel)
