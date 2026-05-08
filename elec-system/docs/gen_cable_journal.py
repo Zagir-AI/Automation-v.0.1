@@ -346,6 +346,164 @@ def generate_cable_journal(project: dict, docs_dir: Path) -> Path:
     return out_path
 
 
+# ── XLSX ──────────────────────────────────────────────────────────────────────
+
+def generate_cable_journal_xlsx(project: dict, docs_dir: Path) -> Path:
+    """
+    Генерирует кабельный журнал в формате xlsx (ГОСТ 21.613).
+    Рабочий документ для монтажа; штамп не включается.
+    Возвращает путь к созданному файлу.
+    """
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    from openpyxl.utils import get_column_letter
+
+    docs_dir = Path(docs_dir)
+    docs_dir.mkdir(parents=True, exist_ok=True)
+
+    proj   = project.get("project", {})
+    code   = proj.get("code", "ОБЪЕКТ")
+    name   = proj.get("name", "")
+    stage  = proj.get("stage", "Р")
+    rev    = proj.get("revision", 0)
+    date   = proj.get("date", "")
+    cables = _collect_cables(project)
+
+    out_path = docs_dir / f"{code}_cable_journal.xlsx"
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Кабельный журнал"
+
+    # ── Стили ────────────────────────────────────────────────────────────────
+    TNR = "Times New Roman"
+    thin = Side(style="thin")
+    border_all = Border(left=thin, right=thin, top=thin, bottom=thin)
+
+    def _font(size=9, bold=False, italic=False, color="FF000000"):
+        return Font(name=TNR, size=size, bold=bold, italic=italic, color=color)
+
+    def _fill(hex_color):
+        return PatternFill("solid", fgColor=hex_color)
+
+    def _align(horizontal="left", wrap=True):
+        return Alignment(horizontal=horizontal, vertical="center", wrap_text=wrap)
+
+    fill_header  = _fill("FFCCCCCC")
+    fill_section = _fill("FFD6E4F7")
+    fill_du_warn = _fill("FFFFE066")
+
+    # ── Ширины колонок ────────────────────────────────────────────────────────
+    col_widths_ch = [4, 12, 14, 12, 16, 28, 10, 10, 14, 7, 7, 20]
+    n_cols = len(_HEADERS)
+    last_col = get_column_letter(n_cols)
+    for i, w in enumerate(col_widths_ch, start=1):
+        ws.column_dimensions[get_column_letter(i)].width = w
+
+    # ── Шапка документа (строки 1–4) ─────────────────────────────────────────
+    def _header_row(row_num: int, text: str, size: int = 9, bold: bool = False):
+        ws.merge_cells(f"A{row_num}:{last_col}{row_num}")
+        cell = ws.cell(row=row_num, column=1, value=text)
+        cell.font      = _font(size=size, bold=bold)
+        cell.alignment = _align(horizontal="center")
+        ws.row_dimensions[row_num].height = 18
+
+    _header_row(1, "КАБЕЛЬНЫЙ ЖУРНАЛ  (ГОСТ 21.613)", size=13, bold=True)
+    _header_row(2, name, size=11)
+    _header_row(3,
+        f"Код: {code}  |  Стадия: {stage}  |  Ред.: {rev}  |  Дата: {date}",
+        size=9)
+    ws.row_dimensions[4].height = 8  # пустой отступ
+
+    # ── Строка заголовков (row 5) ─────────────────────────────────────────────
+    for col_idx, h in enumerate(_HEADERS, start=1):
+        cell = ws.cell(row=5, column=col_idx, value=h)
+        cell.font      = _font(size=9, bold=True)
+        cell.fill      = fill_header
+        cell.alignment = _align(horizontal="center")
+        cell.border    = border_all
+    ws.row_dimensions[5].height = 25
+
+    # freeze: 4 строки шапки + 1 строка заголовков → данные с 6-й строки
+    ws.freeze_panes = "A6"
+
+    # ── Заполнение данных ─────────────────────────────────────────────────────
+    current_row    = 6
+    current_section = None
+
+    # Выравнивание по колонкам (центр / лево)
+    align_flags = [True, True, False, True, True, False,
+                   True, True, False, True, True, False]
+
+    for rec in cables:
+        # Строка-разделитель раздела
+        if rec["section_tag"] != current_section:
+            current_section = rec["section_tag"]
+            ws.merge_cells(f"A{current_row}:{last_col}{current_row}")
+            cell = ws.cell(row=current_row, column=1,
+                           value=f"  Раздел: {current_section}")
+            cell.font      = _font(size=9, bold=True)
+            cell.fill      = fill_section
+            cell.alignment = _align(horizontal="left")
+            cell.border    = border_all
+            ws.row_dimensions[current_row].height = 18
+            current_row += 1
+
+        is_reserve = rec.get("is_reserve", False)
+        du = rec["voltage_drop"]
+        du_str = f"{du:.2f}" if isinstance(du, float) else str(du)
+        du_over = isinstance(du, float) and du > 5
+
+        values = [
+            str(rec["n"]),
+            rec["cable_no"],
+            rec["mark"],
+            f"{rec['cores']}×{rec['section']}",
+            rec["from_id"],
+            rec["to_name"] or rec["to_id"],
+            str(int(rec["length_plan"])) if rec["length_plan"] else "—",
+            str(int(rec["length_calc"])) if rec["length_calc"] else "—",
+            rec["install"],
+            str(rec["breaker_a"]),
+            du_str,
+            rec.get("note", ""),
+        ]
+
+        for col_idx, (val, center) in enumerate(zip(values, align_flags), start=1):
+            cell = ws.cell(row=current_row, column=col_idx, value=val)
+            cell.alignment = _align(horizontal="center" if center else "left")
+            cell.border    = border_all
+
+            if is_reserve:
+                cell.font = _font(size=9, italic=True, color="FF888888")
+            else:
+                cell.font = _font(size=9)
+
+            # ΔU > 5% — жёлтый фон для колонки K (индекс 11)
+            if col_idx == 11 and du_over:
+                cell.fill = fill_du_warn
+                cell.font = _font(size=9, bold=True,
+                                  italic=is_reserve, color="FF000000")
+
+        ws.row_dimensions[current_row].height = 15
+        current_row += 1
+
+    # ── Итоговая строка ───────────────────────────────────────────────────────
+    total_plan = sum(r["length_plan"] for r in cables)
+    total_calc = sum(r["length_calc"] for r in cables)
+    current_row += 1  # пустая строка
+    ws.merge_cells(f"A{current_row}:{last_col}{current_row}")
+    summary_cell = ws.cell(row=current_row, column=1,
+        value=(f"Итого кабельных линий: {len(cables)} шт.  |  "
+               f"Длина по плану: {total_plan:.0f} м  |  "
+               f"Расчётная длина (с запасом): {total_calc:.0f} м"))
+    summary_cell.font      = _font(size=10, bold=True)
+    summary_cell.alignment = _align(horizontal="left")
+    ws.row_dimensions[current_row].height = 20
+
+    wb.save(str(out_path))
+    return out_path
+
+
 # ── TXT fallback ──────────────────────────────────────────────────────────────
 
 def _write_txt(cables: list[dict], proj: dict, path: Path):
