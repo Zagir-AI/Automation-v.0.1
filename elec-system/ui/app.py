@@ -458,25 +458,84 @@ with tab_docs:
             st.warning("Позиции не найдены. Проверь формат файла.")
 
     st.divider()
+
+    # ── Кнопки генерации ─────────────────────────────────────────────
+    st.subheader("Генерация документов")
+    col_d, col_x, col_a = st.columns(3)
+
+    with col_d:
+        if st.button("📄 Сгенерировать DOCX", width="stretch"):
+            with st.spinner("Генерация DOCX..."):
+                out, err_txt, rc = run_cli(["docs", str(proj_dir), "--format", "docx"])
+            if rc == 0:
+                st.success("DOCX сгенерированы")
+            else:
+                st.error(err_txt or out)
+
+    with col_x:
+        if st.button("📊 Сгенерировать XLSX", width="stretch"):
+            with st.spinner("Генерация XLSX..."):
+                out, err_txt, rc = run_cli(["docs", str(proj_dir), "--format", "xlsx"])
+            if rc == 0:
+                st.success("XLSX сгенерированы")
+            else:
+                st.error(err_txt or out)
+
+    with col_a:
+        if st.button("📦 Оба формата", width="stretch"):
+            with st.spinner("Генерация DOCX + XLSX..."):
+                out, err_txt, rc = run_cli(["docs", str(proj_dir), "--format", "all"])
+            if rc == 0:
+                st.success("Все форматы сгенерированы")
+            else:
+                st.error(err_txt or out)
+
+    st.divider()
+
+    # ── Листинг файлов ───────────────────────────────────────────────
     st.subheader("Сгенерированные документы")
 
+    def _file_row(f: Path, mime: str, icon: str):
+        size_kb = f.stat().st_size // 1024
+        col_name, col_size, col_dl = st.columns([4, 1, 1])
+        col_name.write(f"{icon} {f.name}")
+        col_size.write(f"{size_kb} КБ")
+        with open(f, "rb") as fh:
+            col_dl.download_button(
+                "⬇️",
+                data=fh.read(),
+                file_name=f.name,
+                mime=mime,
+                key=f"dl_{f.name}",
+            )
+
     if docs_dir.exists():
-        docx_files = list(docs_dir.glob("*.docx"))
+        docx_files = sorted(docs_dir.glob("*.docx"))
+        xlsx_files = sorted(docs_dir.glob("*.xlsx"))
+
         if docx_files:
-            for f in sorted(docx_files):
-                size_kb = f.stat().st_size // 1024
-                col_name, col_size, col_dl = st.columns([4, 1, 1])
-                col_name.write(f.name)
-                col_size.write(f"{size_kb} КБ")
-                with open(f, "rb") as fh:
-                    col_dl.download_button(
-                        "⬇️",
-                        data=fh.read(),
-                        file_name=f.name,
-                        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                        key=f"dl_{f.name}"
-                    )
-        else:
-            st.info("Документов пока нет. Нажми **Сгенерировать документы** вверху страницы.")
+            st.markdown("**Word (DOCX)**")
+            for f in docx_files:
+                _file_row(
+                    f,
+                    mime="application/vnd.openxmlformats-officedocument"
+                         ".wordprocessingml.document",
+                    icon="📄",
+                )
+
+        if xlsx_files:
+            if docx_files:
+                st.markdown("")
+            st.markdown("**Excel (XLSX)**")
+            for f in xlsx_files:
+                _file_row(
+                    f,
+                    mime="application/vnd.openxmlformats-officedocument"
+                         ".spreadsheetml.sheet",
+                    icon="📊",
+                )
+
+        if not docx_files and not xlsx_files:
+            st.info("Документов пока нет. Нажми одну из кнопок генерации выше.")
     else:
-        st.info("Папка docs/ не создана. Сначала сгенерируй документы.")
+        st.info("Папка docs/ не создана. Нажми одну из кнопок генерации выше.")
