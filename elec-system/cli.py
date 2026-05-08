@@ -660,7 +660,7 @@ def cmd_stamp(args):
     if docs_dir.exists() and any(docs_dir.iterdir()):
         print(info("Пересоздаю документы..."))
         project = _ensure_calc(project, proj_dir)
-        fake_args = type("A", (), {"path": str(proj_dir), "type": None})()
+        fake_args = type("A", (), {"path": str(proj_dir), "type": None, "format": "docx"})()
         cmd_docs(fake_args)
 
 
@@ -671,6 +671,7 @@ def cmd_docs(args):
     project  = _ensure_calc(project, proj_dir)
 
     doc_type = getattr(args, "type", None)
+    fmt      = getattr(args, "format", "docx") or "docx"
     p_name   = project["project"]["name"]
     print(hdr(f"Генерация документов: {p_name}"))
 
@@ -689,18 +690,28 @@ def cmd_docs(args):
             print(err(f"{label} — ошибка: {e}"))
 
     if doc_type in (None, "spec"):
-        _try_gen("docs.gen_spec",         "generate_spec",         "Спецификация")
+        if fmt in ("docx", "all"):
+            _try_gen("docs.gen_spec", "generate_spec",      "Спецификация (docx)")
+        if fmt in ("xlsx", "all"):
+            _try_gen("docs.gen_spec", "generate_spec_xlsx", "Спецификация (xlsx)")
+
     if doc_type in (None, "cable"):
-        _try_gen("docs.gen_cable_journal","generate_cable_journal","Кабельный журнал")
+        if fmt in ("docx", "all"):
+            _try_gen("docs.gen_cable_journal", "generate_cable_journal",
+                     "Кабельный журнал (docx)")
+        if fmt in ("xlsx", "all"):
+            _try_gen("docs.gen_cable_journal", "generate_cable_journal_xlsx",
+                     "Кабельный журнал (xlsx)")
+
     if doc_type in (None, "load"):
         from docs.gen_load_tables import generate_all_load_tables
         files = generate_all_load_tables(project, docs_dir)
         for f in files:
             print(ok(f"Ведомость нагрузок: {f.name}"))
     if doc_type in (None, "work"):
-        _try_gen("docs.gen_work_list",    "generate_work_list",   "Ведомость работ")
+        _try_gen("docs.gen_work_list", "generate_work_list", "Ведомость работ")
     if doc_type in (None, "pnr"):
-        _try_gen("docs.gen_pnr",          "generate_pnr",         "Программа ПНР")
+        _try_gen("docs.gen_pnr",       "generate_pnr",       "Программа ПНР")
 
     print()
     print(info(f"Документы: {docs_dir}"))
@@ -1018,6 +1029,8 @@ def main():
     p_docs.add_argument("path", help="Путь к папке проекта или код")
     p_docs.add_argument("--type", choices=["spec","cable","load","work","pnr"],
                          help="Тип документа (по умолчанию — все)")
+    p_docs.add_argument("--format", choices=["docx","xlsx","all"], default="docx",
+                         help="Формат вывода: docx, xlsx или all [docx]")
 
     # plan
     p_plan = sub.add_parser("plan", help="Сгенерировать DXF-план")
