@@ -1,8 +1,9 @@
+# Python
 __pycache__/
 *.pyc
 *.pyo
-.env
-*.egg-info/
-dist/
-build/
-.streamlit/
+
+# Generated documents (build artifacts)
+elec-system/projects/*/docs/*.xlsx
+elec-system/projects/*/docs/*.docx
+elec-system/projects/*/docs/*.txt
