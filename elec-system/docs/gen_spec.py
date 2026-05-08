@@ -460,6 +460,174 @@ def generate_spec(project: dict, docs_dir: Path) -> Path:
     return out_path
 
 
+# ── XLSX ──────────────────────────────────────────────────────────────────────
+
+def generate_spec_xlsx(project: dict, docs_dir: Path) -> Path:
+    """
+    Генерирует спецификацию оборудования в формате xlsx (ГОСТ 21.110-2013).
+    Рабочий документ для комплектации; штамп не включается.
+    Возвращает путь к созданному файлу.
+    """
+    from openpyxl import Workbook
+    from openpyxl.styles import (Font, PatternFill, Alignment, Border, Side,
+                                  GradientFill)
+    from openpyxl.utils import get_column_letter
+
+    docs_dir = Path(docs_dir)
+    docs_dir.mkdir(parents=True, exist_ok=True)
+
+    proj  = project.get("project", {})
+    code  = proj.get("code", "ОБЪЕКТ")
+    name  = proj.get("name", "")
+    stage = proj.get("stage", "Р")
+    rev   = proj.get("revision", 0)
+    date  = proj.get("date", "")
+
+    data = _build_spec_data(project)
+
+    out_path = docs_dir / f"{code}_spec.xlsx"
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Спецификация"
+
+    # ── Стили ────────────────────────────────────────────────────────────────
+    TNR = "Times New Roman"
+    thin = Side(style="thin")
+    border_all = Border(left=thin, right=thin, top=thin, bottom=thin)
+
+    def _font(size=10, bold=False, italic=False, color="FF000000"):
+        return Font(name=TNR, size=size, bold=bold, italic=italic, color=color)
+
+    def _fill(hex_color):
+        return PatternFill("solid", fgColor=hex_color)
+
+    def _align(horizontal="left", wrap=True):
+        return Alignment(horizontal=horizontal, vertical="center",
+                         wrap_text=wrap)
+
+    fill_header  = _fill("FFCCCCCC")
+    fill_section = _fill("FFD6E4F7")
+
+    # ── Ширины колонок (символы) ──────────────────────────────────────────────
+    col_widths_ch = [6, 20, 45, 8, 6, 30]
+    col_letters   = [get_column_letter(i + 1) for i in range(6)]
+    for letter, w in zip(col_letters, col_widths_ch):
+        ws.column_dimensions[letter].width = w
+
+    # ── Шапка документа (строки 1–4) ─────────────────────────────────────────
+    def _header_row(row_num: int, text: str, size: int = 10, bold: bool = False):
+        ws.merge_cells(f"A{row_num}:F{row_num}")
+        cell = ws.cell(row=row_num, column=1, value=text)
+        cell.font      = _font(size=size, bold=bold)
+        cell.alignment = _align(horizontal="center")
+        ws.row_dimensions[row_num].height = 18
+
+    _header_row(1, "СПЕЦИФИКАЦИЯ ОБОРУДОВАНИЯ, ИЗДЕЛИЙ И МАТЕРИАЛОВ",
+                size=13, bold=True)
+    _header_row(2, name, size=11)
+    _header_row(3,
+        f"Код: {code}  |  Стадия: {stage}  |  Ред.: {rev}  |  Дата: {date}",
+        size=10)
+    ws.row_dimensions[4].height = 8  # пустой отступ
+
+    # ── Строка заголовков таблицы (row 5) ────────────────────────────────────
+    headers = ["Поз.", "Марка / Обозначение", "Наименование",
+               "Кол.", "Ед.", "Примечание"]
+    for col_idx, h in enumerate(headers, start=1):
+        cell = ws.cell(row=5, column=col_idx, value=h)
+        cell.font      = _font(size=10, bold=True)
+        cell.fill      = fill_header
+        cell.alignment = _align(horizontal="center")
+        cell.border    = border_all
+    ws.row_dimensions[5].height = 25
+
+    # freeze: 4 строки шапки + 1 строка заголовков → данные с 6-й строки
+    ws.freeze_panes = "A6"
+
+    # ── Заполнение данных ─────────────────────────────────────────────────────
+    current_row = 6
+    pos = 1
+
+    def _section_row(title: str):
+        nonlocal current_row
+        ws.merge_cells(f"A{current_row}:F{current_row}")
+        cell = ws.cell(row=current_row, column=1, value=f"  {title}")
+        cell.font      = _font(size=10, bold=True)
+        cell.fill      = fill_section
+        cell.alignment = _align(horizontal="left")
+        cell.border    = border_all
+        ws.row_dimensions[current_row].height = 18
+        current_row += 1
+
+    def _data_row(p: int, mark: str, name_s: str, qty, unit: str, note: str):
+        nonlocal current_row, pos
+        values = [str(p), mark, name_s, str(qty), unit, note]
+        aligns = ["center", "left", "left", "center", "center", "left"]
+        for col_idx, (val, aln) in enumerate(zip(values, aligns), start=1):
+            cell = ws.cell(row=current_row, column=col_idx, value=val)
+            cell.font      = _font(size=10)
+            cell.alignment = _align(horizontal=aln)
+            cell.border    = border_all
+        ws.row_dimensions[current_row].height = 16
+        current_row += 1
+        pos += 1
+
+    # 1. Щиты и шкафы
+    _section_row("1. Щиты и шкафы управления")
+    for panel in data["panels"]:
+        avr_note = " (с АВР)" if panel.get("has_avr") else ""
+        _data_row(pos, panel["id"], panel["name"] + avr_note,
+                  1, "шт.", panel.get("note", ""))
+
+    # 2. Аппараты защиты
+    _section_row("2. Аппараты защиты")
+    for key in sorted(data["breakers"]):
+        br = data["breakers"][key]
+        _data_row(pos, br["mark"], br["name"],
+                  br["count"], "шт.", br.get("gost", ""))
+
+    # 3. Кабели и провода
+    _section_row("3. Кабели и провода")
+    for (mark, cores, section) in sorted(data["cables"]):
+        entry  = data["cables"][(mark, cores, section)]
+        length = round(entry["length_m"])
+        notes  = "; ".join(sorted(entry["routing_notes"]))
+        cable_mark = f"{mark} {cores}×{section}"
+        cable_name = f"Кабель {mark} {cores}×{section} мм²"
+        _data_row(pos, cable_mark, cable_name,
+                  length, "м", notes or "с запасом 20%")
+
+    # 4. Электроустановочные изделия
+    if data["hardware"]:
+        _section_row("4. Электроустановочные изделия и оборудование")
+        hw_agg: dict[tuple, dict] = {}
+        for item in data["hardware"]:
+            key = (item["name"], item.get("mark", ""), item["unit"])
+            if key not in hw_agg:
+                hw_agg[key] = {**item, "qty": 0}
+            hw_agg[key]["qty"] += item["qty"]
+        for key in sorted(hw_agg):
+            item = hw_agg[key]
+            qty  = item["qty"]
+            if isinstance(qty, float) and qty == int(qty):
+                qty = int(qty)
+            _data_row(pos, item.get("mark", ""), item["name"],
+                      qty, item["unit"], item.get("note", ""))
+
+    # 5. Прочие материалы
+    if data["extra"]:
+        _section_row("5. Прочие материалы")
+        for item in data["extra"]:
+            qty = item.get("qty", 1)
+            if isinstance(qty, float) and qty == int(qty):
+                qty = int(qty)
+            _data_row(pos, item.get("mark", ""), item.get("name", ""),
+                      qty, item.get("unit", "шт."), item.get("note", ""))
+
+    wb.save(str(out_path))
+    return out_path
+
+
 # ── TXT fallback ──────────────────────────────────────────────────────────────
 
 def _write_txt(data: dict, proj: dict, path: Path):
