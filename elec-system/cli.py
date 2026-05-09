@@ -956,8 +956,8 @@ def cmd_import(args):
             break
     if target_feeder is None:
         target_feeder = {
-            "id":      f"Ф-{section}",
-            "name":    f"Группа {section}",
+            "id":      section,
+            "name":    f"Раздел {section}",
             "section": section,
             "panels":  []
         }
