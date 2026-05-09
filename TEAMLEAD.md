@@ -39,9 +39,13 @@ python-docx · openpyxl · ezdxf
    - auto_assign_panels() вызывается после парсинга DXF
    - Feeder ищется по полю "section"; если нет — создаётся с id=section
    - Идемпотентен: повторный импорт не дублирует потребителей
+5. ✅ Сверка спецификации с КП поставщика
+   - parsers/compare_kp.py: compare_kp(project, kp_path) → list[dict]
+   - cli.py: compare-kp <path> <kp_file> [--xlsx]
+   - Статусы: found / not_found / extra_in_kp; xlsx с цветовой индикацией
 
 ## В очереди
-5. Экспорт в смету (parsers/parse_estimate.py)
+6. (следующая задача — обсудить с заказчиком)
 
 ---
 
