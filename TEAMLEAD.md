@@ -18,7 +18,7 @@
 - Тестовый проект: elec-system/projects/DEMO-2025-001_Офисный_центр/
 
 ## Стек
-Python · argparse CLI (cli.py) · Streamlit UI (ui/app.py)
+Python · argparse CLI (cli.py) · Streamlit UI (ui/app.py, ~731 строк)
 python-docx · openpyxl · ezdxf
 Данные: project.json → vru.feeders[].panels[].consumers[]
 
@@ -31,26 +31,29 @@ python-docx · openpyxl · ezdxf
    - gen_cable_journal.py: generate_cable_journal_xlsx(), итоги, условное форм.
    - cli.py: --format docx|xlsx|all
    - ui/app.py: 3 кнопки (DOCX / XLSX / Оба формата)
+3. ✅ Inline-редактор потребителей (tab_data → 3 суб-вкладки)
+   - "👥 Потребители": st.data_editor + редактор кабеля, num_rows="dynamic"
+   - "⚙️ Настройки щитов": read-only dataframe
+   - "{ } JSON": исходный редактор без изменений
 
 ## В очереди
-3. Inline-редактор потребителей в tab_data (план готов, промпт ниже)
-4. Авто-формирование щитов из DXF (panels/auto_panels.py)
+4. Авто-формирование щитов из DXF-задания смежников (panels/auto_panels.py)
 5. Экспорт в смету (parsers/parse_estimate.py)
 
 ---
 
 ## Архитектурные инварианты (НЕЛЬЗЯ нарушать)
 
-Это самое важное для ревью. Если исполнитель нарушает хоть один — стоп.
+Если исполнитель нарушает хоть один — немедленный стоп.
 
 ### Поток данных — строго однонаправленный:
 ```
-project.json (vru/building/extra_items)
+project.json (vru / building / extra_items / outdoor_networks)
     ↓ calc/engine.py:calculate_project()
 project["_results"]         ← ТОЛЬКО engine.py пишет сюда
     ↓
 docs/gen_*.py              ← читают ТОЛЬКО _results, никогда не читают vru напрямую
-ui/app.py                  ← читает _results для отображения
+ui/app.py (tab_results)    ← читает _results для отображения
 ```
 
 ### Конкретные запреты:
@@ -58,23 +61,32 @@ ui/app.py                  ← читает _results для отображени
 - `_results` НЕ пишется из UI, docs, CLI — только из `calculate_project()`
 - `changes[]` — append-only, не редактировать существующие записи
 - `reserve=true` → кабель и АВ подбираются, но потребитель НЕ входит в суммарную нагрузку
-- Кат.1 потребители → только в панелях с `has_avr=True` (ЩДУ, ЩПС)
+- Кат.1 потребители → только в панелях с `has_avr=True` (ЩДУ, ЩПС и аналоги)
+- Нормативные таблицы → только в `data/`, не хардкодить в engine.py
+
+### Марка кабеля — автовыбор по категории:
+```python
+# data/cables/pue_tables.py — таблица (install, material, category_pue) → марка
+# кат.1 + любая прокладка (кроме земли) → ВВГнг-FRLS  (огнестойкий)
+# кат.2/3                                → ВВГнг-LS
+# алюминий                               → АВВГнг-LS
+```
+При ревью: если исполнитель меняет логику выбора марки — проверить эту таблицу.
 
 ### Длины кабелей:
 ```python
-# ПРАВИЛЬНО — всегда через effective_cable_length():
+# ПРАВИЛЬНО:
 from calc.engine import effective_cable_length
 l_calc = effective_cable_length(cable_cfg, building)  # с запасом
 
-# НЕПРАВИЛЬНО — напрямую:
-l = consumer["cable"]["length_m"]  # план без запаса — ошибка!
+# НЕПРАВИЛЬНО:
+l = consumer["cable"]["length_m"]  # план без запаса!
 ```
-В _results: `length_m_plan` (план), `length_m_calc` (расчётная, с запасом).
-В doc-генераторах брать `cable["length_m_calc"]`.
+В `_results`: `length_m_plan` (план), `length_m_calc` (расчётная с запасом).
+В doc-генераторах: всегда `cable["length_m_calc"]`.
 
 ### Обозначения АВ:
 ```python
-# Всегда через:
 from data.breakers.breaker_tables import get_breaker_designation
 des = get_breaker_designation(rating, char="C", poles=3, series_brand="IEK")
 # → {"type": "ВА47-63", "rating": 16, "char": "C", ...}
@@ -87,6 +99,40 @@ items = get_template_items(panel_type, n_consumers, n_breakers)
 # panel_type: "din_rail", "power", "avr", "hvac", ...
 ```
 
+### Наружные сети — отдельный расчётный поток:
+```python
+# outdoor_networks[] в project.json — НЕ входит в vru
+# Расчёт: outdoor/calc_outdoor.py:calc_all_outdoor(project)
+# Результат: project["_results"]["outdoor_networks"]
+# CLI: python cli.py calc-outdoor <путь>
+```
+Не смешивать с основным расчётом ВРУ.
+
+---
+
+## Автоформирование щитов (panels/auto_panels.py) — для задачи #4
+
+Раздел DXF-задания → префикс щита:
+```python
+_SECTION_TO_PANEL_PREFIX = {
+    "ОВ": "ЩОВ",  "ВК": "ЩВК",  "КВ": "ЩКВ",
+    "ТХ": "ЩТХ",  "ЭОМ": "ЩС",  "ЭН": "ШУНО",
+}
+```
+Специальные щиты (кат.1):
+- ЩДУ → дымоудаление, `has_avr=True`, `category_pue=1`
+- ЩПС → пожаротушение, `has_avr=True`, `category_pue=1`
+
+Метаданные щитов: `_PANEL_META` — имя, тип, категория, АВР.
+Идемпотентность: повторный вызов добавляет новых потребителей, не перезаписывает существующих.
+
+DXF атрибуты блоков → потребители: `parse_dwg_assignment.py`
+- `ID_TAG` → `id` в project.json
+- `POWER_KW` → `power_kw`
+- `SECTION_TAG` → раздел (ОВ, ВК, ТХ...)
+- `RESERVE` → `reserve=true` если "1"
+- `CABLE_MARK_OVERRIDE` → принудительная марка
+
 ---
 
 ## Публичный API ключевых модулей
@@ -94,38 +140,77 @@ items = get_template_items(panel_type, n_consumers, n_breakers)
 ### calc/engine.py
 | Функция | Назначение |
 |---|---|
-| `calculate_project(project)` | Главный расчёт → возвращает `_results` |
+| `calculate_project(project)` | Главный расчёт → `_results` |
 | `effective_cable_length(cable_cfg, building)` | Расчётная длина с запасом |
 | `calc_consumer_current(consumer)` | Ток потребителя, А |
-| `select_cable_for_current(cable_cfg, i_calc)` | Подбор сечения кабеля |
+| `select_cable_for_current(cable_cfg, i_calc)` | Подбор сечения |
 | `calc_panel(panel, building, isc_ka)` | Расчёт щита |
 | `calc_vru(vru, building)` | Расчёт ВРУ |
 
-### docs/gen_spec.py
+### outdoor/calc_outdoor.py
 | Функция | Назначение |
 |---|---|
-| `_build_spec_data(project)` | Сбор данных → переиспользовать в xlsx |
-| `generate_spec(project, docs_dir)` | → .docx |
-| `generate_spec_xlsx(project, docs_dir)` | → .xlsx |
+| `calc_outdoor_network(network)` | Расчёт одной наружной сети |
+| `calc_all_outdoor(project)` | Все наружные сети → `_results` |
 
-### docs/gen_cable_journal.py
-| Функция | Назначение |
+### docs/ — все генераторы
+| Модуль | docx | xlsx | Данные-источник |
+|---|---|---|---|
+| gen_spec.py | `generate_spec()` | `generate_spec_xlsx()` | `_build_spec_data()` |
+| gen_cable_journal.py | `generate_cable_journal()` | `generate_cable_journal_xlsx()` | `_collect_cables()` |
+| gen_load_tables.py | `generate_load_table()` | — | `_results` |
+| gen_work_list.py | `generate_work_list()` | — | `_results` |
+| gen_pnr.py | `generate_pnr()` | — | `_results` |
+
+### rules/
+| Модуль | Ключевая функция |
 |---|---|
-| `_collect_cables(project)` | Сбор кабелей → переиспользовать в xlsx |
-| `generate_cable_journal(project, docs_dir)` | → .docx |
-| `generate_cable_journal_xlsx(project, docs_dir)` | → .xlsx |
-
-### rules/selectivity.py
-- `check_selectivity(project)` → список нарушений
-- Коэффициент ≥ 1.6 (ПУЭ). При ревью: если исполнитель меняет логику выбора АВ — проверить `RATIO_REQUIRED = 1.6`.
-
-### rules/category_rules.py
-- `determine_building_category(project)` → int (1..3)
-- `update_building_meta(project)` → обновляет `_building`
+| selectivity.py | `check_selectivity(project)` → нарушения, коэф. ≥ 1.6 |
+| category_rules.py | `determine_building_category(project)` → int 1..3 |
+| category_rules.py | `update_building_meta(project)` → `_building` |
 
 ### calc/compensation.py
 - `check_compensation_needed(project)` → нужна ли КРМ
 - `update_compensation(project)` → обновляет `project["compensation"]`
+
+### panels/auto_panels.py
+- `auto_assign_panels(consumers, existing_panels)` → структура panels[]
+- Идемпотентен: безопасно вызывать повторно
+
+### dwg/
+| Функция | Назначение |
+|---|---|
+| `generate_section_plan(project, output_dir, section)` | DXF-план раздела |
+| `generate_summary_plan(project, output_dir)` | Сводный DXF-план |
+| `update_attribs(project, dxf_path)` | Синхронизировать атрибуты project → DXF |
+| `update_cable_numbering(project, dxf_path)` | Записать номера КЛ в DXF блоки |
+| `add_changes_trapezoid(project, dxf_path)` | Трапеция изменений (rev > 0) |
+
+### data/ — нормативные таблицы (только читать, не трогать)
+- `pue_tables.py` — допустимые токи, (install, material, category_pue) → марка кабеля
+- `breaker_tables.py` — ряды номиналов АВ, 5 производителей
+- `sp256_factors.py` — коэффициенты спроса по типу потребителя (kс, cos_phi по умолчанию)
+- `spec_templates.py` — шаблонные позиции DIN-рейки, шин, реле для спецификации
+
+---
+
+## Структура UI (ui/app.py, 731 строка)
+
+Вкладки: `tab_summary | tab_data | tab_results | tab_cables | tab_changes | tab_docs`
+
+| Вкладка | Что показывает | Пишет в файл? |
+|---|---|---|
+| Сводка | Метрики ВРУ, таблица щитов | Нет |
+| Данные | Потребители / Щиты / JSON | Да (save_project) |
+| Расчёт | Подробные результаты по потребителям | Нет |
+| Кабели | ΔU > 5%, термо-КЗ, чувствительность | Нет |
+| Изменения | История ревизий (changes[]) | Нет |
+| Документы | Генерация docx/xlsx, скачивание | Нет (через CLI) |
+
+Функции-утилиты в app.py:
+- `load_project(proj_dir)` → dict
+- `save_project(project, proj_dir)` → None
+- `run_cli(command_list)` → (stdout, stderr, returncode)
 
 ---
 
@@ -134,24 +219,19 @@ items = get_template_items(panel_type, n_consumers, n_breakers)
 ```bash
 cd /home/user/Automation-v.0.1/elec-system
 
-# Базовый расчёт
-python cli.py calc projects/DEMO-2025-001_Офисный_центр
-
-# Проверки
-python cli.py check-cables projects/DEMO-2025-001_Офисный_центр
+python cli.py calc          projects/DEMO-2025-001_Офисный_центр
+python cli.py calc-outdoor  projects/DEMO-2025-001_Офисный_центр
+python cli.py check-cables  projects/DEMO-2025-001_Офисный_центр
 python cli.py check-selectivity projects/DEMO-2025-001_Офисный_центр
 python cli.py check-compensation projects/DEMO-2025-001_Офисный_центр
-
-# Документы
-python cli.py docs projects/DEMO-2025-001_Офисный_центр
-python cli.py docs projects/DEMO-2025-001_Офисный_центр --format xlsx
+python cli.py docs          projects/DEMO-2025-001_Офисный_центр --format all
 ```
 
 ### Эталонные значения DEMO (нарушение = регрессия):
 - Pуст = 58.5 кВт, Pрасч = 38.5 кВт, cosφ = 0.852, Iвру = 68.66 А
 - Кабель ВРУ: ВВГнг-LS 4×25 мм², АВ ВРУ: 80А хар.C
 - Категория здания: 1, КРМ обязательна (15 кВАр)
-- 6 нарушений термо-КЗ — это норма для DEMO (isc_ka=3.0)
+- 6 нарушений термо-КЗ — норма для DEMO (isc_ka=3.0)
 
 ---
 
@@ -161,87 +241,86 @@ python cli.py docs projects/DEMO-2025-001_Офисный_центр --format xls
 |---|---|---|
 | gen_spec.py | Неиспользуемый импорт `GradientFill` | Низкий |
 | cli.py | Docstring не упоминает `--format` | Низкий |
-| ui/app.py | Дублирующая кнопка генерации в шапке (docx) | Средний |
+| ui/app.py | `import pandas as pd` внутри tab_data вместо шапки | Низкий |
+| ui/app.py | Дублирующая кнопка генерации DOCX в шапке | Средний |
 
 ---
 
 ## Чеклист аудита кода (после каждой задачи)
 
 **Scope:**
-- [ ] Изменены только файлы из задания — не больше
-- [ ] Другие вкладки UI / другие CLI-команды не затронуты
+- [ ] Изменены только файлы из задания
+- [ ] Другие вкладки UI / CLI-команды не затронуты
 
 **Архитектура:**
-- [ ] Генераторы docs/ читают только из `_results`
-- [ ] Длины кабелей берутся из `length_m_calc` (не `length_m`)
+- [ ] Генераторы docs/ читают только `_results`
+- [ ] Длины кабелей берутся из `length_m_calc`
+- [ ] Марка кабеля: кат.1 → FRLS, кат.2/3 → LS (через pue_tables)
 - [ ] Обозначения АВ через `get_breaker_designation()`
 - [ ] `reserve=true` потребители не суммируются в нагрузку
+- [ ] Нормативы только в data/, не в engine.py
 
 **Код:**
 - [ ] Нет неиспользуемых импортов
-- [ ] Ключи st.* виджетов уникальны (включают fi и pi)
-- [ ] При сохранении data_editor: cable существующих потребителей не стирается
-- [ ] freeze_panes явно прописан в xlsx ("A6")
-- [ ] Штамп в xlsx — отсутствует
+- [ ] Ключи st.* виджетов уникальны (fi + pi)
+- [ ] cable при сохранении data_editor не стирается
+- [ ] freeze_panes = "A6" в xlsx (если задача xlsx)
+- [ ] Штамп в xlsx отсутствует (если задача xlsx)
 
 **Git:**
-- [ ] Коммит атомарный: feat/fix/chore(scope): описание (ru)
+- [ ] Коммит атомарный: feat/fix/chore(scope): описание
 - [ ] Запушено на claude/setup-electrical-automation-wQ5a9
 
 **Тест:**
-- [ ] `python cli.py calc DEMO` проходит без ошибок
-- [ ] Эталонные значения DEMO совпадают (Pрасч=38.5 кВт, Iвру=68.66А)
+- [ ] `python cli.py calc DEMO` без ошибок
+- [ ] Pрасч = 38.5 кВт, Iвру = 68.66 А (эталон не сломан)
 
 ---
 
 ## Правила ревью планов исполнителя
 
-1. **xlsx freeze_panes** — обязательно явно: `ws.freeze_panes = "A6"`
-2. **xlsx штамп** — НЕ делать (рабочий документ, не подписной)
-3. **cable при save** — при сохранении data_editor кабель не стирать, merge с существующим
-4. **Ключи виджетов** — включают fi (feeder idx) и pi (panel idx)
-5. **Scope** — только заявленный файл, не "заодно почищу" остальное
-6. **Длины** — всегда `effective_cable_length()`, не `length_m` напрямую
-7. **Нормативы** — только в data/, не хардкодить в engine.py
+1. **xlsx freeze_panes** — явно: `ws.freeze_panes = "A6"`
+2. **xlsx штамп** — НЕ делать
+3. **cable при save** — merge с существующим, не перезаписывать целиком
+4. **Ключи виджетов** — включают fi и pi
+5. **Scope** — только заявленный файл
+6. **Длины** — `effective_cable_length()`, не `length_m` напрямую
+7. **Нормативы** — только в data/
+8. **auto_panels идемпотентность** — повторный вызов не должен ломать существующих потребителей
+9. **DXF атрибуты** — ID_TAG обязателен и должен совпадать с id в project.json
 
 ---
 
-## Промпт для задачи #3 — Inline-редактор потребителей
-
-Готов к выдаче исполнителю:
+## Промпт для задачи #4 — Авто-формирование щитов из DXF
 
 ```
 Рабочая директория: /home/user/Automation-v.0.1/elec-system
-Рабочая ветка: claude/setup-electrical-automation-wQ5a9 (переключись на неё)
+Рабочая ветка: claude/setup-electrical-automation-wQ5a9
 
-КОНТЕКСТ: Система электропроектирования. UI — Streamlit, файл ui/app.py (~541 строк).
-Данные: project.json → vru.feeders[].panels[].consumers[]
+КОНТЕКСТ: Система электропроектирования. Команда `python cli.py import <путь> dwg <файл.dxf>`
+парсит DXF задание смежника через parsers/parse_dwg_assignment.py и возвращает список
+потребителей. Модуль panels/auto_panels.py:auto_assign_panels() формирует из них
+структуру panels[] для project.json.
 
-ЗАДАЧА: В ui/app.py внутри блока `with tab_data:` (строки ~279-309) заменить монолитный
-st.text_area на три суб-вкладки через st.tabs([]):
+Сейчас после `cli.py import dwg` потребители добавляются в project.json, но щиты
+НЕ создаются автоматически — инженер должен вручную добавить panels[] в JSON.
 
-1. "👥 Потребители" — st.data_editor таблица потребителей выбранного щита +
-   редактор кабеля выбранного потребителя (st.columns(3)).
-   Кнопка "💾 Сохранить потребителей" → project.json → st.rerun().
-
-2. "⚙️ Настройки щитов" — st.dataframe список всех щитов (id, name, floor, длина кабеля).
-   Только чтение, без кнопок.
-
-3. "{ } JSON" — перенести сюда ТЕКУЩИЙ КОД без изменений (st.text_area + Сохранить + Проверить).
+ЗАДАЧА: После импорта DXF (cmd_import в cli.py) автоматически вызывать
+auto_assign_panels() и добавлять сформированные щиты в project["vru"]["feeders"].
 
 ТРЕБОВАНИЯ:
-- Не трогать другие вкладки (tab_summary, tab_results, tab_cables, tab_changes, tab_docs).
-- Не трогать cli.py, gen_spec.py, gen_cable_journal.py.
-- st.data_editor с num_rows="dynamic" (строки добавлять и удалять).
-- Ключи виджетов включают fi (индекс feeder) и pi (индекс panel).
-- При сохранении из data_editor: cable существующих потребителей НЕ стирать.
-- Поля потребителя: id, name, type (lighting/power/hvac/it/other),
-  power_kw, demand_factor, cos_phi, phases (1-3), start_factor.
-- Поля cable: mark, cores, section_mm2 (None если 0), length_m,
-  install (лоток/труба/открыто/земля), ambient_t, parallel.
+1. В cmd_import (cli.py): после записи импортированных потребителей вызвать
+   auto_assign_panels(new_consumers, existing_panels) и добавить новые щиты
+   в соответствующий feeder project["vru"]["feeders"].
+2. Существующие щиты и потребители НЕ затирать (auto_assign_panels идемпотентен).
+3. Раздел DXF → prefixes: ОВ→ЩОВ, ВК→ЩВК, КВ→ЩКВ, ТХ→ЩТХ, ЭОМ→ЩС, ЭН→ШУНО.
+4. Кат.1 потребители → ЩДУ (дымоудаление) или ЩПС (пожаротушение), has_avr=True.
+5. Новые щиты добавлять в feeder по разделу. Если feeder с нужным разделом не существует
+   — создать новый feeder с id=section и добавить в vru.feeders[].
+6. Не трогать calc, docs, ui/app.py.
 
-ПОСЛЕ: коммит feat(ui): add structured consumer editor in tab_data + push.
-Сначала прочитай весь app.py, особенно блок tab_data и load_project/save_project.
+ПОСЛЕ: коммит feat(cli): auto-create panels after dwg import + push.
+Сначала прочитай cmd_import в cli.py и весь panels/auto_panels.py.
 ```
 
 ---
@@ -253,6 +332,6 @@ st.text_area на три суб-вкладки через st.tabs([]):
 Прочитай /home/user/Automation-v.0.1/TEAMLEAD.md и продолжи в роли тимлида.
 ```
 
-После завершения задачи — обновить:
-- Переместить задачу из "В очереди" в "Завершённые"
-- Добавить новый промпт для следующей задачи
+После завершения задачи:
+- Перенести из "В очереди" в "Завершённые"
+- Обновить промпт для следующей задачи
