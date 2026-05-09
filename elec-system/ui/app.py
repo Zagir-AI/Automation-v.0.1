@@ -277,33 +277,223 @@ with tab_summary:
 # ── Вкладка: Данные ──────────────────────────────────────────────────
 
 with tab_data:
-    st.subheader("Редактор project.json")
-    st.caption("Прямое редактирование JSON. После изменений нажми Сохранить, затем Пересчитать.")
+    sub_consumers, sub_settings, sub_json = st.tabs([
+        "👥 Потребители", "⚙️ Настройки щитов", "{ } JSON"
+    ])
 
-    json_text = st.text_area(
-        "project.json",
-        value=json.dumps(project, ensure_ascii=False, indent=2),
-        height=600,
-        key="json_editor"
-    )
+    # ── Суб-вкладка: Потребители ──────────────────────────────────────
+    with sub_consumers:
+        import pandas as pd
 
-    col_save, col_validate = st.columns(2)
-    with col_save:
-        if st.button("💾 Сохранить", type="primary"):
-            try:
-                new_project = json.loads(json_text)
-                save_project(new_project, proj_dir)
-                st.success("Сохранено")
+        CONSUMER_TYPES  = ["lighting", "power", "hvac", "it", "other"]
+        INSTALL_OPTIONS = ["лоток", "труба", "открыто", "земля"]
+
+        # Список всех щитов из vru.feeders[].panels[]
+        panel_options = []
+        for _fi, _feeder in enumerate(project.get("vru", {}).get("feeders", [])):
+            for _pi, _panel in enumerate(_feeder.get("panels", [])):
+                _label = (f"{_feeder.get('id','?')} / {_panel.get('id','?')}"
+                          f" — {_panel.get('name','')}")
+                panel_options.append((_label, _fi, _pi))
+
+        if not panel_options:
+            st.warning("Щиты не найдены. Заполни структуру проекта во вкладке «{ } JSON».")
+        else:
+            selected_label = st.selectbox(
+                "Щит", [o[0] for o in panel_options], key="panel_sel"
+            )
+            fi, pi = next((o[1], o[2]) for o in panel_options if o[0] == selected_label)
+            panel     = project["vru"]["feeders"][fi]["panels"][pi]
+            consumers = panel.setdefault("consumers", [])
+
+            # Плоская таблица потребителей
+            rows = [{
+                "id":            c.get("id", ""),
+                "name":          c.get("name", ""),
+                "type":          c.get("type", "power"),
+                "power_kw":      float(c.get("power_kw", 0.0)),
+                "demand_factor": float(c.get("demand_factor", 0.85)),
+                "cos_phi":       float(c.get("cos_phi", 0.85)),
+                "phases":        int(c.get("phases", 3)),
+                "start_factor":  float(c.get("start_factor", 1.0)),
+            } for c in consumers]
+
+            df = pd.DataFrame(
+                rows,
+                columns=["id","name","type","power_kw",
+                         "demand_factor","cos_phi","phases","start_factor"]
+            )
+
+            edited_df = st.data_editor(
+                df,
+                num_rows="dynamic",
+                use_container_width=True,
+                column_config={
+                    "id":   st.column_config.TextColumn("ID", required=True),
+                    "name": st.column_config.TextColumn("Наименование"),
+                    "type": st.column_config.SelectboxColumn(
+                        "Тип", options=CONSUMER_TYPES, required=True
+                    ),
+                    "power_kw":      st.column_config.NumberColumn(
+                        "Pуст, кВт", min_value=0.0, step=0.1, format="%.2f"),
+                    "demand_factor": st.column_config.NumberColumn(
+                        "kс", min_value=0.0, max_value=1.0, step=0.01, format="%.2f"),
+                    "cos_phi":       st.column_config.NumberColumn(
+                        "cos φ", min_value=0.01, max_value=1.0, step=0.01, format="%.2f"),
+                    "phases":        st.column_config.NumberColumn(
+                        "Фазы", min_value=1, max_value=3, step=1),
+                    "start_factor":  st.column_config.NumberColumn(
+                        "kп", min_value=1.0, step=0.1, format="%.1f"),
+                },
+                hide_index=True,
+                key=f"consumer_editor_{fi}_{pi}",
+            )
+
+            # Редактор кабеля выбранного потребителя
+            st.divider()
+            st.caption("Кабель потребителя")
+
+            consumer_ids = [
+                str(r["id"]) for _, r in edited_df.iterrows()
+                if str(r.get("id", "")).strip() not in ("", "nan")
+            ]
+            c_idx    = None
+            new_mark = new_cores = new_sec = new_len = new_install = new_amb = None
+
+            if consumer_ids:
+                selected_consumer_id = st.selectbox(
+                    "Потребитель", consumer_ids, key=f"cable_sel_{fi}_{pi}"
+                )
+                c_idx = next(
+                    (i for i, c in enumerate(consumers)
+                     if c.get("id") == selected_consumer_id),
+                    None
+                )
+                cable = consumers[c_idx].get("cable", {}) if c_idx is not None else {}
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    new_mark  = st.text_input(
+                        "Марка кабеля", value=cable.get("mark", "ВВГнг-LS"),
+                        key=f"cm_{fi}_{pi}_{c_idx}")
+                    new_cores = st.number_input(
+                        "Жилы", value=int(cable.get("cores", 3)),
+                        min_value=1, max_value=5, key=f"cc_{fi}_{pi}_{c_idx}")
+                with col2:
+                    new_sec = st.number_input(
+                        "Сечение, мм²", value=float(cable.get("section_mm2") or 0),
+                        min_value=0.0, step=0.5, key=f"cs_{fi}_{pi}_{c_idx}")
+                    new_len = st.number_input(
+                        "Длина, м", value=float(cable.get("length_m", 10)),
+                        min_value=0.0, step=1.0, key=f"cl_{fi}_{pi}_{c_idx}")
+                with col3:
+                    install_val = cable.get("install", "лоток")
+                    install_idx = (INSTALL_OPTIONS.index(install_val)
+                                   if install_val in INSTALL_OPTIONS else 0)
+                    new_install = st.selectbox(
+                        "Прокладка", INSTALL_OPTIONS,
+                        index=install_idx, key=f"ci_{fi}_{pi}_{c_idx}")
+                    new_amb = st.number_input(
+                        "Темп. среды, °C", value=int(cable.get("ambient_t", 25)),
+                        min_value=-40, max_value=50, key=f"ca_{fi}_{pi}_{c_idx}")
+
+            # Сохранение
+            if st.button("💾 Сохранить потребителей", type="primary",
+                         key=f"save_cons_{fi}_{pi}"):
+                new_consumers = []
+                for _, row in edited_df.iterrows():
+                    cid = str(row.get("id", "")).strip()
+                    if not cid or cid == "nan":
+                        continue
+                    old = next((c for c in consumers if c.get("id") == cid), {})
+                    new_consumers.append({
+                        "id":            cid,
+                        "name":          str(row.get("name", "")),
+                        "type":          str(row.get("type", "power")),
+                        "power_kw":      float(row.get("power_kw", 0.0)),
+                        "demand_factor": float(row.get("demand_factor", 0.85)),
+                        "cos_phi":       float(row.get("cos_phi", 0.85)),
+                        "phases":        int(row.get("phases", 3)),
+                        "start_factor":  float(row.get("start_factor", 1.0)),
+                        "cable":         old.get("cable", {
+                            "mark": "ВВГнг-LS", "cores": 3, "section_mm2": None,
+                            "length_m": 10, "install": "лоток",
+                            "ambient_t": 25, "parallel": 1,
+                        }),
+                    })
+                # Обновить cable выбранного потребителя
+                if c_idx is not None and new_mark is not None:
+                    target_id = consumers[c_idx].get("id")
+                    target = next(
+                        (nc for nc in new_consumers if nc["id"] == target_id), None
+                    )
+                    if target is not None:
+                        target["cable"] = {
+                            "mark":        new_mark,
+                            "cores":       int(new_cores),
+                            "section_mm2": float(new_sec) if new_sec > 0 else None,
+                            "length_m":    float(new_len),
+                            "install":     new_install,
+                            "ambient_t":   int(new_amb),
+                            "parallel":    (consumers[c_idx].get("cable", {})
+                                            .get("parallel", 1)),
+                        }
+                project["vru"]["feeders"][fi]["panels"][pi]["consumers"] = new_consumers
+                save_project(project, proj_dir)
+                st.success("Сохранено. Нажми **Пересчитать всё**.")
                 st.rerun()
-            except json.JSONDecodeError as e:
-                st.error(f"Ошибка JSON: {e}")
-    with col_validate:
-        if st.button("✔️ Проверить"):
-            out, err, rc = run_cli(["validate", str(proj_dir)])
-            if rc == 0:
-                st.success(out.strip())
-            else:
-                st.error(out.strip())
+
+    # ── Суб-вкладка: Настройки щитов ─────────────────────────────────
+    with sub_settings:
+        all_panels_data = []
+        for _feeder in project.get("vru", {}).get("feeders", []):
+            for _panel in _feeder.get("panels", []):
+                _pc = _panel.get("cable", {})
+                all_panels_data.append({
+                    "Фидер":        _feeder.get("id", ""),
+                    "ID щита":      _panel.get("id", ""),
+                    "Название":     _panel.get("name", ""),
+                    "Этаж":         _panel.get("floor", ""),
+                    "Марка кабеля": _pc.get("mark", ""),
+                    "L, м":         _pc.get("length_m", ""),
+                    "Сечение, мм²": _pc.get("section_mm2", ""),
+                    "Потребителей": len(_panel.get("consumers", [])),
+                })
+        if all_panels_data:
+            st.subheader("Щиты проекта")
+            st.caption("Только чтение. Для изменения параметров щита используй «{ } JSON».")
+            st.dataframe(all_panels_data, use_container_width=True, hide_index=True)
+        else:
+            st.info("Щиты не найдены в project.json.")
+
+    # ── Суб-вкладка: JSON ─────────────────────────────────────────────
+    with sub_json:
+        st.subheader("Редактор project.json")
+        st.caption("Прямое редактирование JSON. После изменений нажми Сохранить, затем Пересчитать.")
+
+        json_text = st.text_area(
+            "project.json",
+            value=json.dumps(project, ensure_ascii=False, indent=2),
+            height=600,
+            key="json_editor"
+        )
+
+        col_save, col_validate = st.columns(2)
+        with col_save:
+            if st.button("💾 Сохранить", type="primary"):
+                try:
+                    new_project = json.loads(json_text)
+                    save_project(new_project, proj_dir)
+                    st.success("Сохранено")
+                    st.rerun()
+                except json.JSONDecodeError as e:
+                    st.error(f"Ошибка JSON: {e}")
+        with col_validate:
+            if st.button("✔️ Проверить"):
+                out, err, rc = run_cli(["validate", str(proj_dir)])
+                if rc == 0:
+                    st.success(out.strip())
+                else:
+                    st.error(out.strip())
 
 
 # ── Вкладка: Расчёт ─────────────────────────────────────────────────
