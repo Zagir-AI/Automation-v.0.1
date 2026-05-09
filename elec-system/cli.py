@@ -981,6 +981,177 @@ def cmd_import(args):
     print(info(f"Запусти расчёт: python cli.py calc {args.path}"))
 
 
+def cmd_compare_kp(args):
+    """Сверка спецификации проекта с КП поставщика."""
+    from parsers.compare_kp import compare_kp
+
+    proj_dir = find_project_dir(args.path)
+    project  = load_project(proj_dir)
+
+    p_name = project.get("project", {}).get("name", "")
+    p_code = project.get("project", {}).get("code", "")
+    print(hdr(f"Сверка с КП: {p_name}"))
+
+    # Спецификация требует выполненного расчёта
+    if not project.get("_results"):
+        print(err("Проект не рассчитан — спецификация недоступна."))
+        print(info(f"Запусти: python cli.py calc {args.path}"))
+        sys.exit(1)
+
+    kp_file = Path(args.kp_file)
+    if not kp_file.exists():
+        print(err(f"Файл КП не найден: {kp_file}"))
+        sys.exit(1)
+
+    rows = compare_kp(project, str(kp_file))
+
+    if not rows:
+        print(warn("Спецификация и КП пусты — нечего сверять."))
+        return
+
+    # Раскраска статусов
+    _ICON = {"found": "✓", "not_found": "✗", "extra_in_kp": "+"}
+    _CLR  = {"found": C.GREEN, "not_found": C.RED, "extra_in_kp": C.YELLOW}
+
+    # Шапка таблицы
+    print()
+    fmt = "{:<5} {:<28} {:<40} {:>8} {:<6} {:>10} {:>12}  {}"
+    print(C.GRAY + fmt.format(
+        "Поз.", "Марка", "Наименование", "Кол.", "Ед.", "Цена", "Сумма", "Статус"
+    ) + C.RESET)
+    print(C.GRAY + "─" * 130 + C.RESET)
+
+    n_found = n_not_found = n_extra = 0
+    total = 0.0
+
+    for r in rows:
+        status = r["status"]
+        if status == "found":
+            n_found += 1
+        elif status == "not_found":
+            n_not_found += 1
+        else:
+            n_extra += 1
+        total += r["amount"]
+
+        icon = _ICON.get(status, "?")
+        clr  = _CLR.get(status, C.RESET)
+        mark_show = r["mark"] or r["kp_mark"]
+        print(fmt.format(
+            r["pos"],
+            (mark_show or "")[:28],
+            (r["name"] or "")[:40],
+            f"{r['qty']:.0f}" if float(r['qty']).is_integer() else f"{r['qty']:.2f}",
+            (r["unit"] or "")[:6],
+            f"{r['price']:.2f}",
+            f"{r['amount']:.2f}",
+            f"{clr}{icon} {status}{C.RESET}",
+        ))
+
+    n_spec = n_found + n_not_found
+    print()
+    print(f"  Позиций спецификации: {n_spec}  "
+          f"({C.GREEN}найдено: {n_found}{C.RESET}, "
+          f"{C.RED}не найдено: {n_not_found}{C.RESET})")
+    if n_extra:
+        print(f"  {C.YELLOW}В КП есть {n_extra} позиций, отсутствующих в спецификации{C.RESET}")
+    print(f"  Общая сумма по найденным: {total:,.2f} ₽".replace(",", " "))
+
+    # XLSX-экспорт
+    if getattr(args, "xlsx", False):
+        try:
+            import openpyxl
+            from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+            from openpyxl.utils import get_column_letter
+        except ImportError:
+            print(err("openpyxl не установлен — xlsx-экспорт недоступен"))
+            return
+
+        docs_dir = proj_dir / "docs"
+        docs_dir.mkdir(exist_ok=True)
+        out = docs_dir / f"{p_code or 'project'}_kp_compare.xlsx"
+
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Сверка с КП"
+
+        title_font  = Font(bold=True, size=12)
+        header_font = Font(bold=True, size=10, color="FFFFFF")
+        header_fill = PatternFill("solid", fgColor="305496")
+        fill_not    = PatternFill("solid", fgColor="FFE0E0")
+        fill_extra  = PatternFill("solid", fgColor="FFFFE0")
+        thin        = Side(border_style="thin", color="999999")
+        border      = Border(left=thin, right=thin, top=thin, bottom=thin)
+        center      = Alignment(horizontal="center", vertical="center", wrap_text=True)
+        left        = Alignment(horizontal="left",   vertical="center", wrap_text=True)
+        right       = Alignment(horizontal="right",  vertical="center")
+
+        # Строка 1 — заголовок
+        ws.cell(row=1, column=1, value=f"Сверка спецификации с КП — {p_name}").font = title_font
+        ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=8)
+
+        # Строка 2 — шапка таблицы
+        headers = ["Поз.", "Марка", "Наименование", "Кол.", "Ед.",
+                   "Цена, ₽", "Сумма, ₽", "Статус"]
+        for col, h in enumerate(headers, 1):
+            c = ws.cell(row=2, column=col, value=h)
+            c.font = header_font
+            c.fill = header_fill
+            c.alignment = center
+            c.border = border
+
+        # Заморозка
+        ws.freeze_panes = "A3"
+
+        # Данные
+        row_idx = 3
+        for r in rows:
+            status = r["status"]
+            mark_show = r["mark"] or r["kp_mark"]
+            row_values = [
+                r["pos"], mark_show, r["name"], r["qty"], r["unit"],
+                round(r["price"], 2), round(r["amount"], 2),
+                {"found": "✓ найдено",
+                 "not_found": "✗ не найдено",
+                 "extra_in_kp": "+ только в КП"}[status],
+            ]
+            for col, val in enumerate(row_values, 1):
+                c = ws.cell(row=row_idx, column=col, value=val)
+                c.border = border
+                if col in (1, 4, 5, 6, 7):
+                    c.alignment = right if col != 5 else center
+                else:
+                    c.alignment = left
+                if status == "not_found":
+                    c.fill = fill_not
+                elif status == "extra_in_kp":
+                    c.fill = fill_extra
+            row_idx += 1
+
+        # Итоговая строка
+        ws.cell(row=row_idx, column=1, value="ИТОГО:").font = Font(bold=True)
+        ws.merge_cells(start_row=row_idx, start_column=1, end_row=row_idx, end_column=6)
+        c_total = ws.cell(row=row_idx, column=7, value=round(total, 2))
+        c_total.font = Font(bold=True)
+        c_total.alignment = right
+        c_total.border = border
+        ws.cell(row=row_idx, column=8,
+                value=f"{n_found}/{n_spec}").font = Font(bold=True)
+        for col in range(1, 9):
+            ws.cell(row=row_idx, column=col).border = border
+
+        # Автоширина колонок
+        widths = [6, 28, 50, 10, 8, 14, 16, 18]
+        for i, w in enumerate(widths, 1):
+            ws.column_dimensions[get_column_letter(i)].width = w
+        ws.row_dimensions[1].height = 22
+        ws.row_dimensions[2].height = 22
+
+        wb.save(out)
+        print()
+        print(ok(f"XLSX-сверка сохранена: {out}"))
+
+
 # ── ТОЧКА ВХОДА ───────────────────────────────────────────────────────
 
 def main():
@@ -1087,6 +1258,14 @@ def main():
                         choices=["cable","panel","load","general","calc","drawing"],
                         help="Категория изменения [general]")
 
+    # compare-kp
+    p_kp = sub.add_parser("compare-kp",
+                          help="Сверка спецификации проекта с КП поставщика")
+    p_kp.add_argument("path",    help="Путь к папке проекта или код")
+    p_kp.add_argument("kp_file", help="Файл КП поставщика (.xlsx, .xls, .csv)")
+    p_kp.add_argument("--xlsx",  action="store_true",
+                      help="Сохранить отчёт в docs/{code}_kp_compare.xlsx")
+
     args = parser.parse_args()
 
     commands = {
@@ -1107,6 +1286,7 @@ def main():
         "update-attribs":     cmd_update_attribs,
         "number-cables":      cmd_number_cables,
         "change":             cmd_change,
+        "compare-kp":         cmd_compare_kp,
     }
 
     if args.command in commands:
