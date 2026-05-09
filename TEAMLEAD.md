@@ -35,9 +35,12 @@ python-docx · openpyxl · ezdxf
    - "👥 Потребители": st.data_editor + редактор кабеля, num_rows="dynamic"
    - "⚙️ Настройки щитов": read-only dataframe
    - "{ } JSON": исходный редактор без изменений
+4. ✅ Авто-формирование щитов после DWG-импорта (cli.py:cmd_import)
+   - auto_assign_panels() вызывается после парсинга DXF
+   - Feeder ищется по полю "section"; если нет — создаётся с id=section
+   - Идемпотентен: повторный импорт не дублирует потребителей
 
 ## В очереди
-4. Авто-формирование щитов из DXF-задания смежников (panels/auto_panels.py)
 5. Экспорт в смету (parsers/parse_estimate.py)
 
 ---
