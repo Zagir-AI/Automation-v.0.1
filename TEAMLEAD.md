@@ -18,7 +18,7 @@
 - Тестовый проект: elec-system/projects/DEMO-2025-001_Офисный_центр/
 
 ## Стек
-Python · argparse CLI (cli.py) · Streamlit UI (ui/app.py, ~731 строк)
+Python · argparse CLI (cli.py) · Streamlit UI (ui/app.py, ~917 строк)
 python-docx · openpyxl · ezdxf
 Данные: project.json → vru.feeders[].panels[].consumers[]
 
@@ -44,14 +44,18 @@ python-docx · openpyxl · ezdxf
    - cli.py: compare-kp <path> <kp_file> [--xlsx]
    - Статусы: found / not_found / extra_in_kp; xlsx с цветовой индикацией
 
+5. ✅ Сверка спецификации с КП поставщика (дублировано выше — см. п.5)
+6. ✅ Редизайн UI — MVP (sidebar-навигация + admin-блок)
+   - Ветка: `claude/ui-redesign-mvp-XR05M`, коммит `feat(ui): sidebar section nav + admin settings page`
+   - ui/app.py: ~917 строк после редизайна
+   - Sidebar: динамические разделы из `feeders[].section`, фильтрация вкладок Данные/Результаты/Кабели
+   - Admin: страница "⚙️ Настройки проекта" — 3 expander (Свойства / Исполнители / Тех.параметры)
+   - Регрессия DEMO: Pуст=58.5кВт Iвру=68.66А cosφ=0.852 ✅
+   - Тех.долг: двойная загрузка project.json (sidebar + main), isc_ka в двух местах
+   - ROADMAP.md создан на ветке `claude/ui-redesign-mvp-XR05M`
+
 ## В очереди
-6. 🎨 Редизайн UI — MVP (sidebar-навигация по разделам + admin-блок)
-   - Ветка исполнителя: `claude/ui-redesign-mvp-XR05M`
-   - Файл: `ui/app.py` (~731 строк)
-   - Задача A: `st.sidebar` radio с 4 разделами (ЭОМ/ЭО/НО/ЭН), фильтрация Данные→Результаты→Кабели→Документы по `feeders[].section`
-   - Задача B: страница "⚙️ Настройки проекта" — 3 группы форм (Свойства / Исполнители / Тех.параметры), кнопка Сохранить
-   - Не трогать: `calc/`, `docs/`, `cli.py`, `gen_*.py`
-   - ROADMAP отложенных задач: `ROADMAP.md` в корне репо
+7. (следующая задача — из ROADMAP.md)
 
 ---
 
