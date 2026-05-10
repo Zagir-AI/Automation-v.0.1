@@ -165,3 +165,27 @@ def panels_summary(panels: list) -> None:
         n_reserve = sum(1 for c in p["consumers"] if c.get("reserve"))
         note = f"{n_consumers} ({n_reserve} резерв)" if n_reserve else str(n_consumers)
         print(f"{p['id']:<12} {p['name'][:35]:<35} {p['category_pue']:<4} {avr:<5} {note}")
+
+
+def make_blank_panel(panel_id: str, panel_type: str = "ЩС") -> dict:
+    """Создать пустой щит с дефолтами для добавления через UI."""
+    meta = _PANEL_META.get(panel_type, _PANEL_META["ЩС"])
+    return {
+        "id": panel_id,
+        "name": meta["name"],
+        "type": meta["type"],
+        "category_pue": meta["category_pue"],
+        "has_avr": meta["has_avr"],
+        "floor": "1",
+        "cable": {
+            "mark": "ВВГнг-LS",
+            "cores": 4,
+            "section_mm2": None,
+            "length_m": 20,
+            "install": "лоток",
+            "ambient_t": 25,
+            "parallel": 1,
+        },
+        "breaker": {},
+        "consumers": [],
+    }

@@ -18,7 +18,7 @@
 - Тестовый проект: elec-system/projects/DEMO-2025-001_Офисный_центр/
 
 ## Стек
-Python · argparse CLI (cli.py) · Streamlit UI (ui/app.py, ~917 строк)
+Python · argparse CLI (cli.py) · Streamlit UI (ui/app.py, ~1200 строк)
 python-docx · openpyxl · ezdxf
 Данные: project.json → vru.feeders[].panels[].consumers[]
 
@@ -43,7 +43,6 @@ python-docx · openpyxl · ezdxf
    - parsers/compare_kp.py: compare_kp(project, kp_path) → list[dict]
    - cli.py: compare-kp <path> <kp_file> [--xlsx]
    - Статусы: found / not_found / extra_in_kp; xlsx с цветовой индикацией
-
 6. ✅ Редизайн UI — MVP (sidebar-навигация + admin-блок)
    - Ветка: `claude/ui-redesign-mvp-XR05M`, коммит `feat(ui): sidebar section nav + admin settings page`
    - ui/app.py: ~917 строк после редизайна
@@ -58,9 +57,17 @@ python-docx · openpyxl · ezdxf
    - ui/app.py: суб-вкладка "⚡ Ток КЗ" в tab_data, кнопка "Применить к проекту"
    - Ключи CABLE_RESISTANCE: ("copper"/"aluminium", section) через get_conductor_material()
    - Регрессия DEMO: ✅
+8. ✅ Детальный редактор щита
+   - Ветка: `claude/interactive-short-circuit-calc-0sCKR`
+   - panels/auto_panels.py: `make_blank_panel(panel_id, panel_type)` — создать пустой щит
+   - ui/app.py (~1200 строк): sub_settings → интерактивный редактор (параметры + кабель + потребители)
+   - vru определяется в начале `with sub_settings:` (line 447)
+   - cable merge через `panel_s["cable"].update({...})`, не полная перезапись
+   - consumer cable preservation: `old_by_id = {c.get("id"): c for c in consumers_s}`
+   - Регрессия DEMO: Pуст=58.5кВт Iвру=68.66А cosφ=0.852 ✅
 
 ## В очереди
-7. (следующая задача — из ROADMAP.md)
+9. (следующая задача — из ROADMAP.md)
 
 ---
 
@@ -216,7 +223,7 @@ DXF атрибуты блоков → потребители: `parse_dwg_assignm
 
 ---
 
-## Структура UI (ui/app.py, 731 строка)
+## Структура UI (ui/app.py, ~1200 строк)
 
 Вкладки: `tab_summary | tab_data | tab_results | tab_cables | tab_changes | tab_docs`
 
