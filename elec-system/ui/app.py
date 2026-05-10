@@ -277,8 +277,8 @@ with tab_summary:
 # ── Вкладка: Данные ──────────────────────────────────────────────────
 
 with tab_data:
-    sub_consumers, sub_settings, sub_json = st.tabs([
-        "👥 Потребители", "⚙️ Настройки щитов", "{ } JSON"
+    sub_consumers, sub_settings, sub_kz, sub_json = st.tabs([
+        "👥 Потребители", "⚙️ Настройки щитов", "⚡ Ток КЗ", "{ } JSON"
     ])
 
     # ── Суб-вкладка: Потребители ──────────────────────────────────────
@@ -464,6 +464,85 @@ with tab_data:
             st.dataframe(all_panels_data, use_container_width=True, hide_index=True)
         else:
             st.info("Щиты не найдены в project.json.")
+
+    # ── Суб-вкладка: Ток КЗ ───────────────────────────────────────────
+    with sub_kz:
+        vru = project.get("vru", {})
+        st.subheader("Расчёт тока КЗ от параметров ТП")
+
+        col1, col2 = st.columns(2)
+        with col1:
+            st.markdown("**🏭 Параметры трансформатора**")
+            tp_s_nom = st.number_input(
+                "S_ном, кВА", min_value=25.0, max_value=10000.0,
+                value=float(vru.get("tp_s_nom_kva", 630)), step=25.0,
+                key="tp_s_nom"
+            )
+            tp_u_k = st.number_input(
+                "u_к, %", min_value=1.0, max_value=10.0,
+                value=float(vru.get("tp_u_k_pct", 5.5)), step=0.1,
+                key="tp_u_k"
+            )
+            tp_u_nom_lv = st.number_input(
+                "U_ном (вторич.), кВ", min_value=0.1, max_value=1.0,
+                value=float(vru.get("tp_u_nom_lv_kv", 0.4)), step=0.05,
+                key="tp_u_nom_lv"
+            )
+        with col2:
+            st.markdown("**🔌 Кабель ТП → ВРУ**")
+            tp_cable_mark = st.text_input(
+                "Марка кабеля", value=vru.get("tp_cable_mark", "ВВГнг-LS"),
+                key="tp_cable_mark"
+            )
+            tp_cable_section = st.number_input(
+                "Сечение, мм²", min_value=0.0, max_value=1000.0,
+                value=float(vru.get("tp_cable_section_mm2", 0.0)), step=1.0,
+                key="tp_cable_section"
+            )
+            tp_cable_length = st.number_input(
+                "Длина, м", min_value=0.0, max_value=2000.0,
+                value=float(vru.get("tp_cable_length_m", 0.0)), step=1.0,
+                key="tp_cable_length"
+            )
+            tp_parallel = st.number_input(
+                "Параллельных кабелей", min_value=1, max_value=10,
+                value=int(vru.get("tp_parallel_cables", 1)), step=1,
+                key="tp_parallel"
+            )
+
+        # Расчёт происходит при каждом изменении поля (Streamlit реактивен)
+        from calc.engine import calc_isc_from_tp
+        kz_result = calc_isc_from_tp(
+            tp_s_nom, tp_u_k, tp_u_nom_lv,
+            tp_cable_mark, tp_cable_section, tp_cable_length, tp_parallel
+        )
+
+        st.divider()
+        m1, m2, m3 = st.columns(3)
+        m1.metric("Z_тр", f"{kz_result['z_tr_ohm'] * 1000:.2f} мОм")
+        m2.metric("Z_каб", f"{kz_result['z_cable_ohm'] * 1000:.2f} мОм")
+        m3.metric("Iкз на шинах ТП", f"{kz_result['isc_at_tr_ka']:.2f} кА")
+
+        isc_vru = kz_result["isc_at_vru_ka"]
+        color = "🟢" if isc_vru >= 3.0 else "🟡"
+        st.markdown(f"### {color} Iкз на шинах ВРУ: **{isc_vru:.2f} кА**")
+        st.caption(f"Текущее значение в проекте: isc_ka = {vru.get('isc_ka', 10.0)} кА")
+
+        if kz_result.get("notes"):
+            st.warning(kz_result["notes"])
+
+        if st.button("✅ Применить к проекту", key="apply_isc_ka"):
+            vru["isc_ka"] = round(isc_vru, 3)
+            vru["tp_s_nom_kva"] = tp_s_nom
+            vru["tp_u_k_pct"] = tp_u_k
+            vru["tp_u_nom_lv_kv"] = tp_u_nom_lv
+            vru["tp_cable_mark"] = tp_cable_mark
+            vru["tp_cable_section_mm2"] = tp_cable_section
+            vru["tp_cable_length_m"] = tp_cable_length
+            vru["tp_parallel_cables"] = tp_parallel
+            save_project(project, proj_dir)
+            st.success(f"isc_ka = {vru['isc_ka']} кА сохранено в проект")
+            st.rerun()
 
     # ── Суб-вкладка: JSON ─────────────────────────────────────────────
     with sub_json:

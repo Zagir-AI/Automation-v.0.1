@@ -44,7 +44,6 @@ python-docx · openpyxl · ezdxf
    - cli.py: compare-kp <path> <kp_file> [--xlsx]
    - Статусы: found / not_found / extra_in_kp; xlsx с цветовой индикацией
 
-5. ✅ Сверка спецификации с КП поставщика (дублировано выше — см. п.5)
 6. ✅ Редизайн UI — MVP (sidebar-навигация + admin-блок)
    - Ветка: `claude/ui-redesign-mvp-XR05M`, коммит `feat(ui): sidebar section nav + admin settings page`
    - ui/app.py: ~917 строк после редизайна
@@ -52,7 +51,13 @@ python-docx · openpyxl · ezdxf
    - Admin: страница "⚙️ Настройки проекта" — 3 expander (Свойства / Исполнители / Тех.параметры)
    - Регрессия DEMO: Pуст=58.5кВт Iвру=68.66А cosφ=0.852 ✅
    - Тех.долг: двойная загрузка project.json (sidebar + main), isc_ka в двух местах
-   - ROADMAP.md создан на ветке `claude/ui-redesign-mvp-XR05M`
+   - ROADMAP.md создан на ветке `claude/setup-electrical-automation-wQ5a9`
+7. ✅ Интерактивный расчёт тока КЗ от параметров ТП
+   - Ветка: `claude/interactive-short-circuit-calc-0sCKR`
+   - calc/engine.py: `calc_isc_from_tp(s_nom_kva, u_k_pct, ...)` → dict с z_tr/z_cable/isc_ka
+   - ui/app.py: суб-вкладка "⚡ Ток КЗ" в tab_data, кнопка "Применить к проекту"
+   - Ключи CABLE_RESISTANCE: ("copper"/"aluminium", section) через get_conductor_material()
+   - Регрессия DEMO: ✅
 
 ## В очереди
 7. (следующая задача — из ROADMAP.md)
