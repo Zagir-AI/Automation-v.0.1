@@ -444,26 +444,255 @@ with tab_data:
 
     # ── Суб-вкладка: Настройки щитов ─────────────────────────────────
     with sub_settings:
-        all_panels_data = []
-        for _feeder in project.get("vru", {}).get("feeders", []):
-            for _panel in _feeder.get("panels", []):
-                _pc = _panel.get("cable", {})
-                all_panels_data.append({
-                    "Фидер":        _feeder.get("id", ""),
-                    "ID щита":      _panel.get("id", ""),
-                    "Название":     _panel.get("name", ""),
-                    "Этаж":         _panel.get("floor", ""),
-                    "Марка кабеля": _pc.get("mark", ""),
-                    "L, м":         _pc.get("length_m", ""),
-                    "Сечение, мм²": _pc.get("section_mm2", ""),
-                    "Потребителей": len(_panel.get("consumers", [])),
+        vru = project.get("vru", {})
+        
+        # ── Выбор щита ──────────────────────────────────────────────────
+        panel_options_s = []
+        for _fi, _feeder in enumerate(vru.get("feeders", [])):
+            for _pi, _panel in enumerate(_feeder.get("panels", [])):
+                _label = f"{_feeder.get('id','?')} / {_panel.get('id','?')} — {_panel.get('name','')}"
+                panel_options_s.append((_label, _fi, _pi))
+
+        col_sel, col_add = st.columns([4, 1])
+        with col_sel:
+            if not panel_options_s:
+                st.info("Нет щитов. Добавьте через кнопку →")
+                selected_panel_s = None
+            else:
+                selected_label_s = st.selectbox(
+                    "Выберите щит",
+                    [o[0] for o in panel_options_s],
+                    key="settings_panel_select",
+                )
+                fi_s, pi_s = next((o[1], o[2]) for o in panel_options_s if o[0] == selected_label_s)
+                selected_panel_s = project["vru"]["feeders"][fi_s]["panels"][pi_s]
+
+        with col_add:
+            st.write("")
+            st.write("")
+            if st.button("➕ Добавить щит", key="add_panel_btn"):
+                st.session_state["show_add_panel"] = True
+
+        # ── Форма добавления нового щита ────────────────────────────────
+        if st.session_state.get("show_add_panel"):
+            from panels.auto_panels import make_blank_panel, _PANEL_META
+            with st.form("new_panel_form"):
+                st.markdown("**Новый щит**")
+                np_feeder_ids = [f.get("id", f"feeder_{i}") for i, f in enumerate(vru.get("feeders", []))]
+                np_feeder = st.selectbox("Фидер", np_feeder_ids, key="np_feeder")
+                np_id = st.text_input("ID щита (напр. ЩО-2)", key="np_id")
+                np_type = st.selectbox("Тип щита", list(_PANEL_META.keys()), key="np_type")
+                np_submitted = st.form_submit_button("Создать")
+                if np_submitted:
+                    if np_id:
+                        new_panel = make_blank_panel(np_id, np_type)
+                        fi_new = next(i for i, f in enumerate(vru["feeders"]) if f.get("id") == np_feeder)
+                        vru["feeders"][fi_new].setdefault("panels", []).append(new_panel)
+                        save_project(project, proj_dir)
+                        st.session_state["show_add_panel"] = False
+                        st.success(f"Щит {np_id} добавлен")
+                        st.rerun()
+                    else:
+                        st.warning("Укажите ID щита")
+
+        if selected_panel_s is None:
+            st.stop()
+
+        panel_s = selected_panel_s
+
+        # ── Параметры щита ──────────────────────────────────────────────
+        st.divider()
+        col_meta, col_cable = st.columns(2)
+
+        with col_meta:
+            st.markdown("**📋 Параметры щита**")
+            panel_name_s = st.text_input(
+                "Название", value=panel_s.get("name", ""), key=f"pname_{fi_s}_{pi_s}"
+            )
+            panel_floor_s = st.text_input(
+                "Этаж", value=str(panel_s.get("floor", "")), key=f"pfloor_{fi_s}_{pi_s}"
+            )
+            PANEL_TYPES = {
+                "lighting": "Освещение", "power": "Силовой",
+                "heating": "Отопление", "ventilation": "Вентиляция",
+                "hvac": "Кондиционирование", "technology": "Технологический",
+                "smoke_exhaust": "Дымоудаление", "firefighting": "Пожаротушение",
+                "outdoor_lighting": "Наружное освещение",
+            }
+            ptype_keys = list(PANEL_TYPES.keys())
+            ptype_labels = list(PANEL_TYPES.values())
+            cur_type = panel_s.get("type", "power")
+            ptype_idx = ptype_keys.index(cur_type) if cur_type in ptype_keys else 0
+            panel_type_s = st.selectbox(
+                "Тип", ptype_labels, index=ptype_idx, key=f"ptype_{fi_s}_{pi_s}"
+            )
+            panel_cat_s = st.selectbox(
+                "Категория ПУЭ", [1, 2, 3],
+                index=[1, 2, 3].index(panel_s.get("category_pue", 3)),
+                key=f"pcat_{fi_s}_{pi_s}",
+            )
+            panel_avr_s = st.checkbox(
+                "Есть АВР", value=bool(panel_s.get("has_avr", False)),
+                key=f"pavr_{fi_s}_{pi_s}",
+            )
+
+        with col_cable:
+            st.markdown("**🔌 Ввод (кабель питания щита)**")
+            cable_s = panel_s.setdefault("cable", {})
+            INSTALL_OPTIONS = ["лоток", "труба", "открыто", "земля"]
+            cur_install = cable_s.get("install", "лоток")
+            install_idx = INSTALL_OPTIONS.index(cur_install) if cur_install in INSTALL_OPTIONS else 0
+
+            pc_mark = st.text_input(
+                "Марка", value=cable_s.get("mark", "ВВГнг-LS"), key=f"pcmark_{fi_s}_{pi_s}"
+            )
+            pc_cores = st.number_input(
+                "Жил", min_value=1, max_value=5,
+                value=int(cable_s.get("cores", 4)), step=1, key=f"pccores_{fi_s}_{pi_s}"
+            )
+            pc_section = st.number_input(
+                "Сечение, мм² (0 = авто)", min_value=0.0, max_value=500.0,
+                value=float(cable_s.get("section_mm2") or 0.0), step=1.0,
+                key=f"pcsec_{fi_s}_{pi_s}",
+            )
+            pc_length = st.number_input(
+                "Длина план, м", min_value=0.0, max_value=2000.0,
+                value=float(cable_s.get("length_m", 20)), step=1.0,
+                key=f"pclen_{fi_s}_{pi_s}",
+            )
+            pc_install = st.selectbox(
+                "Прокладка", INSTALL_OPTIONS, index=install_idx, key=f"pcinst_{fi_s}_{pi_s}"
+            )
+            pc_temp = st.number_input(
+                "Темп. окр., °C", min_value=-40, max_value=50,
+                value=int(cable_s.get("ambient_t", 25)), step=1, key=f"pctemp_{fi_s}_{pi_s}"
+            )
+            pc_parallel = st.number_input(
+                "Параллельных кабелей", min_value=1, max_value=10,
+                value=int(cable_s.get("parallel", 1)), step=1, key=f"pcpar_{fi_s}_{pi_s}"
+            )
+
+        # ── Кнопка сохранения мета + кабеля щита ───────────────────────
+        col_save, col_del = st.columns([3, 1])
+        with col_save:
+            if st.button("💾 Сохранить параметры щита", key=f"save_panel_{fi_s}_{pi_s}"):
+                panel_s["name"] = panel_name_s
+                panel_s["floor"] = panel_floor_s
+                panel_s["type"] = ptype_keys[ptype_labels.index(panel_type_s)]
+                panel_s["category_pue"] = panel_cat_s
+                panel_s["has_avr"] = panel_avr_s
+                # Merge кабеля — НЕ перезаписывать целиком
+                panel_s["cable"].update({
+                    "mark": pc_mark,
+                    "cores": int(pc_cores),
+                    "section_mm2": float(pc_section) if pc_section > 0 else None,
+                    "length_m": float(pc_length),
+                    "install": pc_install,
+                    "ambient_t": int(pc_temp),
+                    "parallel": int(pc_parallel),
                 })
-        if all_panels_data:
-            st.subheader("Щиты проекта")
-            st.caption("Только чтение. Для изменения параметров щита используй «{ } JSON».")
-            st.dataframe(all_panels_data, use_container_width=True, hide_index=True)
-        else:
-            st.info("Щиты не найдены в project.json.")
+                save_project(project, proj_dir)
+                st.success("Параметры щита сохранены")
+                st.rerun()
+        with col_del:
+            if st.button("🗑️ Удалить щит", key=f"del_panel_{fi_s}_{pi_s}", type="secondary"):
+                st.session_state[f"confirm_del_{fi_s}_{pi_s}"] = True
+
+        if st.session_state.get(f"confirm_del_{fi_s}_{pi_s}"):
+            st.warning(f"Удалить щит **{panel_s.get('id')}** со всеми потребителями?")
+            c1, c2 = st.columns(2)
+            with c1:
+                if st.button("Да, удалить", key=f"confirm_yes_{fi_s}_{pi_s}"):
+                    vru["feeders"][fi_s]["panels"].pop(pi_s)
+                    save_project(project, proj_dir)
+                    st.session_state.pop(f"confirm_del_{fi_s}_{pi_s}", None)
+                    st.success("Щит удалён")
+                    st.rerun()
+            with c2:
+                if st.button("Отмена", key=f"confirm_no_{fi_s}_{pi_s}"):
+                    st.session_state.pop(f"confirm_del_{fi_s}_{pi_s}", None)
+                    st.rerun()
+
+        # ── Потребители щита ────────────────────────────────────────────
+        st.divider()
+        st.markdown("**👥 Потребители щита**")
+
+        consumers_s = panel_s.setdefault("consumers", [])
+
+        if not consumers_s:
+            st.info("Нет потребителей. Добавьте строку в таблицу ниже.")
+
+        CON_TYPES = ["lighting", "power", "hvac", "pump", "it", "other"]
+
+        df_consumers_s = []
+        for c in consumers_s:
+            df_consumers_s.append({
+                "id":            c.get("id", ""),
+                "name":          c.get("name", ""),
+                "type":          c.get("type", "power"),
+                "power_kw":      c.get("power_kw", 0.0),
+                "demand_factor": c.get("demand_factor", 0.8),
+                "cos_phi":       c.get("cos_phi", 0.85),
+                "phases":        c.get("phases", 3),
+                "start_factor":  c.get("start_factor", 1.0),
+                "reserve":       c.get("reserve", False),
+            })
+
+        import pandas as pd
+        df_s = pd.DataFrame(df_consumers_s) if df_consumers_s else pd.DataFrame(columns=[
+            "id", "name", "type", "power_kw", "demand_factor", "cos_phi",
+            "phases", "start_factor", "reserve"
+        ])
+
+        edited_df_s = st.data_editor(
+            df_s,
+            num_rows="dynamic",
+            use_container_width=True,
+            key=f"consumers_editor_{fi_s}_{pi_s}",
+            column_config={
+                "id":            st.column_config.TextColumn("ID", width="small"),
+                "name":          st.column_config.TextColumn("Название"),
+                "type":          st.column_config.SelectboxColumn("Тип", options=CON_TYPES),
+                "power_kw":      st.column_config.NumberColumn("P, кВт", min_value=0.0, step=0.1),
+                "demand_factor": st.column_config.NumberColumn("kс", min_value=0.0, max_value=1.0, step=0.01),
+                "cos_phi":       st.column_config.NumberColumn("cosφ", min_value=0.01, max_value=1.0, step=0.01),
+                "phases":        st.column_config.SelectboxColumn("Фаз", options=[1, 3]),
+                "start_factor":  st.column_config.NumberColumn("Iпуск/Iн", min_value=1.0, step=0.1),
+                "reserve":       st.column_config.CheckboxColumn("Резерв"),
+            },
+        )
+
+        if st.button("💾 Сохранить потребителей", key=f"save_consumers_{fi_s}_{pi_s}"):
+            new_rows = edited_df_s.to_dict("records")
+            # Merge: сохранить cable каждого потребителя
+            old_by_id = {c.get("id"): c for c in consumers_s}
+            merged = []
+            for row in new_rows:
+                cid = str(row.get("id", "")).strip()
+                if not cid:
+                    continue
+                old_c = old_by_id.get(cid, {})
+                merged.append({
+                    "id":            cid,
+                    "name":          str(row.get("name", cid)),
+                    "type":          str(row.get("type", "power")),
+                    "power_kw":      float(row.get("power_kw", 0.0)),
+                    "demand_factor": float(row.get("demand_factor", 0.8)),
+                    "cos_phi":       float(row.get("cos_phi", 0.85)),
+                    "phases":        int(row.get("phases", 3)),
+                    "start_factor":  float(row.get("start_factor", 1.0)),
+                    "reserve":       bool(row.get("reserve", False)),
+                    # Сохранить cable из оригинала, если есть
+                    "cable": old_c.get("cable", {
+                        "mark": "ВВГнг-LS", "cores": 3 if int(row.get("phases", 3)) == 3 else 2,
+                        "section_mm2": None, "length_m": 15,
+                        "install": "лоток", "ambient_t": 25, "parallel": 1,
+                    }),
+                })
+            panel_s["consumers"] = merged
+            save_project(project, proj_dir)
+            st.success(f"Сохранено {len(merged)} потребителей")
+            st.rerun()
 
     # ── Суб-вкладка: Ток КЗ ───────────────────────────────────────────
     with sub_kz:
