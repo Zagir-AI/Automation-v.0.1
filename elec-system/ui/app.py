@@ -92,6 +92,35 @@ with st.sidebar:
     st.divider()
     if st.button("➕ Новый объект", width="stretch"):
         st.session_state["show_new_form"] = True
+    
+    # ── Навигация по разделам (если проект открыт) ───────────────────
+    if st.session_state.get("active_project"):
+        active_path = st.session_state.get("active_project")
+        proj_dir_temp = Path(active_path)
+        project_temp = load_project(proj_dir_temp)
+        
+        if project_temp:
+            st.divider()
+            
+            # Кнопка настроек
+            if st.button("⚙️ Настройки проекта", width="stretch", key="btn_admin"):
+                st.session_state["show_admin"] = True
+                st.rerun()
+            
+            # Динамический список разделов
+            all_feeders_temp = project_temp.get("vru", {}).get("feeders", [])
+            available_sections = sorted(set(
+                f.get("section", "—") for f in all_feeders_temp if f.get("section")
+            ))
+            
+            if available_sections:
+                st.subheader("Раздел проекта")
+                selected_section = st.radio(
+                    "Выберите раздел",
+                    available_sections,
+                    key="nav_section",
+                    label_visibility="collapsed"
+                )
 
 
 # ── Новый проект ────────────────────────────────────────────────────
@@ -171,12 +200,141 @@ proj = project.get("project", {})
 results = project.get("_results")
 calc_done = project.get("_meta", {}).get("calc_done", False)
 
+# ── Admin-страница настроек ──────────────────────────────────────────
+
+if st.session_state.get("show_admin"):
+    st.header("⚙️ Настройки проекта")
+    st.caption(f"Проект: {proj.get('code', '')} — {proj.get('name', '')}")
+    
+    proj_data = project.get("project", {})
+    
+    # Секция 1: Свойства объекта
+    with st.expander("📋 Свойства объекта", expanded=True):
+        col1, col2 = st.columns(2)
+        with col1:
+            admin_code = st.text_input("Шифр объекта", 
+                                       value=proj_data.get("code", ""),
+                                       key="admin_code")
+            admin_address = st.text_input("Адрес",
+                                          value=proj_data.get("address", ""),
+                                          key="admin_address")
+            admin_org = st.text_input("Организация",
+                                      value=proj_data.get("org", ""),
+                                      key="admin_org")
+        with col2:
+            admin_name = st.text_input("Название",
+                                       value=proj_data.get("name", ""),
+                                       key="admin_name")
+            admin_stage = st.text_input("Стадия",
+                                        value=proj_data.get("stage", ""),
+                                        key="admin_stage")
+            admin_city = st.text_input("Город",
+                                       value=proj_data.get("city", ""),
+                                       key="admin_city")
+    
+    # Секция 2: Исполнители
+    with st.expander("👥 Исполнители", expanded=True):
+        col1, col2 = st.columns(2)
+        with col1:
+            admin_designer = st.text_input("Проектировщик",
+                                           value=proj_data.get("designer", ""),
+                                           key="admin_designer")
+            admin_gip = st.text_input("ГИП",
+                                      value=proj_data.get("gip", ""),
+                                      key="admin_gip")
+            admin_head = st.text_input("Руководитель",
+                                       value=proj_data.get("head", ""),
+                                       key="admin_head")
+        with col2:
+            admin_checker = st.text_input("Проверил",
+                                          value=proj_data.get("checker", ""),
+                                          key="admin_checker")
+            admin_norm_head = st.text_input("Нач. отдела",
+                                            value=proj_data.get("norm_head", ""),
+                                            key="admin_norm_head")
+    
+    # Секция 3: Технические параметры
+    with st.expander("🔧 Технические параметры", expanded=True):
+        col1, col2 = st.columns(2)
+        with col1:
+            breaker_options = ["IEK", "Schneider", "ABB", "DEKraft", "TDM"]
+            current_breaker = proj_data.get("breaker_series", "IEK")
+            breaker_idx = breaker_options.index(current_breaker) if current_breaker in breaker_options else 0
+            admin_breaker_series = st.selectbox("Серия АВ",
+                                                breaker_options,
+                                                index=breaker_idx,
+                                                key="admin_breaker_series")
+        with col2:
+            # Получаем isc_ka из vru, если нет в project
+            default_isc = proj_data.get("isc_ka") or project.get("vru", {}).get("isc_ka", 3.0)
+            admin_isc_ka = st.number_input("Ток КЗ, кА",
+                                           min_value=0.1,
+                                           max_value=50.0,
+                                           step=0.1,
+                                           value=float(default_isc),
+                                           key="admin_isc_ka")
+    
+    st.divider()
+    
+    # Кнопки управления
+    col1, col2, col3 = st.columns([2, 2, 1])
+    with col1:
+        if st.button("💾 Сохранить настройки", type="primary", key="admin_save"):
+            # Обновляем только project["project"]
+            project["project"].update({
+                "code": admin_code,
+                "name": admin_name,
+                "address": admin_address,
+                "stage": admin_stage,
+                "org": admin_org,
+                "city": admin_city,
+                "designer": admin_designer,
+                "checker": admin_checker,
+                "gip": admin_gip,
+                "norm_head": admin_norm_head,
+                "head": admin_head,
+                "breaker_series": admin_breaker_series,
+            })
+            # Сохраняем isc_ka в vru, если там хранится
+            if "isc_ka" not in proj_data and "vru" in project:
+                project["vru"]["isc_ka"] = admin_isc_ka
+            else:
+                project["project"]["isc_ka"] = admin_isc_ka
+            
+            save_project(project, proj_dir)
+            st.success("✅ Настройки сохранены")
+            st.rerun()
+    
+    with col2:
+        if st.button("← Назад к проекту", key="admin_back"):
+            st.session_state["show_admin"] = False
+            st.rerun()
+    
+    st.stop()
+
+# ── Фильтрация по разделу ────────────────────────────────────────────
+
+all_feeders = project.get("vru", {}).get("feeders", [])
+active_section = st.session_state.get("nav_section")
+
+if active_section:
+    active_feeders = [f for f in all_feeders if f.get("section") == active_section]
+    if not active_feeders:
+        st.info(f"ℹ️ Нет фидеров для раздела «{active_section}»")
+        st.stop()
+else:
+    active_feeders = all_feeders
+
+# Создаём маппинг feeder_id → index для сохранения
+feeder_id_to_idx = {f["id"]: i for i, f in enumerate(all_feeders)}
+
 # Шапка
 col_title, col_btns = st.columns([3, 1])
 with col_title:
     st.title(f"⚡ {proj.get('name','')}")
+    section_badge = f" | 📂 {active_section}" if active_section else ""
     st.caption(f"Код: {proj.get('code','')} | Стадия: {proj.get('stage','')} | "
-               f"Ред. {proj.get('revision',0)} | {proj.get('date','')}")
+               f"Ред. {proj.get('revision',0)} | {proj.get('date','')}{section_badge}")
 
 with col_btns:
     st.write("")
@@ -208,6 +366,7 @@ tab_summary, tab_data, tab_results, tab_cables, tab_changes, tab_docs = st.tabs(
 
 
 # ── Вкладка: Сводка ─────────────────────────────────────────────────
+# (НЕ фильтруется — показывает весь проект)
 
 with tab_summary:
     if calc_done and results:
@@ -249,7 +408,7 @@ with tab_summary:
             else:
                 c_comp.error(f"⚠ Нарушений кат.: {n_viol}")
 
-        # Таблица щитов
+        # Таблица щитов (показываем все фидеры, не фильтруем)
         st.subheader("Щиты")
         for feeder in vru_r.get("feeders", []):
             st.markdown(f"**{feeder['id']} — {feeder['name']}** "
@@ -288,22 +447,22 @@ with tab_data:
         CONSUMER_TYPES  = ["lighting", "power", "hvac", "it", "other"]
         INSTALL_OPTIONS = ["лоток", "труба", "открыто", "земля"]
 
-        # Список всех щитов из vru.feeders[].panels[]
+        # Список щитов из АКТИВНЫХ фидеров
         panel_options = []
-        for _fi, _feeder in enumerate(project.get("vru", {}).get("feeders", [])):
+        for _fi, _feeder in enumerate(active_feeders):
             for _pi, _panel in enumerate(_feeder.get("panels", [])):
                 _label = (f"{_feeder.get('id','?')} / {_panel.get('id','?')}"
                           f" — {_panel.get('name','')}")
-                panel_options.append((_label, _fi, _pi))
+                panel_options.append((_label, _fi, _pi, _feeder.get("id")))
 
         if not panel_options:
-            st.warning("Щиты не найдены. Заполни структуру проекта во вкладке «{ } JSON».")
+            st.warning("Щиты не найдены в выбранном разделе.")
         else:
             selected_label = st.selectbox(
                 "Щит", [o[0] for o in panel_options], key="panel_sel"
             )
-            fi, pi = next((o[1], o[2]) for o in panel_options if o[0] == selected_label)
-            panel     = project["vru"]["feeders"][fi]["panels"][pi]
+            fi, pi, feeder_id = next((o[1], o[2], o[3]) for o in panel_options if o[0] == selected_label)
+            panel     = active_feeders[fi]["panels"][pi]
             consumers = panel.setdefault("consumers", [])
 
             # Плоская таблица потребителей
@@ -437,7 +596,10 @@ with tab_data:
                             "parallel":    (consumers[c_idx].get("cable", {})
                                             .get("parallel", 1)),
                         }
-                project["vru"]["feeders"][fi]["panels"][pi]["consumers"] = new_consumers
+                
+                # Найти реальный индекс в полном списке feeders
+                real_fi = feeder_id_to_idx[feeder_id]
+                project["vru"]["feeders"][real_fi]["panels"][pi]["consumers"] = new_consumers
                 save_project(project, proj_dir)
                 st.success("Сохранено. Нажми **Пересчитать всё**.")
                 st.rerun()
@@ -445,7 +607,7 @@ with tab_data:
     # ── Суб-вкладка: Настройки щитов ─────────────────────────────────
     with sub_settings:
         all_panels_data = []
-        for _feeder in project.get("vru", {}).get("feeders", []):
+        for _feeder in active_feeders:
             for _panel in _feeder.get("panels", []):
                 _pc = _panel.get("cable", {})
                 all_panels_data.append({
@@ -459,11 +621,11 @@ with tab_data:
                     "Потребителей": len(_panel.get("consumers", [])),
                 })
         if all_panels_data:
-            st.subheader("Щиты проекта")
+            st.subheader("Щиты выбранного раздела")
             st.caption("Только чтение. Для изменения параметров щита используй «{ } JSON».")
             st.dataframe(all_panels_data, use_container_width=True, hide_index=True)
         else:
-            st.info("Щиты не найдены в project.json.")
+            st.info("Щиты не найдены в выбранном разделе.")
 
     # ── Суб-вкладка: JSON ─────────────────────────────────────────────
     with sub_json:
@@ -503,7 +665,12 @@ with tab_results:
         st.warning("Нет результатов расчёта.")
     else:
         vru_r = results.get("vru", {})
-        for feeder in vru_r.get("feeders", []):
+        # Фильтруем feeders по активному разделу
+        results_feeders = vru_r.get("feeders", [])
+        if active_section:
+            results_feeders = [f for f in results_feeders if f.get("section") == active_section]
+        
+        for feeder in results_feeders:
             with st.expander(f"{feeder['id']} — {feeder['name']} "
                              f"| Pр={feeder['p_calc_kw']:.1f} кВт | Iр={feeder['i_calc_a']:.1f} А",
                              expanded=True):
@@ -538,7 +705,12 @@ with tab_cables:
         vru_r = results.get("vru", {})
         du_err, kzt_err, kzs_err = [], [], []
 
-        for feeder in vru_r.get("feeders", []):
+        # Фильтруем feeders по активному разделу
+        results_feeders = vru_r.get("feeders", [])
+        if active_section:
+            results_feeders = [f for f in results_feeders if f.get("section") == active_section]
+
+        for feeder in results_feeders:
             for panel in feeder.get("panels", []):
                 for obj_id, obj_name, cb in (
                     [(panel["id"], panel["name"], panel.get("cable", {}))]
