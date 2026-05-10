@@ -679,3 +679,51 @@ def calculate_project(project: dict) -> dict:
     result["_meta"]["last_modified"] = datetime.date.today().isoformat()
 
     return result
+
+
+# ─────────────────────────────────────────────
+#  РАСЧЁТ ТОКА КЗ ОТ ПАРАМЕТРОВ ТП
+# ─────────────────────────────────────────────
+
+def calc_isc_from_tp(
+    s_nom_kva: float,
+    u_k_pct: float,
+    u_nom_lv_kv: float = 0.4,
+    cable_mark: str = "ВВГнг-LS",
+    cable_section_mm2: float = 0.0,
+    cable_length_m: float = 0.0,
+    parallel_cables: int = 1,
+) -> dict:
+    """Расчёт тока КЗ на шинах ВРУ из параметров ТП (ГОСТ 28249-93)."""
+    from math import sqrt
+
+    parallel_cables = max(1, int(parallel_cables))
+    u_nom_v = u_nom_lv_kv * 1000  # В
+
+    # Сопротивление трансформатора (приведено ко вторичной стороне), Ом
+    z_tr = (u_k_pct / 100.0) * (u_nom_v ** 2) / (s_nom_kva * 1000.0)
+
+    # Сопротивление кабеля ТП → ВРУ
+    z_cable = 0.0
+    cable_note = ""
+    if cable_section_mm2 > 0 and cable_length_m > 0:
+        material = get_conductor_material(cable_mark)  # → "copper" или "aluminium"
+        r0, x0 = CABLE_RESISTANCE.get((material, cable_section_mm2), (None, None))
+        if r0 is not None:
+            z_cable = sqrt(r0 ** 2 + x0 ** 2) * cable_length_m / 1000.0 / parallel_cables
+        else:
+            cable_note = f"Сечение {cable_section_mm2} мм² не найдено в таблице, z_cable=0"
+
+    z_total = z_tr + z_cable
+
+    isc_at_tr_ka = (u_nom_v / (sqrt(3) * z_tr)) / 1000.0
+    isc_at_vru_ka = (u_nom_v / (sqrt(3) * z_total)) / 1000.0
+
+    return {
+        "z_tr_ohm": round(z_tr, 6),
+        "z_cable_ohm": round(z_cable, 6),
+        "z_total_ohm": round(z_total, 6),
+        "isc_at_tr_ka": round(isc_at_tr_ka, 3),
+        "isc_at_vru_ka": round(isc_at_vru_ka, 3),
+        "notes": cable_note,
+    }
