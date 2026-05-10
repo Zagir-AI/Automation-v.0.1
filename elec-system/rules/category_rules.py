@@ -117,28 +117,46 @@ def check_all_compliance(project: dict) -> list[dict]:
 
     Returns:
         list[dict] — список нарушений:
-        {"consumer_id", "consumer_name", "consumer_cat",
-         "panel_id", "panel_cat", "panel_avr", "message"}
+        {"severity": "error"|"warning", "consumer_id", "consumer_name",
+         "consumer_cat", "panel_id", "panel_cat", "panel_avr", "message"}
     """
     violations = []
 
     vru = project.get("vru", {})
     for feeder in vru.get("feeders", []):
         for panel in feeder.get("panels", []):
+            panel_id  = panel.get("id", "?")
+            panel_cat = panel.get("category_pue", 3)
+            has_avr   = panel.get("has_avr", False)
             for consumer in panel.get("consumers", []):
-                if not check_category_compliance(consumer, panel):
+                c_id  = consumer.get("id", "?")
+                c_cat = consumer.get("category_pue", 3)
+                if c_cat == 1 and not has_avr:
                     violations.append({
-                        "consumer_id":   consumer.get("id"),
+                        "severity":      "error",
+                        "consumer_id":   c_id,
                         "consumer_name": consumer.get("name"),
-                        "consumer_cat":  consumer.get("category_pue", 3),
-                        "panel_id":      panel.get("id"),
-                        "panel_cat":     panel.get("category_pue", 3),
-                        "panel_avr":     panel.get("has_avr", False),
+                        "consumer_cat":  c_cat,
+                        "panel_id":      panel_id,
+                        "panel_cat":     panel_cat,
+                        "panel_avr":     has_avr,
                         "message": (
-                            f"Потребитель кат.{consumer.get('category_pue',3)} "
-                            f"'{consumer.get('name')}' находится в щите "
-                            f"{panel.get('id')} кат.{panel.get('category_pue',3)} "
+                            f"Потребитель {c_id} (кат.1) в щите {panel_id} "
                             f"без АВР — нарушение ПУЭ 1.2.19"
+                        ),
+                    })
+                elif c_cat < panel_cat:
+                    violations.append({
+                        "severity":      "warning",
+                        "consumer_id":   c_id,
+                        "consumer_name": consumer.get("name"),
+                        "consumer_cat":  c_cat,
+                        "panel_id":      panel_id,
+                        "panel_cat":     panel_cat,
+                        "panel_avr":     has_avr,
+                        "message": (
+                            f"Потребитель {c_id} (кат.{c_cat}) в щите {panel_id} "
+                            f"кат.{panel_cat} — рекомендуется выделить в отдельный щит"
                         ),
                     })
 

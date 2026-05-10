@@ -285,6 +285,62 @@ def get_temp_correction(install_key: str, ambient_t: float) -> float:
     return 1.0
 
 
+# ── Поправочный коэффициент на число кабелей в пучке ─────────────────
+# ПУЭ 7, табл. 1.3.7 / РТМ 36.18.32.4-92, разд. 2.4
+# Применяется при прокладке в лотке (tray) и трубе (pipe)
+_K_GROUP = {
+    1: 1.00, 2: 0.90, 3: 0.85, 4: 0.80, 5: 0.80,
+    6: 0.75, 7: 0.75, 8: 0.70, 9: 0.70, 10: 0.70,
+}
+_K_GROUP_GT10 = 0.65  # более 10 кабелей в пучке
+
+
+def get_grouping_factor(n_cables_in_group: int) -> float:
+    """
+    Поправочный коэффициент на число кабелей в одном лотке или трубе.
+    ПУЭ 7, табл. 1.3.7 / РТМ 36.18.32.4-92.
+    Для прокладки открыто (air) не применяется — возвращает 1.0.
+    """
+    if n_cables_in_group <= 1:
+        return 1.0
+    return _K_GROUP.get(n_cables_in_group, _K_GROUP_GT10)
+
+
+# ── Минимальные сечения медных проводников ───────────────────────────
+# СП 256.1325800.2016 п.6.2.4 / ПУЭ 7.1.34
+MIN_SECTION_MM2 = {
+    "lighting":           1.5,
+    "emergency_lighting": 1.5,
+    "sockets":            2.5,
+    "power":              1.5,
+    "hvac":               1.5,
+    "ventilation_unit":   1.5,
+    "smoke_fan":          1.5,
+    "smoke_exhaust":      1.5,
+    "fire_pump":          2.5,
+    "motor":              1.5,
+    "pump":               1.5,
+    "elevator":           1.5,
+    "it_equipment":       1.5,
+    "kitchen":            2.5,
+    "heating":            1.5,
+    "ahu":                1.5,
+    "panel":              2.5,
+    "default":            1.5,
+}
+
+
+def get_min_section(consumer_type: str, is_aluminum: bool = False) -> float:
+    """
+    Минимальное допустимое сечение проводника (мм²).
+    СП 256.1325800.2016 п.6.2.4; ПУЭ 7.1.34.
+    Для алюминия минимум 16 мм² (ПУЭ 7.1.34, алюминий запрещён < 16 мм²).
+    """
+    if is_aluminum:
+        return 16.0
+    return MIN_SECTION_MM2.get(consumer_type, MIN_SECTION_MM2["default"])
+
+
 def get_cable_mark_by_install(install_key: str, material: str = "copper",
                                category_pue: int = 3) -> str:
     """
