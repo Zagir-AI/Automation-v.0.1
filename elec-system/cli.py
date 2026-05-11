@@ -690,11 +690,19 @@ def cmd_docs(args):
     docs_dir = proj_dir / "docs"
     docs_dir.mkdir(exist_ok=True)
 
-    def _try_gen(import_path: str, func_name: str, label: str):
+    # Фильтры для кабельного журнала
+    extra = dict(
+        panel_id=getattr(args, "panel",   None),
+        install= getattr(args, "install", None),
+        section= getattr(args, "section", None),
+        mark=    getattr(args, "mark",    None),
+    )
+
+    def _try_gen(import_path: str, func_name: str, label: str, **kwargs):
         try:
             mod = __import__(import_path, fromlist=[func_name])
             fn  = getattr(mod, func_name)
-            path = fn(project, docs_dir)
+            path = fn(project, docs_dir, **kwargs)
             print(ok(f"{label}: {path.name}"))
         except ImportError as e:
             print(info(f"{label} — модуль не найден ({e})"))
@@ -710,10 +718,10 @@ def cmd_docs(args):
     if doc_type in (None, "cable"):
         if fmt in ("docx", "all"):
             _try_gen("docs.gen_cable_journal", "generate_cable_journal",
-                     "Кабельный журнал (docx)")
+                     "Кабельный журнал (docx)", **extra)
         if fmt in ("xlsx", "all"):
             _try_gen("docs.gen_cable_journal", "generate_cable_journal_xlsx",
-                     "Кабельный журнал (xlsx)")
+                     "Кабельный журнал (xlsx)", **extra)
 
     if doc_type in (None, "load"):
         from docs.gen_load_tables import generate_all_load_tables
@@ -1256,6 +1264,14 @@ def main():
                          help="Тип документа (по умолчанию — все)")
     p_docs.add_argument("--format", choices=["docx","xlsx","all"], default="docx",
                          help="Формат вывода: docx, xlsx или all [docx]")
+    p_docs.add_argument("--panel",   default=None,
+                         help="ID щита — только его кабели (кабельный журнал)")
+    p_docs.add_argument("--install", default=None,
+                         help="Тип прокладки: лоток|труба|открыто|земля")
+    p_docs.add_argument("--section", default=None,
+                         help="Раздел: ЭОМ|ОВ|ВК|ТХ|НО")
+    p_docs.add_argument("--mark",    default=None,
+                         help="Вхождение в марку кабеля, напр. FRLS")
 
     # plan
     p_plan = sub.add_parser("plan", help="Сгенерировать DXF-план")

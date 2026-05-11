@@ -17,9 +17,21 @@ from pathlib import Path
 
 # ── Сбор данных ───────────────────────────────────────────────────────────────
 
-def _collect_cables(project: dict) -> list[dict]:
+def _collect_cables(
+    project: dict,
+    panel_id: str | None = None,
+    install:  str | None = None,
+    section:  str | None = None,
+    mark:     str | None = None,
+) -> list[dict]:
     """
     Собирает все кабельные линии из _results в плоский список.
+
+    Фильтры (применяются после сбора):
+      panel_id — только кабели этого щита (from_id или to_id)
+      install  — тип прокладки (лоток|труба|открыто|земля)
+      section  — раздел (ЭОМ|ОВ|ВК|ТХ|НО)
+      mark     — вхождение в марку кабеля (регистронезависимо)
 
     Каждая запись:
       n, cable_no, mark, cores, section, from_id, from_name,
@@ -163,6 +175,20 @@ def _collect_cables(project: dict) -> list[dict]:
         })
         seq += 1
 
+    # ── Фильтрация ────────────────────────────────────────────────────────────
+    if panel_id:
+        records = [r for r in records
+                   if r["from_id"] == panel_id or r["to_id"] == panel_id]
+    if install:
+        records = [r for r in records if r["install"] == install]
+    if section:
+        records = [r for r in records if r["section_tag"] == section]
+    if mark:
+        records = [r for r in records if mark.lower() in r["mark"].lower()]
+
+    for i, r in enumerate(records, 1):
+        r["n"] = i
+
     return records
 
 
@@ -217,7 +243,14 @@ def _add_stamp(doc, proj: dict):
         _set_cell(row.cells[1], name, center=False)
 
 
-def generate_cable_journal(project: dict, docs_dir: Path) -> Path:
+def generate_cable_journal(
+    project:  dict,
+    docs_dir: Path,
+    panel_id: str | None = None,
+    install:  str | None = None,
+    section:  str | None = None,
+    mark:     str | None = None,
+) -> Path:
     """
     Генерирует кабельный журнал ГОСТ 21.613.
     Возвращает путь к созданному файлу (.docx или .txt).
@@ -234,16 +267,19 @@ def generate_cable_journal(project: dict, docs_dir: Path) -> Path:
     docs_dir = Path(docs_dir)
     docs_dir.mkdir(parents=True, exist_ok=True)
 
-    proj  = project.get("project", {})
-    code  = proj.get("code", "ОБЪЕКТ")
-    cables = _collect_cables(project)
+    proj   = project.get("project", {})
+    code   = proj.get("code", "ОБЪЕКТ")
+    cables = _collect_cables(project, panel_id=panel_id, install=install,
+                             section=section, mark=mark)
+
+    suffix = f"_{panel_id}" if panel_id else ""
 
     if not _has_docx:
-        txt_path = docs_dir / f"{code}_cable_journal.txt"
+        txt_path = docs_dir / f"{code}_cable_journal{suffix}.txt"
         _write_txt(cables, proj, txt_path)
         return txt_path
 
-    out_path = docs_dir / f"{code}_cable_journal.docx"
+    out_path = docs_dir / f"{code}_cable_journal{suffix}.docx"
     doc = Document()
 
     # ── А3 альбом ─────────────────────────────────────────────────────────────
@@ -348,7 +384,14 @@ def generate_cable_journal(project: dict, docs_dir: Path) -> Path:
 
 # ── XLSX ──────────────────────────────────────────────────────────────────────
 
-def generate_cable_journal_xlsx(project: dict, docs_dir: Path) -> Path:
+def generate_cable_journal_xlsx(
+    project:  dict,
+    docs_dir: Path,
+    panel_id: str | None = None,
+    install:  str | None = None,
+    section:  str | None = None,
+    mark:     str | None = None,
+) -> Path:
     """
     Генерирует кабельный журнал в формате xlsx (ГОСТ 21.613).
     Рабочий документ для монтажа; штамп не включается.
@@ -367,9 +410,11 @@ def generate_cable_journal_xlsx(project: dict, docs_dir: Path) -> Path:
     stage  = proj.get("stage", "Р")
     rev    = proj.get("revision", 0)
     date   = proj.get("date", "")
-    cables = _collect_cables(project)
+    cables = _collect_cables(project, panel_id=panel_id, install=install,
+                             section=section, mark=mark)
 
-    out_path = docs_dir / f"{code}_cable_journal.xlsx"
+    suffix   = f"_{panel_id}" if panel_id else ""
+    out_path = docs_dir / f"{code}_cable_journal{suffix}.xlsx"
     wb = Workbook()
     ws = wb.active
     ws.title = "Кабельный журнал"
