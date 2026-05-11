@@ -1,0 +1,1907 @@
+{
+  "project": {
+    "name": "Тестовая школа",
+    "code": "ТЕСТ-2025-001",
+    "object_type": "Общественное здание",
+    "stage": "Р",
+    "voltage_kv": 0.4,
+    "system": "TN-S",
+    "frequency": 50,
+    "city": "Москва",
+    "designer": "Петров П.П.",
+    "checker": "",
+    "norm_head": "",
+    "revision": 0,
+    "date": "2026-04-18",
+    "notes": "Двухэтажная школа. 20 классов, 450 учеников.",
+    "address": "ул. Учительская, д.5",
+    "gip": "Смирнов С.С.",
+    "org": "ООО Электропроект-Школа",
+    "breaker_series": "IEK"
+  },
+  "vru": {
+    "id": "ВРУ-1",
+    "name": "ВРУ-1",
+    "bus_current_a": 250,
+    "isc_ka": 4.0,
+    "incoming_cable": {
+      "mark": "ВВГнг-LS",
+      "cores": 4,
+      "section_mm2": null,
+      "length_m": 25,
+      "install": "лоток",
+      "ambient_t": 25,
+      "parallel": 1
+    },
+    "feeders": [
+      {
+        "id": "Ф1",
+        "name": "Группа ЩО-1",
+        "section": "ЭОМ",
+        "panels": [
+          {
+            "id": "ЩО-1",
+            "name": "Щит освещения №1",
+            "category_pue": 3,
+            "cable": {
+              "mark": "ВВГнг-LS",
+              "cores": 4,
+              "section_mm2": null,
+              "length_m": 35,
+              "install": "лоток"
+            },
+            "consumers": [
+              {
+                "id": "ОС-01",
+                "name": "Освещение классов 1 эт.",
+                "type": "lighting",
+                "power_kw": 8.0,
+                "cos_phi": 0.95,
+                "phases": 3,
+                "cable": {
+                  "mark": "ВВГнг-LS",
+                  "cores": 4,
+                  "section_mm2": null,
+                  "length_m": 40,
+                  "install": "лоток"
+                }
+              },
+              {
+                "id": "ОС-02",
+                "name": "Освещение классов 2 эт.",
+                "type": "lighting",
+                "power_kw": 8.0,
+                "cos_phi": 0.95,
+                "phases": 3,
+                "cable": {
+                  "mark": "ВВГнг-LS",
+                  "cores": 4,
+                  "section_mm2": null,
+                  "length_m": 45,
+                  "install": "лоток"
+                }
+              },
+              {
+                "id": "ОС-03",
+                "name": "Освещение коридоров",
+                "type": "lighting",
+                "power_kw": 4.0,
+                "cos_phi": 0.95,
+                "phases": 3,
+                "cable": {
+                  "mark": "ВВГнг-LS",
+                  "cores": 4,
+                  "section_mm2": null,
+                  "length_m": 50,
+                  "install": "лоток"
+                }
+              },
+              {
+                "id": "ОС-04",
+                "name": "Освещение актового зала",
+                "type": "lighting",
+                "power_kw": 5.0,
+                "cos_phi": 0.95,
+                "phases": 3,
+                "cable": {
+                  "mark": "ВВГнг-LS",
+                  "cores": 4,
+                  "section_mm2": null,
+                  "length_m": 60,
+                  "install": "лоток"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ф1б",
+        "name": "Группа ЩАО-1",
+        "section": "ЭОМ",
+        "panels": [
+          {
+            "id": "ЩАО-1",
+            "name": "Щит аварийного освещения",
+            "category_pue": 2,
+            "breaker_min_rating": 10,
+            "cable": {
+              "mark": "ВВГнг-LS",
+              "cores": 4,
+              "section_mm2": null,
+              "length_m": 35,
+              "install": "лоток"
+            },
+            "consumers": [
+              {
+                "id": "АО-01",
+                "name": "Аварийное освещение",
+                "type": "lighting",
+                "power_kw": 2.0,
+                "cos_phi": 0.95,
+                "phases": 3,
+                "category_pue": 2,
+                "cable": {
+                  "mark": "ВВГнг-LS",
+                  "cores": 4,
+                  "section_mm2": null,
+                  "length_m": 55,
+                  "install": "лоток"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ф2",
+        "name": "Группа ЩС-1",
+        "section": "ЭОМ",
+        "panels": [
+          {
+            "id": "ЩС-1",
+            "name": "Щит силовой №1",
+            "category_pue": 3,
+            "cable": {
+              "mark": "ВВГнг-LS",
+              "cores": 4,
+              "section_mm2": null,
+              "length_m": 30,
+              "install": "лоток"
+            },
+            "consumers": [
+              {
+                "id": "РЗ-01",
+                "name": "Розетки учебные кабинеты",
+                "type": "sockets",
+                "power_kw": 8.0,
+                "cos_phi": 0.8,
+                "phases": 3,
+                "cable": {
+                  "mark": "ВВГнг-LS",
+                  "cores": 4,
+                  "section_mm2": null,
+                  "length_m": 45,
+                  "install": "лоток"
+                }
+              },
+              {
+                "id": "ИТ-01",
+                "name": "ИТ-оборудование (серверная)",
+                "type": "it_equipment",
+                "power_kw": 6.0,
+                "cos_phi": 0.8,
+                "phases": 3,
+                "cable": {
+                  "mark": "ВВГнг-LS",
+                  "cores": 4,
+                  "section_mm2": null,
+                  "length_m": 20,
+                  "install": "лоток"
+                }
+              },
+              {
+                "id": "КУХ-01",
+                "name": "Пищеблок (кухня)",
+                "type": "kitchen",
+                "power_kw": 12.0,
+                "cos_phi": 0.95,
+                "phases": 3,
+                "cable": {
+                  "mark": "ВВГнг-LS",
+                  "cores": 4,
+                  "section_mm2": null,
+                  "length_m": 70,
+                  "install": "лоток"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ф3",
+        "name": "Группа ЩОВ-1 (ОВ)",
+        "section": "ОВ",
+        "panels": [
+          {
+            "id": "ЩОВ-1",
+            "name": "Щит насосной станции",
+            "category_pue": 2,
+            "breaker_min_rating": 10,
+            "cable": {
+              "mark": "ВВГнг-LS",
+              "cores": 4,
+              "section_mm2": null,
+              "length_m": 60,
+              "install": "лоток"
+            },
+            "consumers": [
+              {
+                "id": "НО-01",
+                "name": "Насос отопления основной",
+                "type": "pump",
+                "power_kw": 3.0,
+                "cos_phi": 0.8,
+                "phases": 3,
+                "start_factor": 5.0,
+                "category_pue": 2,
+                "cable": {
+                  "mark": "ВВГнг-LS",
+                  "cores": 4,
+                  "section_mm2": null,
+                  "length_m": 10,
+                  "install": "лоток"
+                }
+              },
+              {
+                "id": "НО-02",
+                "name": "Насос отопления резервный",
+                "type": "pump",
+                "power_kw": 3.0,
+                "cos_phi": 0.8,
+                "phases": 3,
+                "start_factor": 5.0,
+                "category_pue": 2,
+                "reserve": true,
+                "cable": {
+                  "mark": "ВВГнг-LS",
+                  "cores": 4,
+                  "section_mm2": null,
+                  "length_m": 10,
+                  "install": "лоток"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ф4",
+        "name": "Группа ЩВК-1 (ВК)",
+        "section": "ВК",
+        "panels": [
+          {
+            "id": "ЩВК-1",
+            "name": "Щит вентиляции №1",
+            "category_pue": 3,
+            "cable": {
+              "mark": "ВВГнг-LS",
+              "cores": 4,
+              "section_mm2": null,
+              "length_m": 40,
+              "install": "лоток"
+            },
+            "consumers": [
+              {
+                "id": "ПВ-01",
+                "name": "Приточная вентустановка П1",
+                "type": "hvac",
+                "power_kw": 7.5,
+                "cos_phi": 0.85,
+                "phases": 3,
+                "start_factor": 3.0,
+                "cable": {
+                  "mark": "ВВГнг-LS",
+                  "cores": 4,
+                  "section_mm2": null,
+                  "length_m": 15,
+                  "install": "лоток"
+                }
+              },
+              {
+                "id": "ВВ-01",
+                "name": "Вытяжная вентустановка В1",
+                "type": "hvac",
+                "power_kw": 5.5,
+                "cos_phi": 0.85,
+                "phases": 3,
+                "start_factor": 3.0,
+                "cable": {
+                  "mark": "ВВГнг-LS",
+                  "cores": 4,
+                  "section_mm2": null,
+                  "length_m": 15,
+                  "install": "лоток"
+                }
+              }
+            ]
+          },
+          {
+            "id": "ЩАПЗ-1",
+            "name": "Щит автоматики пожарной защиты",
+            "category_pue": 1,
+            "has_avr": true,
+            "breaker_min_rating": 16,
+            "cable": {
+              "mark": "ВВГнг-FRLS",
+              "cores": 4,
+              "section_mm2": null,
+              "length_m": 50,
+              "install": "лоток"
+            },
+            "consumers": [
+              {
+                "id": "СДУ-01",
+                "name": "Системы дымоудаления",
+                "type": "hvac",
+                "power_kw": 5.5,
+                "cos_phi": 0.85,
+                "phases": 3,
+                "category_pue": 1,
+                "start_factor": 4.0,
+                "cable": {
+                  "mark": "ВВГнг-FRLS",
+                  "cores": 4,
+                  "section_mm2": null,
+                  "length_m": 25,
+                  "install": "лоток"
+                }
+              },
+              {
+                "id": "ОПС-01",
+                "name": "Охранно-пожарная сигнализация",
+                "type": "it_equipment",
+                "power_kw": 1.5,
+                "cos_phi": 0.8,
+                "phases": 1,
+                "category_pue": 1,
+                "cable": {
+                  "mark": "ВВГнг-FRLS",
+                  "cores": 3,
+                  "section_mm2": null,
+                  "length_m": 30,
+                  "install": "лоток"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "changes": [],
+  "_meta": {
+    "schema_version": "1.0",
+    "created": "2026-04-18",
+    "last_modified": "2026-05-06",
+    "calc_done": true
+  },
+  "_results": {
+    "calculated_at": "2026-05-06T04:49:52.362954",
+    "vru": {
+      "id": "ВРУ-1",
+      "name": "ВРУ-1",
+      "feeders": [
+        {
+          "id": "Ф1",
+          "name": "Группа ЩО-1",
+          "section": "ЭОМ",
+          "panels": [
+            {
+              "id": "ЩО-1",
+              "name": "Щит освещения №1",
+              "floor": "",
+              "consumers": [
+                {
+                  "id": "ОС-01",
+                  "name": "Освещение классов 1 эт.",
+                  "type": "lighting",
+                  "section": "",
+                  "power_kw": 8.0,
+                  "reserve": false,
+                  "demand_factor": 0.9,
+                  "p_calc_kw": 7.2,
+                  "phases": 3,
+                  "cos_phi": 0.95,
+                  "i_calc_a": 11.515,
+                  "i_start_a": 11.52,
+                  "cable": {
+                    "mark": "ВВГнг-LS",
+                    "cores": 4,
+                    "section_mm2": 2.5,
+                    "length_m": 48.0,
+                    "install": "лоток",
+                    "cos_phi": 0.95,
+                    "i_calc": 13,
+                    "i_allowed": 24.0,
+                    "ok": true,
+                    "install_key": "tray",
+                    "k_temp": 1.0,
+                    "auto_selected": true,
+                    "length_m_plan": 40,
+                    "length_m_calc": 48.0,
+                    "routing_note": "план 40м + запас 20%",
+                    "voltage_drop_pct": 1.92,
+                    "du_limit_pct": 2.5,
+                    "du_ok": true,
+                    "section_upgraded_for_du": true,
+                    "kz_thermal_ok": true,
+                    "kz_thermal_s_min_mm2": 1.5,
+                    "kz_sens_ok": true,
+                    "kz_sens_i_end_a": 200,
+                    "kz_sens_i_trip_min_a": 65,
+                    "isc_ka_source": 0.6623
+                  },
+                  "breaker": {
+                    "rating": 13,
+                    "char": "C",
+                    "poles": 3,
+                    "type": "АВ 13А хар.C 3П",
+                    "i_calc": 11.52
+                  },
+                  "category_pue": 3
+                },
+                {
+                  "id": "ОС-02",
+                  "name": "Освещение классов 2 эт.",
+                  "type": "lighting",
+                  "section": "",
+                  "power_kw": 8.0,
+                  "reserve": false,
+                  "demand_factor": 0.9,
+                  "p_calc_kw": 7.2,
+                  "phases": 3,
+                  "cos_phi": 0.95,
+                  "i_calc_a": 11.515,
+                  "i_start_a": 11.52,
+                  "cable": {
+                    "mark": "ВВГнг-LS",
+                    "cores": 4,
+                    "section_mm2": 2.5,
+                    "length_m": 54.0,
+                    "install": "лоток",
+                    "cos_phi": 0.95,
+                    "i_calc": 13,
+                    "i_allowed": 24.0,
+                    "ok": true,
+                    "install_key": "tray",
+                    "k_temp": 1.0,
+                    "auto_selected": true,
+                    "length_m_plan": 45,
+                    "length_m_calc": 54.0,
+                    "routing_note": "план 45м + запас 20%",
+                    "voltage_drop_pct": 2.16,
+                    "du_limit_pct": 2.5,
+                    "du_ok": true,
+                    "section_upgraded_for_du": true,
+                    "kz_thermal_ok": true,
+                    "kz_thermal_s_min_mm2": 1.5,
+                    "kz_sens_ok": true,
+                    "kz_sens_i_end_a": 184,
+                    "kz_sens_i_trip_min_a": 65,
+                    "isc_ka_source": 0.6623
+                  },
+                  "breaker": {
+                    "rating": 13,
+                    "char": "C",
+                    "poles": 3,
+                    "type": "АВ 13А хар.C 3П",
+                    "i_calc": 11.52
+                  },
+                  "category_pue": 3
+                },
+                {
+                  "id": "ОС-03",
+                  "name": "Освещение коридоров",
+                  "type": "lighting",
+                  "section": "",
+                  "power_kw": 4.0,
+                  "reserve": false,
+                  "demand_factor": 0.9,
+                  "p_calc_kw": 3.6,
+                  "phases": 3,
+                  "cos_phi": 0.95,
+                  "i_calc_a": 5.758,
+                  "i_start_a": 5.76,
+                  "cable": {
+                    "mark": "ВВГнг-LS",
+                    "cores": 4,
+                    "section_mm2": 1.5,
+                    "length_m": 60.0,
+                    "install": "лоток",
+                    "cos_phi": 0.95,
+                    "i_calc": 10,
+                    "i_allowed": 17.0,
+                    "ok": true,
+                    "install_key": "tray",
+                    "k_temp": 1.0,
+                    "auto_selected": true,
+                    "length_m_plan": 50,
+                    "length_m_calc": 60.0,
+                    "routing_note": "план 50м + запас 20%",
+                    "voltage_drop_pct": 1.99,
+                    "du_limit_pct": 2.5,
+                    "du_ok": true,
+                    "section_upgraded_for_du": false,
+                    "kz_thermal_ok": true,
+                    "kz_thermal_s_min_mm2": 1.5,
+                    "kz_sens_ok": true,
+                    "kz_sens_i_end_a": 114,
+                    "kz_sens_i_trip_min_a": 50,
+                    "isc_ka_source": 0.6623
+                  },
+                  "breaker": {
+                    "rating": 10,
+                    "char": "C",
+                    "poles": 3,
+                    "type": "АВ 10А хар.C 3П",
+                    "i_calc": 5.76
+                  },
+                  "category_pue": 3
+                },
+                {
+                  "id": "ОС-04",
+                  "name": "Освещение актового зала",
+                  "type": "lighting",
+                  "section": "",
+                  "power_kw": 5.0,
+                  "reserve": false,
+                  "demand_factor": 0.9,
+                  "p_calc_kw": 4.5,
+                  "phases": 3,
+                  "cos_phi": 0.95,
+                  "i_calc_a": 7.197,
+                  "i_start_a": 7.2,
+                  "cable": {
+                    "mark": "ВВГнг-LS",
+                    "cores": 4,
+                    "section_mm2": 2.5,
+                    "length_m": 72.0,
+                    "install": "лоток",
+                    "cos_phi": 0.95,
+                    "i_calc": 10,
+                    "i_allowed": 24.0,
+                    "ok": true,
+                    "install_key": "tray",
+                    "k_temp": 1.0,
+                    "auto_selected": true,
+                    "length_m_plan": 60,
+                    "length_m_calc": 72.0,
+                    "routing_note": "план 60м + запас 20%",
+                    "voltage_drop_pct": 1.8,
+                    "du_limit_pct": 2.5,
+                    "du_ok": true,
+                    "section_upgraded_for_du": true,
+                    "kz_thermal_ok": true,
+                    "kz_thermal_s_min_mm2": 1.5,
+                    "kz_sens_ok": true,
+                    "kz_sens_i_end_a": 148,
+                    "kz_sens_i_trip_min_a": 50,
+                    "isc_ka_source": 0.6623
+                  },
+                  "breaker": {
+                    "rating": 10,
+                    "char": "C",
+                    "poles": 3,
+                    "type": "АВ 10А хар.C 3П",
+                    "i_calc": 7.2
+                  },
+                  "category_pue": 3
+                }
+              ],
+              "n_consumers": 4,
+              "p_installed_kw": 25.0,
+              "p_calc_kw": 22.5,
+              "s_calc_kva": 23.684,
+              "cos_phi": 0.95,
+              "ku": 1.0,
+              "i_calc_a": 35.98,
+              "cable": {
+                "mark": "ВВГнг-LS",
+                "cores": 4,
+                "section_mm2": 6,
+                "length_m": 42.0,
+                "install": "лоток",
+                "cos_phi": 0.95,
+                "i_calc": 40,
+                "i_allowed": 40.0,
+                "ok": true,
+                "install_key": "tray",
+                "k_temp": 1.0,
+                "auto_selected": true,
+                "length_m_plan": 35,
+                "length_m_calc": 42.0,
+                "routing_note": "план 35м + запас 20%",
+                "voltage_drop_pct": 2.18,
+                "du_limit_pct": 5.0,
+                "du_ok": true,
+                "section_upgraded_for_du": false,
+                "kz_thermal_ok": true,
+                "kz_thermal_s_min_mm2": 6,
+                "kz_sens_ok": true,
+                "kz_sens_i_end_a": 662,
+                "kz_sens_i_trip_min_a": 200,
+                "isc_ka_source": 4.0
+              },
+              "breaker": {
+                "rating": 40,
+                "char": "C",
+                "poles": 3,
+                "type": "АВ 40А хар.C 3П",
+                "i_calc": 35.98
+              }
+            }
+          ],
+          "p_calc_kw": 22.5,
+          "s_calc_kva": 23.684,
+          "cos_phi": 0.95,
+          "ku": 1.0,
+          "i_calc_a": 35.98
+        },
+        {
+          "id": "Ф1б",
+          "name": "Группа ЩАО-1",
+          "section": "ЭОМ",
+          "panels": [
+            {
+              "id": "ЩАО-1",
+              "name": "Щит аварийного освещения",
+              "floor": "",
+              "consumers": [
+                {
+                  "id": "АО-01",
+                  "name": "Аварийное освещение",
+                  "type": "lighting",
+                  "section": "",
+                  "power_kw": 2.0,
+                  "reserve": false,
+                  "demand_factor": 0.9,
+                  "p_calc_kw": 1.8,
+                  "phases": 3,
+                  "cos_phi": 0.95,
+                  "i_calc_a": 2.879,
+                  "i_start_a": 2.88,
+                  "cable": {
+                    "mark": "ВВГнг-LS",
+                    "cores": 4,
+                    "section_mm2": 1.5,
+                    "length_m": 66.0,
+                    "install": "лоток",
+                    "cos_phi": 0.95,
+                    "i_calc": 6,
+                    "i_allowed": 17.0,
+                    "ok": true,
+                    "install_key": "tray",
+                    "k_temp": 1.0,
+                    "auto_selected": true,
+                    "length_m_plan": 55,
+                    "length_m_calc": 66.0,
+                    "routing_note": "план 55м + запас 20%",
+                    "voltage_drop_pct": 1.1,
+                    "du_limit_pct": 2.5,
+                    "du_ok": true,
+                    "section_upgraded_for_du": false,
+                    "kz_thermal_ok": true,
+                    "kz_thermal_s_min_mm2": 1.5,
+                    "kz_sens_ok": true,
+                    "kz_sens_i_end_a": 75,
+                    "kz_sens_i_trip_min_a": 30,
+                    "isc_ka_source": 0.18769999999999998
+                  },
+                  "breaker": {
+                    "rating": 6,
+                    "char": "C",
+                    "poles": 3,
+                    "type": "АВ 6А хар.C 3П",
+                    "i_calc": 2.88
+                  },
+                  "category_pue": 2
+                }
+              ],
+              "n_consumers": 1,
+              "p_installed_kw": 2.0,
+              "p_calc_kw": 1.8,
+              "s_calc_kva": 1.895,
+              "cos_phi": 0.95,
+              "ku": 1.0,
+              "i_calc_a": 2.88,
+              "cable": {
+                "mark": "ВВГнг-LS",
+                "cores": 4,
+                "section_mm2": 1.5,
+                "length_m": 42.0,
+                "install": "лоток",
+                "cos_phi": 0.95,
+                "i_calc": 10,
+                "i_allowed": 17.0,
+                "ok": true,
+                "install_key": "tray",
+                "k_temp": 1.0,
+                "auto_selected": true,
+                "length_m_plan": 35,
+                "length_m_calc": 42.0,
+                "routing_note": "план 35м + запас 20%",
+                "voltage_drop_pct": 0.7,
+                "du_limit_pct": 5.0,
+                "du_ok": true,
+                "section_upgraded_for_du": false,
+                "kz_thermal_ok": false,
+                "kz_thermal_s_min_mm2": 6,
+                "kz_sens_ok": true,
+                "kz_sens_i_end_a": 187,
+                "kz_sens_i_trip_min_a": 50,
+                "isc_ka_source": 4.0
+              },
+              "breaker": {
+                "rating": 10,
+                "char": "C",
+                "poles": 3,
+                "type": "АВ 10А хар.C 3П",
+                "i_calc": 9.09
+              }
+            }
+          ],
+          "p_calc_kw": 1.8,
+          "s_calc_kva": 1.895,
+          "cos_phi": 0.95,
+          "ku": 1.0,
+          "i_calc_a": 2.88
+        },
+        {
+          "id": "Ф2",
+          "name": "Группа ЩС-1",
+          "section": "ЭОМ",
+          "panels": [
+            {
+              "id": "ЩС-1",
+              "name": "Щит силовой №1",
+              "floor": "",
+              "consumers": [
+                {
+                  "id": "РЗ-01",
+                  "name": "Розетки учебные кабинеты",
+                  "type": "sockets",
+                  "section": "",
+                  "power_kw": 8.0,
+                  "reserve": false,
+                  "demand_factor": 0.5,
+                  "p_calc_kw": 4.0,
+                  "phases": 3,
+                  "cos_phi": 0.8,
+                  "i_calc_a": 7.597,
+                  "i_start_a": 7.6,
+                  "cable": {
+                    "mark": "ВВГнг-LS",
+                    "cores": 4,
+                    "section_mm2": 1.5,
+                    "length_m": 54.0,
+                    "install": "лоток",
+                    "cos_phi": 0.8,
+                    "i_calc": 10,
+                    "i_allowed": 17.0,
+                    "ok": true,
+                    "install_key": "tray",
+                    "k_temp": 1.0,
+                    "auto_selected": true,
+                    "length_m_plan": 45,
+                    "length_m_calc": 54.0,
+                    "routing_note": "план 45м + запас 20%",
+                    "voltage_drop_pct": 2.0,
+                    "du_limit_pct": 5.0,
+                    "du_ok": true,
+                    "section_upgraded_for_du": false,
+                    "kz_thermal_ok": true,
+                    "kz_thermal_s_min_mm2": 1.5,
+                    "kz_sens_ok": true,
+                    "kz_sens_i_end_a": 127,
+                    "kz_sens_i_trip_min_a": 50,
+                    "isc_ka_source": 0.7519
+                  },
+                  "breaker": {
+                    "rating": 10,
+                    "char": "C",
+                    "poles": 3,
+                    "type": "АВ 10А хар.C 3П",
+                    "i_calc": 7.6
+                  },
+                  "category_pue": 3
+                },
+                {
+                  "id": "ИТ-01",
+                  "name": "ИТ-оборудование (серверная)",
+                  "type": "it_equipment",
+                  "section": "",
+                  "power_kw": 6.0,
+                  "reserve": false,
+                  "demand_factor": 0.9,
+                  "p_calc_kw": 5.4,
+                  "phases": 3,
+                  "cos_phi": 0.8,
+                  "i_calc_a": 10.256,
+                  "i_start_a": 10.26,
+                  "cable": {
+                    "mark": "ВВГнг-LS",
+                    "cores": 4,
+                    "section_mm2": 1.5,
+                    "length_m": 24.0,
+                    "install": "лоток",
+                    "cos_phi": 0.8,
+                    "i_calc": 13,
+                    "i_allowed": 17.0,
+                    "ok": true,
+                    "install_key": "tray",
+                    "k_temp": 1.0,
+                    "auto_selected": true,
+                    "length_m_plan": 20,
+                    "length_m_calc": 24.0,
+                    "routing_note": "план 20м + запас 20%",
+                    "voltage_drop_pct": 1.2,
+                    "du_limit_pct": 5.0,
+                    "du_ok": true,
+                    "section_upgraded_for_du": false,
+                    "kz_thermal_ok": true,
+                    "kz_thermal_s_min_mm2": 1.5,
+                    "kz_sens_ok": true,
+                    "kz_sens_i_end_a": 236,
+                    "kz_sens_i_trip_min_a": 65,
+                    "isc_ka_source": 0.7519
+                  },
+                  "breaker": {
+                    "rating": 13,
+                    "char": "C",
+                    "poles": 3,
+                    "type": "АВ 13А хар.C 3П",
+                    "i_calc": 10.26
+                  },
+                  "category_pue": 3
+                },
+                {
+                  "id": "КУХ-01",
+                  "name": "Пищеблок (кухня)",
+                  "type": "kitchen",
+                  "section": "",
+                  "power_kw": 12.0,
+                  "reserve": false,
+                  "demand_factor": 0.65,
+                  "p_calc_kw": 7.8,
+                  "phases": 3,
+                  "cos_phi": 0.95,
+                  "i_calc_a": 12.475,
+                  "i_start_a": 12.47,
+                  "cable": {
+                    "mark": "ВВГнг-LS",
+                    "cores": 4,
+                    "section_mm2": 2.5,
+                    "length_m": 84.0,
+                    "install": "лоток",
+                    "cos_phi": 0.95,
+                    "i_calc": 16,
+                    "i_allowed": 24.0,
+                    "ok": true,
+                    "install_key": "tray",
+                    "k_temp": 1.0,
+                    "auto_selected": true,
+                    "length_m_plan": 70,
+                    "length_m_calc": 84.0,
+                    "routing_note": "план 70м + запас 20%",
+                    "voltage_drop_pct": 3.64,
+                    "du_limit_pct": 5.0,
+                    "du_ok": true,
+                    "section_upgraded_for_du": true,
+                    "kz_thermal_ok": true,
+                    "kz_thermal_s_min_mm2": 1.5,
+                    "kz_sens_ok": true,
+                    "kz_sens_i_end_a": 134,
+                    "kz_sens_i_trip_min_a": 80,
+                    "isc_ka_source": 0.7519
+                  },
+                  "breaker": {
+                    "rating": 16,
+                    "char": "C",
+                    "poles": 3,
+                    "type": "АВ 16А хар.C 3П",
+                    "i_calc": 12.47
+                  },
+                  "category_pue": 3
+                }
+              ],
+              "n_consumers": 3,
+              "p_installed_kw": 26.0,
+              "p_calc_kw": 17.2,
+              "s_calc_kva": 19.704,
+              "cos_phi": 0.873,
+              "ku": 1.0,
+              "i_calc_a": 29.94,
+              "cable": {
+                "mark": "ВВГнг-LS",
+                "cores": 4,
+                "section_mm2": 6,
+                "length_m": 36.0,
+                "install": "лоток",
+                "cos_phi": 0.8729008758910023,
+                "i_calc": 40,
+                "i_allowed": 40.0,
+                "ok": true,
+                "install_key": "tray",
+                "k_temp": 1.0,
+                "auto_selected": true,
+                "length_m_plan": 30,
+                "length_m_calc": 36.0,
+                "routing_note": "план 30м + запас 20%",
+                "voltage_drop_pct": 1.44,
+                "du_limit_pct": 5.0,
+                "du_ok": true,
+                "section_upgraded_for_du": false,
+                "kz_thermal_ok": true,
+                "kz_thermal_s_min_mm2": 6,
+                "kz_sens_ok": true,
+                "kz_sens_i_end_a": 751,
+                "kz_sens_i_trip_min_a": 200,
+                "isc_ka_source": 4.0
+              },
+              "breaker": {
+                "rating": 40,
+                "char": "C",
+                "poles": 3,
+                "type": "АВ 40А хар.C 3П",
+                "i_calc": 29.94
+              }
+            }
+          ],
+          "p_calc_kw": 17.2,
+          "s_calc_kva": 19.702,
+          "cos_phi": 0.873,
+          "ku": 1.0,
+          "i_calc_a": 29.93
+        },
+        {
+          "id": "Ф3",
+          "name": "Группа ЩОВ-1 (ОВ)",
+          "section": "ОВ",
+          "panels": [
+            {
+              "id": "ЩОВ-1",
+              "name": "Щит насосной станции",
+              "floor": "",
+              "consumers": [
+                {
+                  "id": "НО-01",
+                  "name": "Насос отопления основной",
+                  "type": "pump",
+                  "section": "",
+                  "power_kw": 3.0,
+                  "reserve": false,
+                  "demand_factor": 0.75,
+                  "p_calc_kw": 2.25,
+                  "phases": 3,
+                  "cos_phi": 0.8,
+                  "i_calc_a": 4.273,
+                  "i_start_a": 21.36,
+                  "cable": {
+                    "mark": "ВВГнг-LS",
+                    "cores": 4,
+                    "section_mm2": 1.5,
+                    "length_m": 12.0,
+                    "install": "лоток",
+                    "cos_phi": 0.8,
+                    "i_calc": 6,
+                    "i_allowed": 17.0,
+                    "ok": true,
+                    "install_key": "tray",
+                    "k_temp": 1.0,
+                    "auto_selected": true,
+                    "length_m_plan": 10,
+                    "length_m_calc": 12.0,
+                    "routing_note": "план 10м + запас 20%",
+                    "voltage_drop_pct": 0.25,
+                    "du_limit_pct": 5.0,
+                    "du_ok": true,
+                    "section_upgraded_for_du": false,
+                    "kz_thermal_ok": true,
+                    "kz_thermal_s_min_mm2": 1.5,
+                    "kz_sens_ok": true,
+                    "kz_sens_i_end_a": 96,
+                    "kz_sens_i_trip_min_a": 60,
+                    "isc_ka_source": 0.11170000000000001
+                  },
+                  "breaker": {
+                    "rating": 6,
+                    "char": "D",
+                    "poles": 3,
+                    "type": "АВ 6А хар.D 3П",
+                    "i_calc": 4.27
+                  },
+                  "category_pue": 2
+                },
+                {
+                  "id": "НО-02",
+                  "name": "Насос отопления резервный",
+                  "type": "pump",
+                  "section": "",
+                  "power_kw": 3.0,
+                  "reserve": true,
+                  "demand_factor": 0.75,
+                  "p_calc_kw": 0.0,
+                  "phases": 3,
+                  "cos_phi": 0.8,
+                  "i_calc_a": 4.273,
+                  "i_start_a": 21.36,
+                  "cable": {
+                    "mark": "ВВГнг-LS",
+                    "cores": 4,
+                    "section_mm2": 1.5,
+                    "length_m": 12.0,
+                    "install": "лоток",
+                    "cos_phi": 0.8,
+                    "i_calc": 6,
+                    "i_allowed": 17.0,
+                    "ok": true,
+                    "install_key": "tray",
+                    "k_temp": 1.0,
+                    "auto_selected": true,
+                    "length_m_plan": 10,
+                    "length_m_calc": 12.0,
+                    "routing_note": "план 10м + запас 20%",
+                    "voltage_drop_pct": 0.25,
+                    "du_limit_pct": 5.0,
+                    "du_ok": true,
+                    "section_upgraded_for_du": false,
+                    "kz_thermal_ok": true,
+                    "kz_thermal_s_min_mm2": 1.5,
+                    "kz_sens_ok": true,
+                    "kz_sens_i_end_a": 96,
+                    "kz_sens_i_trip_min_a": 60,
+                    "isc_ka_source": 0.11170000000000001
+                  },
+                  "breaker": {
+                    "rating": 6,
+                    "char": "D",
+                    "poles": 3,
+                    "type": "АВ 6А хар.D 3П",
+                    "i_calc": 4.27
+                  },
+                  "category_pue": 2
+                }
+              ],
+              "n_consumers": 2,
+              "p_installed_kw": 6.0,
+              "p_calc_kw": 2.25,
+              "s_calc_kva": 2.812,
+              "cos_phi": 0.8,
+              "ku": 1.0,
+              "i_calc_a": 4.27,
+              "cable": {
+                "mark": "ВВГнг-LS",
+                "cores": 4,
+                "section_mm2": 1.5,
+                "length_m": 72.0,
+                "install": "лоток",
+                "cos_phi": 0.8000000000000002,
+                "i_calc": 10,
+                "i_allowed": 17.0,
+                "ok": true,
+                "install_key": "tray",
+                "k_temp": 1.0,
+                "auto_selected": true,
+                "length_m_plan": 60,
+                "length_m_calc": 72.0,
+                "routing_note": "план 60м + запас 20%",
+                "voltage_drop_pct": 1.5,
+                "du_limit_pct": 5.0,
+                "du_ok": true,
+                "section_upgraded_for_du": false,
+                "kz_thermal_ok": false,
+                "kz_thermal_s_min_mm2": 6,
+                "kz_sens_ok": true,
+                "kz_sens_i_end_a": 111,
+                "kz_sens_i_trip_min_a": 50,
+                "isc_ka_source": 4.0
+              },
+              "breaker": {
+                "rating": 10,
+                "char": "C",
+                "poles": 3,
+                "type": "АВ 10А хар.C 3П",
+                "i_calc": 9.09
+              }
+            }
+          ],
+          "p_calc_kw": 2.25,
+          "s_calc_kva": 2.812,
+          "cos_phi": 0.8,
+          "ku": 1.0,
+          "i_calc_a": 4.27
+        },
+        {
+          "id": "Ф4",
+          "name": "Группа ЩВК-1 (ВК)",
+          "section": "ВК",
+          "panels": [
+            {
+              "id": "ЩВК-1",
+              "name": "Щит вентиляции №1",
+              "floor": "",
+              "consumers": [
+                {
+                  "id": "ПВ-01",
+                  "name": "Приточная вентустановка П1",
+                  "type": "hvac",
+                  "section": "",
+                  "power_kw": 7.5,
+                  "reserve": false,
+                  "demand_factor": 0.8,
+                  "p_calc_kw": 6.0,
+                  "phases": 3,
+                  "cos_phi": 0.85,
+                  "i_calc_a": 10.725,
+                  "i_start_a": 32.17,
+                  "cable": {
+                    "mark": "ВВГнг-LS",
+                    "cores": 4,
+                    "section_mm2": 1.5,
+                    "length_m": 18.0,
+                    "install": "лоток",
+                    "cos_phi": 0.85,
+                    "i_calc": 13,
+                    "i_allowed": 17.0,
+                    "ok": true,
+                    "install_key": "tray",
+                    "k_temp": 1.0,
+                    "auto_selected": true,
+                    "length_m_plan": 15,
+                    "length_m_calc": 18.0,
+                    "routing_note": "план 15м + запас 20%",
+                    "voltage_drop_pct": 1.0,
+                    "du_limit_pct": 5.0,
+                    "du_ok": true,
+                    "section_upgraded_for_du": false,
+                    "kz_thermal_ok": true,
+                    "kz_thermal_s_min_mm2": 1.5,
+                    "kz_sens_ok": true,
+                    "kz_sens_i_end_a": 217,
+                    "kz_sens_i_trip_min_a": 130,
+                    "isc_ka_source": 0.412
+                  },
+                  "breaker": {
+                    "rating": 13,
+                    "char": "D",
+                    "poles": 3,
+                    "type": "АВ 13А хар.D 3П",
+                    "i_calc": 10.72
+                  },
+                  "category_pue": 3
+                },
+                {
+                  "id": "ВВ-01",
+                  "name": "Вытяжная вентустановка В1",
+                  "type": "hvac",
+                  "section": "",
+                  "power_kw": 5.5,
+                  "reserve": false,
+                  "demand_factor": 0.8,
+                  "p_calc_kw": 4.4,
+                  "phases": 3,
+                  "cos_phi": 0.85,
+                  "i_calc_a": 7.865,
+                  "i_start_a": 23.59,
+                  "cable": {
+                    "mark": "ВВГнг-LS",
+                    "cores": 4,
+                    "section_mm2": 1.5,
+                    "length_m": 18.0,
+                    "install": "лоток",
+                    "cos_phi": 0.85,
+                    "i_calc": 10,
+                    "i_allowed": 17.0,
+                    "ok": true,
+                    "install_key": "tray",
+                    "k_temp": 1.0,
+                    "auto_selected": true,
+                    "length_m_plan": 15,
+                    "length_m_calc": 18.0,
+                    "routing_note": "план 15м + запас 20%",
+                    "voltage_drop_pct": 0.73,
+                    "du_limit_pct": 5.0,
+                    "du_ok": true,
+                    "section_upgraded_for_du": false,
+                    "kz_thermal_ok": true,
+                    "kz_thermal_s_min_mm2": 1.5,
+                    "kz_sens_ok": true,
+                    "kz_sens_i_end_a": 217,
+                    "kz_sens_i_trip_min_a": 100,
+                    "isc_ka_source": 0.412
+                  },
+                  "breaker": {
+                    "rating": 10,
+                    "char": "D",
+                    "poles": 3,
+                    "type": "АВ 10А хар.D 3П",
+                    "i_calc": 7.87
+                  },
+                  "category_pue": 3
+                }
+              ],
+              "n_consumers": 2,
+              "p_installed_kw": 13.0,
+              "p_calc_kw": 10.4,
+              "s_calc_kva": 12.235,
+              "cos_phi": 0.85,
+              "ku": 1.0,
+              "i_calc_a": 18.59,
+              "cable": {
+                "mark": "ВВГнг-LS",
+                "cores": 4,
+                "section_mm2": 4,
+                "length_m": 48.0,
+                "install": "лоток",
+                "cos_phi": 0.85,
+                "i_calc": 25,
+                "i_allowed": 32.0,
+                "ok": true,
+                "install_key": "tray",
+                "k_temp": 1.0,
+                "auto_selected": true,
+                "length_m_plan": 40,
+                "length_m_calc": 48.0,
+                "routing_note": "план 40м + запас 20%",
+                "voltage_drop_pct": 1.74,
+                "du_limit_pct": 5.0,
+                "du_ok": true,
+                "section_upgraded_for_du": false,
+                "kz_thermal_ok": false,
+                "kz_thermal_s_min_mm2": 6,
+                "kz_sens_ok": true,
+                "kz_sens_i_end_a": 412,
+                "kz_sens_i_trip_min_a": 125,
+                "isc_ka_source": 4.0
+              },
+              "breaker": {
+                "rating": 25,
+                "char": "C",
+                "poles": 3,
+                "type": "АВ 25А хар.C 3П",
+                "i_calc": 18.59
+              }
+            },
+            {
+              "id": "ЩАПЗ-1",
+              "name": "Щит автоматики пожарной защиты",
+              "floor": "",
+              "consumers": [
+                {
+                  "id": "СДУ-01",
+                  "name": "Системы дымоудаления",
+                  "type": "hvac",
+                  "section": "",
+                  "power_kw": 5.5,
+                  "reserve": false,
+                  "demand_factor": 0.8,
+                  "p_calc_kw": 4.4,
+                  "phases": 3,
+                  "cos_phi": 0.85,
+                  "i_calc_a": 7.865,
+                  "i_start_a": 31.46,
+                  "cable": {
+                    "mark": "ВВГнг-FRLS",
+                    "cores": 4,
+                    "section_mm2": 1.5,
+                    "length_m": 30.0,
+                    "install": "лоток",
+                    "cos_phi": 0.85,
+                    "i_calc": 10,
+                    "i_allowed": 17.0,
+                    "ok": true,
+                    "install_key": "tray",
+                    "k_temp": 1.0,
+                    "auto_selected": true,
+                    "length_m_plan": 25,
+                    "length_m_calc": 30.0,
+                    "routing_note": "план 25м + запас 20%",
+                    "voltage_drop_pct": 1.22,
+                    "du_limit_pct": 5.0,
+                    "du_ok": true,
+                    "section_upgraded_for_du": false,
+                    "kz_thermal_ok": true,
+                    "kz_thermal_s_min_mm2": 1.5,
+                    "kz_sens_ok": false,
+                    "kz_sens_i_end_a": 89,
+                    "kz_sens_i_trip_min_a": 100,
+                    "isc_ka_source": 0.1333
+                  },
+                  "breaker": {
+                    "rating": 10,
+                    "char": "D",
+                    "poles": 3,
+                    "type": "АВ 10А хар.D 3П",
+                    "i_calc": 7.87
+                  },
+                  "category_pue": 1
+                },
+                {
+                  "id": "ОПС-01",
+                  "name": "Охранно-пожарная сигнализация",
+                  "type": "it_equipment",
+                  "section": "",
+                  "power_kw": 1.5,
+                  "reserve": false,
+                  "demand_factor": 0.9,
+                  "p_calc_kw": 1.35,
+                  "phases": 1,
+                  "cos_phi": 0.8,
+                  "i_calc_a": 7.67,
+                  "i_start_a": 7.67,
+                  "cable": {
+                    "mark": "ВВГнг-FRLS",
+                    "cores": 3,
+                    "section_mm2": 1.5,
+                    "length_m": 36.0,
+                    "install": "лоток",
+                    "cos_phi": 0.8,
+                    "i_calc": 10,
+                    "i_allowed": 17.0,
+                    "ok": true,
+                    "install_key": "tray",
+                    "k_temp": 1.0,
+                    "auto_selected": true,
+                    "length_m_plan": 30,
+                    "length_m_calc": 36.0,
+                    "routing_note": "план 30м + запас 20%",
+                    "voltage_drop_pct": 2.69,
+                    "du_limit_pct": 5.0,
+                    "du_ok": true,
+                    "section_upgraded_for_du": false,
+                    "kz_thermal_ok": true,
+                    "kz_thermal_s_min_mm2": 1.5,
+                    "kz_sens_ok": true,
+                    "kz_sens_i_end_a": 84,
+                    "kz_sens_i_trip_min_a": 50,
+                    "isc_ka_source": 0.1333
+                  },
+                  "breaker": {
+                    "rating": 10,
+                    "char": "C",
+                    "poles": 2,
+                    "type": "АВ 10А хар.C 2П",
+                    "i_calc": 7.67
+                  },
+                  "category_pue": 1
+                }
+              ],
+              "n_consumers": 2,
+              "p_installed_kw": 7.0,
+              "p_calc_kw": 5.75,
+              "s_calc_kva": 6.859,
+              "cos_phi": 0.838,
+              "ku": 1.0,
+              "i_calc_a": 10.42,
+              "cable": {
+                "mark": "ВВГнг-FRLS",
+                "cores": 4,
+                "section_mm2": 1.5,
+                "length_m": 60.0,
+                "install": "лоток",
+                "cos_phi": 0.83831867649522,
+                "i_calc": 16,
+                "i_allowed": 17.0,
+                "ok": true,
+                "install_key": "tray",
+                "k_temp": 1.0,
+                "auto_selected": true,
+                "length_m_plan": 50,
+                "length_m_calc": 60.0,
+                "routing_note": "план 50м + запас 20%",
+                "voltage_drop_pct": 3.19,
+                "du_limit_pct": 5.0,
+                "du_ok": true,
+                "section_upgraded_for_du": false,
+                "kz_thermal_ok": false,
+                "kz_thermal_s_min_mm2": 6,
+                "kz_sens_ok": true,
+                "kz_sens_i_end_a": 133,
+                "kz_sens_i_trip_min_a": 80,
+                "isc_ka_source": 4.0
+              },
+              "breaker": {
+                "rating": 16,
+                "char": "C",
+                "poles": 3,
+                "type": "АВ 16А хар.C 3П",
+                "i_calc": 14.55
+              }
+            }
+          ],
+          "p_calc_kw": 16.15,
+          "s_calc_kva": 19.096,
+          "cos_phi": 0.846,
+          "ku": 1.0,
+          "i_calc_a": 29.01
+        }
+      ],
+      "p_installed_kw": 79.0,
+      "p_calc_kw": 59.9,
+      "s_calc_kva": 66.753,
+      "cos_phi": 0.897,
+      "ku": 1.0,
+      "i_calc_a": 101.42,
+      "incoming_cable": {
+        "mark": "ВВГнг-LS",
+        "cores": 4,
+        "section_mm2": 50,
+        "length_m": 25,
+        "install": "лоток",
+        "ambient_t": 25,
+        "parallel": 1,
+        "cos_phi": 0.8973319888562473,
+        "i_calc": 125,
+        "i_allowed": 130.0,
+        "ok": true,
+        "install_key": "tray",
+        "k_temp": 1.0,
+        "auto_selected": true,
+        "voltage_drop_pct": 0.44,
+        "du_limit_pct": 5.0,
+        "du_ok": true,
+        "section_upgraded_for_du": false,
+        "kz_thermal_ok": true,
+        "kz_thermal_s_min_mm2": 6,
+        "kz_sens_ok": true,
+        "kz_sens_i_end_a": 2947,
+        "kz_sens_i_trip_min_a": 625,
+        "isc_ka_source": 4.0
+      },
+      "breaker": {
+        "rating": 125,
+        "char": "C",
+        "poles": 3,
+        "type": "АВ 125А хар.C 3П",
+        "i_calc": 101.42
+      }
+    },
+    "summary": {
+      "p_installed_kw": 79.0,
+      "p_calc_kw": 59.9,
+      "s_calc_kva": 66.753,
+      "cos_phi": 0.897,
+      "i_vru_a": 101.42,
+      "incoming_cable": {
+        "mark": "ВВГнг-LS",
+        "cores": 4,
+        "section_mm2": 50,
+        "length_m": 25,
+        "install": "лоток",
+        "ambient_t": 25,
+        "parallel": 1,
+        "cos_phi": 0.8973319888562473,
+        "i_calc": 125,
+        "i_allowed": 130.0,
+        "ok": true,
+        "install_key": "tray",
+        "k_temp": 1.0,
+        "auto_selected": true,
+        "voltage_drop_pct": 0.44,
+        "du_limit_pct": 5.0,
+        "du_ok": true,
+        "section_upgraded_for_du": false,
+        "kz_thermal_ok": true,
+        "kz_thermal_s_min_mm2": 6,
+        "kz_sens_ok": true,
+        "kz_sens_i_end_a": 2947,
+        "kz_sens_i_trip_min_a": 625,
+        "isc_ka_source": 4.0
+      }
+    }
+  },
+  "building": {
+    "floor_height_m": 3.6,
+    "floors": 2
+  },
+  "compensation": {
+    "required": true,
+    "tg_phi_fact": 0.493,
+    "tg_phi_target": 0.33,
+    "q_comp_kvar": 9.75,
+    "selected_krm": {
+      "power_kvar": 10,
+      "model": "КРМ-0.4-10",
+      "voltage_kv": 0.4,
+      "note": "Автоматическая батарея конденсаторов"
+    }
+  },
+  "cable_numbering": {
+    "ОС-01": "КЛ-ЩО1-01",
+    "ОС-02": "КЛ-ЩО1-02",
+    "ОС-03": "КЛ-ЩО1-03",
+    "ОС-04": "КЛ-ЩО1-04",
+    "АО-01": "КЛ-ЩАО1-01",
+    "РЗ-01": "КЛ-ЩС1-01",
+    "ИТ-01": "КЛ-ЩС1-02",
+    "КУХ-01": "КЛ-ЩС1-03",
+    "НО-01": "КЛ-ЩОВ1-01",
+    "НО-02": "КЛ-ЩОВ1-02",
+    "ПВ-01": "КЛ-ЩВК1-01",
+    "ВВ-01": "КЛ-ЩВК1-02",
+    "СДУ-01": "КЛ-ЩАПЗ1-01",
+    "ОПС-01": "КЛ-ЩАПЗ1-02"
+  },
+  "_vru_snapshot": {
+    "id": "ВРУ-1",
+    "name": "ВРУ-1",
+    "bus_current_a": 250,
+    "isc_ka": 4.0,
+    "incoming_cable": {
+      "mark": "ВВГнг-LS",
+      "cores": 4,
+      "section_mm2": null,
+      "length_m": 25,
+      "install": "лоток",
+      "ambient_t": 25,
+      "parallel": 1
+    },
+    "feeders": [
+      {
+        "id": "Ф1",
+        "name": "Группа ЩО-1",
+        "section": "ЭОМ",
+        "panels": [
+          {
+            "id": "ЩО-1",
+            "name": "Щит освещения №1",
+            "category_pue": 3,
+            "cable": {
+              "mark": "ВВГнг-LS",
+              "cores": 4,
+              "section_mm2": null,
+              "length_m": 35,
+              "install": "лоток"
+            },
+            "consumers": [
+              {
+                "id": "ОС-01",
+                "name": "Освещение классов 1 эт.",
+                "type": "lighting",
+                "power_kw": 8.0,
+                "cos_phi": 0.95,
+                "phases": 3,
+                "cable": {
+                  "mark": "ВВГнг-LS",
+                  "cores": 4,
+                  "section_mm2": null,
+                  "length_m": 40,
+                  "install": "лоток"
+                }
+              },
+              {
+                "id": "ОС-02",
+                "name": "Освещение классов 2 эт.",
+                "type": "lighting",
+                "power_kw": 8.0,
+                "cos_phi": 0.95,
+                "phases": 3,
+                "cable": {
+                  "mark": "ВВГнг-LS",
+                  "cores": 4,
+                  "section_mm2": null,
+                  "length_m": 45,
+                  "install": "лоток"
+                }
+              },
+              {
+                "id": "ОС-03",
+                "name": "Освещение коридоров",
+                "type": "lighting",
+                "power_kw": 4.0,
+                "cos_phi": 0.95,
+                "phases": 3,
+                "cable": {
+                  "mark": "ВВГнг-LS",
+                  "cores": 4,
+                  "section_mm2": null,
+                  "length_m": 50,
+                  "install": "лоток"
+                }
+              },
+              {
+                "id": "ОС-04",
+                "name": "Освещение актового зала",
+                "type": "lighting",
+                "power_kw": 5.0,
+                "cos_phi": 0.95,
+                "phases": 3,
+                "cable": {
+                  "mark": "ВВГнг-LS",
+                  "cores": 4,
+                  "section_mm2": null,
+                  "length_m": 60,
+                  "install": "лоток"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ф1б",
+        "name": "Группа ЩАО-1",
+        "section": "ЭОМ",
+        "panels": [
+          {
+            "id": "ЩАО-1",
+            "name": "Щит аварийного освещения",
+            "category_pue": 2,
+            "breaker_min_rating": 10,
+            "cable": {
+              "mark": "ВВГнг-LS",
+              "cores": 4,
+              "section_mm2": null,
+              "length_m": 35,
+              "install": "лоток"
+            },
+            "consumers": [
+              {
+                "id": "АО-01",
+                "name": "Аварийное освещение",
+                "type": "lighting",
+                "power_kw": 2.0,
+                "cos_phi": 0.95,
+                "phases": 3,
+                "category_pue": 2,
+                "cable": {
+                  "mark": "ВВГнг-LS",
+                  "cores": 4,
+                  "section_mm2": null,
+                  "length_m": 55,
+                  "install": "лоток"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ф2",
+        "name": "Группа ЩС-1",
+        "section": "ЭОМ",
+        "panels": [
+          {
+            "id": "ЩС-1",
+            "name": "Щит силовой №1",
+            "category_pue": 3,
+            "cable": {
+              "mark": "ВВГнг-LS",
+              "cores": 4,
+              "section_mm2": null,
+              "length_m": 30,
+              "install": "лоток"
+            },
+            "consumers": [
+              {
+                "id": "РЗ-01",
+                "name": "Розетки учебные кабинеты",
+                "type": "sockets",
+                "power_kw": 8.0,
+                "cos_phi": 0.8,
+                "phases": 3,
+                "cable": {
+                  "mark": "ВВГнг-LS",
+                  "cores": 4,
+                  "section_mm2": null,
+                  "length_m": 45,
+                  "install": "лоток"
+                }
+              },
+              {
+                "id": "ИТ-01",
+                "name": "ИТ-оборудование (серверная)",
+                "type": "it_equipment",
+                "power_kw": 6.0,
+                "cos_phi": 0.8,
+                "phases": 3,
+                "cable": {
+                  "mark": "ВВГнг-LS",
+                  "cores": 4,
+                  "section_mm2": null,
+                  "length_m": 20,
+                  "install": "лоток"
+                }
+              },
+              {
+                "id": "КУХ-01",
+                "name": "Пищеблок (кухня)",
+                "type": "kitchen",
+                "power_kw": 12.0,
+                "cos_phi": 0.95,
+                "phases": 3,
+                "cable": {
+                  "mark": "ВВГнг-LS",
+                  "cores": 4,
+                  "section_mm2": null,
+                  "length_m": 70,
+                  "install": "лоток"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ф3",
+        "name": "Группа ЩОВ-1 (ОВ)",
+        "section": "ОВ",
+        "panels": [
+          {
+            "id": "ЩОВ-1",
+            "name": "Щит насосной станции",
+            "category_pue": 2,
+            "breaker_min_rating": 10,
+            "cable": {
+              "mark": "ВВГнг-LS",
+              "cores": 4,
+              "section_mm2": null,
+              "length_m": 60,
+              "install": "лоток"
+            },
+            "consumers": [
+              {
+                "id": "НО-01",
+                "name": "Насос отопления основной",
+                "type": "pump",
+                "power_kw": 3.0,
+                "cos_phi": 0.8,
+                "phases": 3,
+                "start_factor": 5.0,
+                "category_pue": 2,
+                "cable": {
+                  "mark": "ВВГнг-LS",
+                  "cores": 4,
+                  "section_mm2": null,
+                  "length_m": 10,
+                  "install": "лоток"
+                }
+              },
+              {
+                "id": "НО-02",
+                "name": "Насос отопления резервный",
+                "type": "pump",
+                "power_kw": 3.0,
+                "cos_phi": 0.8,
+                "phases": 3,
+                "start_factor": 5.0,
+                "category_pue": 2,
+                "reserve": true,
+                "cable": {
+                  "mark": "ВВГнг-LS",
+                  "cores": 4,
+                  "section_mm2": null,
+                  "length_m": 10,
+                  "install": "лоток"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ф4",
+        "name": "Группа ЩВК-1 (ВК)",
+        "section": "ВК",
+        "panels": [
+          {
+            "id": "ЩВК-1",
+            "name": "Щит вентиляции №1",
+            "category_pue": 3,
+            "cable": {
+              "mark": "ВВГнг-LS",
+              "cores": 4,
+              "section_mm2": null,
+              "length_m": 40,
+              "install": "лоток"
+            },
+            "consumers": [
+              {
+                "id": "ПВ-01",
+                "name": "Приточная вентустановка П1",
+                "type": "hvac",
+                "power_kw": 7.5,
+                "cos_phi": 0.85,
+                "phases": 3,
+                "start_factor": 3.0,
+                "cable": {
+                  "mark": "ВВГнг-LS",
+                  "cores": 4,
+                  "section_mm2": null,
+                  "length_m": 15,
+                  "install": "лоток"
+                }
+              },
+              {
+                "id": "ВВ-01",
+                "name": "Вытяжная вентустановка В1",
+                "type": "hvac",
+                "power_kw": 5.5,
+                "cos_phi": 0.85,
+                "phases": 3,
+                "start_factor": 3.0,
+                "cable": {
+                  "mark": "ВВГнг-LS",
+                  "cores": 4,
+                  "section_mm2": null,
+                  "length_m": 15,
+                  "install": "лоток"
+                }
+              }
+            ]
+          },
+          {
+            "id": "ЩАПЗ-1",
+            "name": "Щит автоматики пожарной защиты",
+            "category_pue": 1,
+            "has_avr": true,
+            "breaker_min_rating": 16,
+            "cable": {
+              "mark": "ВВГнг-FRLS",
+              "cores": 4,
+              "section_mm2": null,
+              "length_m": 50,
+              "install": "лоток"
+            },
+            "consumers": [
+              {
+                "id": "СДУ-01",
+                "name": "Системы дымоудаления",
+                "type": "hvac",
+                "power_kw": 5.5,
+                "cos_phi": 0.85,
+                "phases": 3,
+                "category_pue": 1,
+                "start_factor": 4.0,
+                "cable": {
+                  "mark": "ВВГнг-FRLS",
+                  "cores": 4,
+                  "section_mm2": null,
+                  "length_m": 25,
+                  "install": "лоток"
+                }
+              },
+              {
+                "id": "ОПС-01",
+                "name": "Охранно-пожарная сигнализация",
+                "type": "it_equipment",
+                "power_kw": 1.5,
+                "cos_phi": 0.8,
+                "phases": 1,
+                "category_pue": 1,
+                "cable": {
+                  "mark": "ВВГнг-FRLS",
+                  "cores": 3,
+                  "section_mm2": null,
+                  "length_m": 30,
+                  "install": "лоток"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "_building": {
+    "category_pue": 1,
+    "vru_scheme": "avr",
+    "vru_description": "Два независимых ввода + АВР",
+    "has_avr": true,
+    "compliance_ok": true,
+    "violations": 0,
+    "last_check": "2026-05-06"
+  }
+}
