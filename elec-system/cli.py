@@ -467,6 +467,42 @@ def cmd_calc_outdoor(args):
     print(info(f"Результаты сохранены: {proj_dir / 'project.json'}"))
 
 
+def cmd_earthwork(args):
+    """Расчёт объёмов земляных работ для кабельных траншей."""
+    from outdoor.calc_earthwork import calc_all_earthwork
+
+    proj_dir = find_project_dir(args.path)
+    project  = load_project(proj_dir)
+
+    results = calc_all_earthwork(project)
+    save_project(project, proj_dir)
+
+    if not results:
+        print(warn("Нет наружных сетей с прокладкой в земле (install='земля')"))
+        return
+
+    print(hdr("Земляные работы"))
+    print(f"  {'Трасса':<20} {'L,м':>5} {'Ш,м':>5} {'Г,м':>5} "
+          f"{'Выемка,м³':>10} {'Вывоз,м³':>9} {'Песок,м³':>9} {'Защита':>12}")
+    print("  " + "─" * 80)
+
+    for r in results:
+        prot = (f"{r['n_bricks']} кирп." if r["protection"] == "кирпич"
+                else f"{r['n_slabs']} плит")
+        print(f"  {r['network_name']:<20} {r['length_m']:>5.0f} "
+              f"{r['width_m']:>5.2f} {r['depth_m']:>5.2f} "
+              f"{r['v_excavation_m3']:>10.2f} {r['v_loose_m3']:>9.2f} "
+              f"{r['v_sand_m3']:>9.2f} {prot:>12}")
+
+    total_exc   = sum(r["v_excavation_m3"] for r in results)
+    total_loose = sum(r["v_loose_m3"]      for r in results)
+    print("  " + "─" * 80)
+    print(f"  {'Итого':<20} {'':>5} {'':>5} {'':>5} "
+          f"{total_exc:>10.2f} {total_loose:>9.2f}")
+    print()
+    print(ok(f"Результаты сохранены в _results.earthwork"))
+
+
 def cmd_summary(args):
     """Краткая сводка по рассчитанному проекту."""
     proj_dir = find_project_dir(args.path)
@@ -1249,6 +1285,11 @@ def main():
     p_co = sub.add_parser("calc-outdoor", help="Рассчитать наружные сети")
     p_co.add_argument("path", help="Путь к папке проекта или код")
 
+    # earthwork
+    p_ew = sub.add_parser("earthwork",
+                           help="Расчёт земляных работ для кабельных траншей")
+    p_ew.add_argument("path", help="Путь к папке проекта или код")
+
     # summary
     p_sum = sub.add_parser("summary", help="Краткая сводка результатов")
     p_sum.add_argument("path", help="Путь к папке проекта или код")
@@ -1348,6 +1389,7 @@ def main():
         "new":                cmd_new,
         "calc":               cmd_calc,
         "calc-outdoor":       cmd_calc_outdoor,
+        "earthwork":          cmd_earthwork,
         "summary":            cmd_summary,
         "validate":           cmd_validate,
         "docs":               cmd_docs,
