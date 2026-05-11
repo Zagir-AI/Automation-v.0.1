@@ -77,9 +77,20 @@ python-docx · openpyxl · ezdxf
     - ui/app.py: expander "⚖️ Фазовый баланс" в tab_summary, кнопка + колонка Фаза в sub_settings
     - Идемпотентность: повторный вызов не перезаписывает уже назначенные фазы
     - Регрессия DEMO: ✅
+11. ✅ Однолинейная схема щита (DXF, ГОСТ 21.608-84)
+    - dwg/gen_sld.py: generate_panel_sld(), generate_all_sld()
+    - Слои: BUS/WIRE/BREAKER/EQUIP/TEXT/TABLE; символ АВ IEC 60617; таблица 9 колонок
+    - cli.py: sld <path> [--panel ID] — обновлён с create_test_sld на gen_sld
+    - ui/app.py: кнопка генерации + selectbox скачивания в tab_docs
+    - Регрессия DEMO: ✅
+12. ✅ Фильтрация кабельного журнала по щиту / прокладке / разделу / марке
+    - docs/gen_cable_journal.py: _collect_cables() + оба генератора получили panel_id/install/section/mark
+    - Суффикс _{panel_id} в имени файла при фильтре по щиту
+    - cli.py: docs --panel / --install / --section / --mark
+    - Регрессия DEMO: ✅
 
 ## В очереди
-11. (следующая задача — из ROADMAP.md)
+13. (следующая задача — из ROADMAP.md)
 
 ---
 
