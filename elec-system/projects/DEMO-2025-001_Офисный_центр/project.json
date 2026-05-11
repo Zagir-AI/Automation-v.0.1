@@ -1760,6 +1760,25 @@
           }
         ]
       }
+    ],
+    "earthwork": [
+      {
+        "length_m": 80.0,
+        "n_cables": 1,
+        "width_m": 0.3,
+        "depth_m": 0.7,
+        "soil_type": "суглинок",
+        "protection": "кирпич",
+        "v_excavation_m3": 16.8,
+        "v_loose_m3": 20.16,
+        "v_sand_m3": 4.8,
+        "v_backfill_m3": 12.0,
+        "n_bricks": 240,
+        "n_slabs": 0,
+        "depth_min_pue_m": 0.7,
+        "network_id": "ОН-1",
+        "network_name": "Наружное освещение паркинга"
+      }
     ]
   },
   "compensation": {
