@@ -127,34 +127,88 @@ active_path = st.session_state.get("active_project")
 
 if not active_path:
     st.title("⚡ ЭлектроПроект")
-    st.markdown("Система автоматизации проектной документации по электроснабжению")
+    st.caption("Система автоматизации проектной документации по электроснабжению")
     st.divider()
 
-    # Сводная таблица всех объектов
-    if projects:
-        st.subheader("Все объекты")
-        cols = st.columns([2, 3, 1, 1, 1, 1])
-        cols[0].markdown("**Код**")
-        cols[1].markdown("**Название**")
-        cols[2].markdown("**Стадия**")
-        cols[3].markdown("**Pуст, кВт**")
-        cols[4].markdown("**Iвру, А**")
-        cols[5].markdown("**Статус**")
-        st.divider()
-
-        for d, p in projects:
-            proj = p.get("project", {})
-            res = p.get("_results", {}).get("summary", {})
-            calc_done = p.get("_meta", {}).get("calc_done", False)
-            c = st.columns([2, 3, 1, 1, 1, 1])
-            c[0].write(proj.get("code",""))
-            c[1].write(proj.get("name","")[:35])
-            c[2].write(proj.get("stage",""))
-            c[3].write(f"{res.get('p_installed_kw','-')}" if calc_done else "—")
-            c[4].write(f"{res.get('i_vru_a','-')}" if calc_done else "—")
-            c[5].write("✅ Рассчитан" if calc_done else "🔲 Ожидает")
-    else:
+    if not projects:
         st.info("Нет объектов. Создай первый через кнопку в сайдбаре.")
+        st.stop()
+
+    # ── Верхние метрики ──────────────────────────────────────────────────
+    total = len(projects)
+    calc  = sum(1 for _, p in projects if p.get("_results"))
+    p_sum = sum(
+        p.get("_results", {}).get("summary", {}).get("p_installed_kw", 0)
+        for _, p in projects if p.get("_results")
+    )
+    warns = sum(
+        len(p.get("_results", {}).get("cable_checks", {}).get("du_violations", [])) +
+        len(p.get("_results", {}).get("cable_checks", {}).get("kz_thermal_violations", []))
+        for _, p in projects if p.get("_results")
+    )
+
+    col1, col2, col3, col4 = st.columns(4)
+    col1.metric("📁 Проектов",      total)
+    col2.metric("✅ Рассчитано",    f"{calc} / {total}")
+    col3.metric("⚡ Суммарно, кВт", f"{p_sum:.1f}")
+    col4.metric(
+        "⚠️ Нарушений", warns,
+        delta=None if warns == 0 else "требует проверки",
+        delta_color="inverse",
+    )
+
+    st.divider()
+    st.subheader("Объекты")
+
+    # ── Карточки по 2 в строку ───────────────────────────────────────────
+    pairs = [projects[i:i + 2] for i in range(0, len(projects), 2)]
+    for pair in pairs:
+        cols = st.columns(2)
+        for col, (d, p) in zip(cols, pair):
+            with col:
+                with st.container(border=True):
+                    proj    = p.get("project", {})
+                    res     = p.get("_results", {})
+                    summary = res.get("summary", {})
+                    bld     = p.get("_building", {})
+                    calc_ok = bool(res)
+
+                    code    = proj.get("code", "?")
+                    name    = proj.get("name", "?")
+                    stage   = proj.get("stage", "")
+                    cat     = bld.get("category_pue", "—")
+                    p_inst  = summary.get("p_installed_kw")
+                    p_calc  = summary.get("p_calc_kw")
+                    i_vru   = summary.get("i_vru_a")
+                    cos_phi = summary.get("cos_phi")
+                    calc_at = res.get("calculated_at", "")[:10]
+
+                    # Заголовок карточки
+                    hdr_col, stage_col = st.columns([4, 1])
+                    hdr_col.markdown(f"**{code}** — {name[:35]}")
+                    stage_col.markdown(f"`{stage}`" if stage else "")
+
+                    st.divider()
+
+                    if calc_ok:
+                        r1c1, r1c2 = st.columns(2)
+                        r1c1.write(f"⚡ Pуст: **{p_inst:.1f} кВт**" if p_inst is not None else "⚡ Pуст: —")
+                        r1c2.write(f"Pрасч: **{p_calc:.1f} кВт**"   if p_calc is not None else "Pрасч: —")
+
+                        r2c1, r2c2 = st.columns(2)
+                        r2c1.write(f"🔌 Iвру: **{i_vru:.1f} А**"    if i_vru   is not None else "🔌 Iвру: —")
+                        r2c2.write(f"cos φ: **{cos_phi:.3f}**"       if cos_phi is not None else "cos φ: —")
+
+                        r3c1, r3c2 = st.columns(2)
+                        r3c1.write(f"🏢 Кат. ПУЭ: **{cat}**")
+                        r3c2.write(f"Дата: {calc_at}" if calc_at else "")
+                    else:
+                        st.warning("Расчёт не выполнен")
+
+                    if st.button("→ Открыть", key=f"open_{code}"):
+                        st.session_state["active_project"] = str(d)
+                        st.rerun()
+
     st.stop()
 
 
