@@ -270,6 +270,18 @@ with tab_summary:
                     "Автомат": f"{pb.get('rating','')}А {pb.get('char','')}",
                 })
             st.dataframe(data, width="stretch", hide_index=True)
+            
+            # Фазовый баланс фидера
+            pb = feeder.get("phase_balance")
+            if pb:
+                with st.expander("⚖️ Фазовый баланс", expanded=False):
+                    imb = pb.get("imbalance_pct", 0)
+                    col_a, col_b, col_c, col_d = st.columns(4)
+                    col_a.metric("Iа, А", f"{pb['A']['i_a']:.1f}")
+                    col_b.metric("Iб, А", f"{pb['B']['i_a']:.1f}")
+                    col_c.metric("Iс, А", f"{pb['C']['i_a']:.1f}")
+                    color = "🟢" if imb < 10 else ("🟡" if imb < 20 else "🔴")
+                    col_d.metric(f"{color} Дисбаланс", f"{imb:.1f}%")
     else:
         st.warning("Проект ещё не рассчитан. Нажми **Пересчитать всё**.")
 
@@ -598,6 +610,15 @@ with tab_data:
             if st.button("🗑️ Удалить щит", key=f"del_panel_{fi_s}_{pi_s}", type="secondary"):
                 st.session_state[f"confirm_del_{fi_s}_{pi_s}"] = True
 
+        # Кнопка автобаланса фаз
+        if st.button("⚖️ Авто-баланс фаз этого щита", key=f"balance_ph_{fi_s}_{pi_s}"):
+            out, err, rc = run_cli(["balance-phases", str(proj_dir)])
+            if rc == 0:
+                st.success("Фазы назначены. Нажми Пересчитать всё.")
+                st.rerun()
+            else:
+                st.error(err)
+
         if st.session_state.get(f"confirm_del_{fi_s}_{pi_s}"):
             st.warning(f"Удалить щит **{panel_s.get('id')}** со всеми потребителями?")
             c1, c2 = st.columns(2)
@@ -634,6 +655,7 @@ with tab_data:
                 "demand_factor": c.get("demand_factor", 0.8),
                 "cos_phi":       c.get("cos_phi", 0.85),
                 "phases":        c.get("phases", 3),
+                "phase":         c.get("phase", "") if c.get("phases", 3) == 1 else "",
                 "start_factor":  c.get("start_factor", 1.0),
                 "reserve":       c.get("reserve", False),
             })
@@ -641,7 +663,7 @@ with tab_data:
         import pandas as pd
         df_s = pd.DataFrame(df_consumers_s) if df_consumers_s else pd.DataFrame(columns=[
             "id", "name", "type", "power_kw", "demand_factor", "cos_phi",
-            "phases", "start_factor", "reserve"
+            "phases", "phase", "start_factor", "reserve"
         ])
 
         edited_df_s = st.data_editor(
@@ -657,6 +679,10 @@ with tab_data:
                 "demand_factor": st.column_config.NumberColumn("kс", min_value=0.0, max_value=1.0, step=0.01),
                 "cos_phi":       st.column_config.NumberColumn("cosφ", min_value=0.01, max_value=1.0, step=0.01),
                 "phases":        st.column_config.SelectboxColumn("Фаз", options=[1, 3]),
+                "phase":         st.column_config.SelectboxColumn(
+                    "Фаза", options=["", "A", "B", "C"],
+                    help="Только для однофазных (phases=1). Пустое = авто."
+                ),
                 "start_factor":  st.column_config.NumberColumn("Iпуск/Iн", min_value=1.0, step=0.1),
                 "reserve":       st.column_config.CheckboxColumn("Резерв"),
             },
@@ -672,7 +698,7 @@ with tab_data:
                 if not cid:
                     continue
                 old_c = old_by_id.get(cid, {})
-                merged.append({
+                new_item = {
                     "id":            cid,
                     "name":          str(row.get("name", cid)),
                     "type":          str(row.get("type", "power")),
@@ -688,7 +714,13 @@ with tab_data:
                         "section_mm2": None, "length_m": 15,
                         "install": "лоток", "ambient_t": 25, "parallel": 1,
                     }),
-                })
+                }
+                # Добавить phase только для однофазных
+                if int(row.get("phases", 3)) == 1:
+                    phase_val = str(row.get("phase", "")).strip()
+                    if phase_val in ("A", "B", "C"):
+                        new_item["phase"] = phase_val
+                merged.append(new_item)
             panel_s["consumers"] = merged
             save_project(project, proj_dir)
             st.success(f"Сохранено {len(merged)} потребителей")

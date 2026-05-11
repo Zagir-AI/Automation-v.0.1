@@ -448,11 +448,11 @@
   "_meta": {
     "schema_version": "1.1",
     "created": "2025-04-18",
-    "last_modified": "2026-05-10",
+    "last_modified": "2026-05-11",
     "calc_done": true
   },
   "_results": {
-    "calculated_at": "2026-05-10T15:19:57.087693",
+    "calculated_at": "2026-05-11T13:37:09.522013",
     "vru": {
       "id": "ВРУ-1",
       "name": "ВРУ-1",
@@ -516,7 +516,8 @@
                     "type": "АВ 6А хар.C 3П",
                     "i_calc": 4.32
                   },
-                  "category_pue": 3
+                  "category_pue": 3,
+                  "phase": ""
                 },
                 {
                   "id": "ОС-02",
@@ -567,7 +568,8 @@
                     "type": "АВ 6А хар.C 3П",
                     "i_calc": 2.88
                   },
-                  "category_pue": 3
+                  "category_pue": 3,
+                  "phase": ""
                 }
               ],
               "n_consumers": 2,
@@ -612,6 +614,22 @@
                 "poles": 3,
                 "type": "АВ 10А хар.C 3П",
                 "i_calc": 7.2
+              },
+              "phase_balance": {
+                "A": {
+                  "p_kw": 1.5,
+                  "i_a": 7.2
+                },
+                "B": {
+                  "p_kw": 1.5,
+                  "i_a": 7.2
+                },
+                "C": {
+                  "p_kw": 1.5,
+                  "i_a": 7.2
+                },
+                "imbalance_pct": 0.0,
+                "imbalance_a": 0.0
               }
             }
           ],
@@ -619,7 +637,23 @@
           "s_calc_kva": 4.737,
           "cos_phi": 0.95,
           "ku": 1.0,
-          "i_calc_a": 7.2
+          "i_calc_a": 7.2,
+          "phase_balance": {
+            "A": {
+              "p_kw": 1.5,
+              "i_a": 7.2
+            },
+            "B": {
+              "p_kw": 1.5,
+              "i_a": 7.2
+            },
+            "C": {
+              "p_kw": 1.5,
+              "i_a": 7.2
+            },
+            "imbalance_pct": 0.0,
+            "imbalance_a": 0.0
+          }
         },
         {
           "id": "Ф2",
@@ -680,7 +714,8 @@
                     "type": "АВ 6А хар.C 3П",
                     "i_calc": 3.8
                   },
-                  "category_pue": 3
+                  "category_pue": 3,
+                  "phase": ""
                 },
                 {
                   "id": "РЗ-02",
@@ -731,7 +766,8 @@
                     "type": "АВ 6А хар.C 3П",
                     "i_calc": 3.8
                   },
-                  "category_pue": 3
+                  "category_pue": 3,
+                  "phase": ""
                 },
                 {
                   "id": "ИТ-01",
@@ -782,7 +818,8 @@
                     "type": "АВ 10А хар.C 3П",
                     "i_calc": 8.55
                   },
-                  "category_pue": 3
+                  "category_pue": 3,
+                  "phase": ""
                 }
               ],
               "n_consumers": 3,
@@ -827,6 +864,22 @@
                 "poles": 3,
                 "type": "АВ 20А хар.C 3П",
                 "i_calc": 16.14
+              },
+              "phase_balance": {
+                "A": {
+                  "p_kw": 2.833,
+                  "i_a": 16.14
+                },
+                "B": {
+                  "p_kw": 2.833,
+                  "i_a": 16.14
+                },
+                "C": {
+                  "p_kw": 2.833,
+                  "i_a": 16.14
+                },
+                "imbalance_pct": 0.0,
+                "imbalance_a": 0.0
               }
             }
           ],
@@ -834,7 +887,23 @@
           "s_calc_kva": 10.625,
           "cos_phi": 0.8,
           "ku": 1.0,
-          "i_calc_a": 16.14
+          "i_calc_a": 16.14,
+          "phase_balance": {
+            "A": {
+              "p_kw": 2.833,
+              "i_a": 16.14
+            },
+            "B": {
+              "p_kw": 2.833,
+              "i_a": 16.14
+            },
+            "C": {
+              "p_kw": 2.833,
+              "i_a": 16.14
+            },
+            "imbalance_pct": 0.0,
+            "imbalance_a": 0.0
+          }
         },
         {
           "id": "Ф3",
@@ -895,7 +964,8 @@
                     "type": "АВ 16А хар.D 3П",
                     "i_calc": 14.3
                   },
-                  "category_pue": 3
+                  "category_pue": 3,
+                  "phase": ""
                 }
               ],
               "n_consumers": 1,
@@ -940,6 +1010,22 @@
                 "poles": 3,
                 "type": "АВ 16А хар.C 3П",
                 "i_calc": 14.3
+              },
+              "phase_balance": {
+                "A": {
+                  "p_kw": 2.667,
+                  "i_a": 14.3
+                },
+                "B": {
+                  "p_kw": 2.667,
+                  "i_a": 14.3
+                },
+                "C": {
+                  "p_kw": 2.667,
+                  "i_a": 14.3
+                },
+                "imbalance_pct": 0.0,
+                "imbalance_a": 0.0
               }
             }
           ],
@@ -947,7 +1033,23 @@
           "s_calc_kva": 9.412,
           "cos_phi": 0.85,
           "ku": 1.0,
-          "i_calc_a": 14.3
+          "i_calc_a": 14.3,
+          "phase_balance": {
+            "A": {
+              "p_kw": 2.667,
+              "i_a": 14.3
+            },
+            "B": {
+              "p_kw": 2.667,
+              "i_a": 14.3
+            },
+            "C": {
+              "p_kw": 2.667,
+              "i_a": 14.3
+            },
+            "imbalance_pct": 0.0,
+            "imbalance_a": 0.0
+          }
         },
         {
           "id": "Ф4",
@@ -1008,7 +1110,8 @@
                     "type": "АВ 6А хар.D 3П",
                     "i_calc": 4.29
                   },
-                  "category_pue": 2
+                  "category_pue": 2,
+                  "phase": ""
                 },
                 {
                   "id": "НО-02",
@@ -1059,7 +1162,8 @@
                     "type": "АВ 6А хар.D 3П",
                     "i_calc": 4.29
                   },
-                  "category_pue": 2
+                  "category_pue": 2,
+                  "phase": ""
                 }
               ],
               "n_consumers": 2,
@@ -1104,6 +1208,22 @@
                 "poles": 3,
                 "type": "АВ 6А хар.C 3П",
                 "i_calc": 4.29
+              },
+              "phase_balance": {
+                "A": {
+                  "p_kw": 0.8,
+                  "i_a": 8.58
+                },
+                "B": {
+                  "p_kw": 0.8,
+                  "i_a": 8.58
+                },
+                "C": {
+                  "p_kw": 0.8,
+                  "i_a": 8.58
+                },
+                "imbalance_pct": 0.0,
+                "imbalance_a": 0.0
               }
             }
           ],
@@ -1111,7 +1231,23 @@
           "s_calc_kva": 2.824,
           "cos_phi": 0.85,
           "ku": 1.0,
-          "i_calc_a": 4.29
+          "i_calc_a": 4.29,
+          "phase_balance": {
+            "A": {
+              "p_kw": 0.8,
+              "i_a": 8.58
+            },
+            "B": {
+              "p_kw": 0.8,
+              "i_a": 8.58
+            },
+            "C": {
+              "p_kw": 0.8,
+              "i_a": 8.58
+            },
+            "imbalance_pct": 0.0,
+            "imbalance_a": 0.0
+          }
         },
         {
           "id": "Ф5",
@@ -1172,7 +1308,8 @@
                     "type": "АВ 10А хар.D 3П",
                     "i_calc": 7.87
                   },
-                  "category_pue": 2
+                  "category_pue": 2,
+                  "phase": ""
                 },
                 {
                   "id": "ВВ-01",
@@ -1223,7 +1360,8 @@
                     "type": "АВ 10А хар.D 3П",
                     "i_calc": 5.72
                   },
-                  "category_pue": 2
+                  "category_pue": 2,
+                  "phase": ""
                 }
               ],
               "n_consumers": 2,
@@ -1268,6 +1406,22 @@
                 "poles": 3,
                 "type": "АВ 16А хар.C 3П",
                 "i_calc": 13.58
+              },
+              "phase_balance": {
+                "A": {
+                  "p_kw": 2.533,
+                  "i_a": 13.59
+                },
+                "B": {
+                  "p_kw": 2.533,
+                  "i_a": 13.59
+                },
+                "C": {
+                  "p_kw": 2.533,
+                  "i_a": 13.59
+                },
+                "imbalance_pct": 0.0,
+                "imbalance_a": 0.0
               }
             },
             {
@@ -1324,7 +1478,8 @@
                     "type": "АВ 16А хар.D 3П",
                     "i_calc": 13.41
                   },
-                  "category_pue": 1
+                  "category_pue": 1,
+                  "phase": ""
                 },
                 {
                   "id": "ВДУ-02",
@@ -1375,7 +1530,8 @@
                     "type": "АВ 16А хар.D 3П",
                     "i_calc": 13.41
                   },
-                  "category_pue": 1
+                  "category_pue": 1,
+                  "phase": ""
                 }
               ],
               "n_consumers": 2,
@@ -1420,6 +1576,22 @@
                 "poles": 3,
                 "type": "АВ 16А хар.C 3П",
                 "i_calc": 13.41
+              },
+              "phase_balance": {
+                "A": {
+                  "p_kw": 2.5,
+                  "i_a": 26.81
+                },
+                "B": {
+                  "p_kw": 2.5,
+                  "i_a": 26.81
+                },
+                "C": {
+                  "p_kw": 2.5,
+                  "i_a": 26.81
+                },
+                "imbalance_pct": 0.0,
+                "imbalance_a": 0.0
               }
             }
           ],
@@ -1427,7 +1599,23 @@
           "s_calc_kva": 17.765,
           "cos_phi": 0.85,
           "ku": 1.0,
-          "i_calc_a": 26.99
+          "i_calc_a": 26.99,
+          "phase_balance": {
+            "A": {
+              "p_kw": 5.0329999999999995,
+              "i_a": 40.4
+            },
+            "B": {
+              "p_kw": 5.0329999999999995,
+              "i_a": 40.4
+            },
+            "C": {
+              "p_kw": 5.0329999999999995,
+              "i_a": 40.4
+            },
+            "imbalance_pct": 0.0,
+            "imbalance_a": 0.0
+          }
         }
       ],
       "p_installed_kw": 58.5,
@@ -1468,6 +1656,22 @@
         "poles": 3,
         "type": "АВ 80А хар.C 3П",
         "i_calc": 68.66
+      },
+      "phase_balance": {
+        "A": {
+          "p_kw": 12.832999999999998,
+          "i_a": 86.62
+        },
+        "B": {
+          "p_kw": 12.832999999999998,
+          "i_a": 86.62
+        },
+        "C": {
+          "p_kw": 12.832999999999998,
+          "i_a": 86.62
+        },
+        "imbalance_pct": 0.0,
+        "imbalance_a": 0.0
       }
     },
     "summary": {
@@ -1619,7 +1823,7 @@
     "has_avr": true,
     "compliance_ok": true,
     "violations": 0,
-    "last_check": "2026-05-10"
+    "last_check": "2026-05-11"
   },
   "_vru_snapshot": {
     "id": "ВРУ-1",

@@ -65,9 +65,21 @@ python-docx · openpyxl · ezdxf
    - cable merge через `panel_s["cable"].update({...})`, не полная перезапись
    - consumer cable preservation: `old_by_id = {c.get("id"): c for c in consumers_s}`
    - Регрессия DEMO: Pуст=58.5кВт Iвру=68.66А cosφ=0.852 ✅
+9. ✅ Нормативное соответствие СП 256 / РТМ 36.18.32.4-92
+   - data/demand_factors/sp256_factors.py: +8 типов (smoke_fan/fire_pump/emergency_lighting ks=1.0)
+   - data/cables/pue_tables.py: get_grouping_factor() (ПУЭ 7, табл.1.3.7), get_min_section()
+   - rules/category_rules.py: check_all_compliance() возвращает "severity": "error"|"warning"
+   - Регрессия DEMO: ✅
+10. ✅ ABC автобаланс фаз однофазных потребителей
+    - panels/phase_balance.py: auto_assign_phases() жадный алгоритм, calc_phase_balance()
+    - calc/engine.py: интеграция в calc_panel/calc_feeder/calc_vru, _aggregate_phase_balance()
+    - cli.py: команда balance-phases <path> — назначает фазы + таблица IA/IB/IC/дисб%
+    - ui/app.py: expander "⚖️ Фазовый баланс" в tab_summary, кнопка + колонка Фаза в sub_settings
+    - Идемпотентность: повторный вызов не перезаписывает уже назначенные фазы
+    - Регрессия DEMO: ✅
 
 ## В очереди
-9. (следующая задача — из ROADMAP.md)
+11. (следующая задача — из ROADMAP.md)
 
 ---
 
