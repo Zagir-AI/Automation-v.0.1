@@ -31,6 +31,7 @@ from data.breakers.breaker_tables import (
 from data.demand_factors.sp256_factors import (
     DEFAULT_DEMAND_FACTORS, get_simultaneous_factor, MAX_VOLTAGE_DROP
 )
+from panels.phase_balance import auto_assign_phases, calc_phase_balance
 
 U_PHASE = 220.0   # В — фазное напряжение
 U_LINE  = 380.0   # В — линейное напряжение
@@ -395,7 +396,7 @@ def calc_panel(panel: dict, building: dict | None = None, isc_ka: float = 10.0) 
             через импеданс питающего кабеля (_calc_isc_end).
     reserve=True потребители: кабель и автомат подбираются, но НЕ суммируются в нагрузку.
     """
-    consumers = panel.get("consumers", [])
+    consumers = auto_assign_phases(panel.get("consumers", []))
     p_calc_total = 0.0
     q_calc_total = 0.0
 
@@ -501,6 +502,7 @@ def calc_panel(panel: dict, building: dict | None = None, isc_ka: float = 10.0) 
             "cable":        cable_result,
             "breaker":      breaker_result,
             "category_pue": c.get("category_pue", panel.get("category_pue", 3)),
+            "phase":        c.get("phase", ""),
         })
 
     return {
@@ -517,12 +519,41 @@ def calc_panel(panel: dict, building: dict | None = None, isc_ka: float = 10.0) 
         "i_calc_a": i_panel,
         "cable": panel_cable_result,
         "breaker": panel_breaker,
+        "phase_balance": calc_phase_balance(results_consumers),
     }
 
 
 # ─────────────────────────────────────────────
 #  УРОВЕНЬ 3: ФИДЕР
 # ─────────────────────────────────────────────
+
+def _aggregate_phase_balance(balances: list[dict]) -> dict:
+    """Суммирует phase_balance нескольких щитов в один."""
+    totals = {
+        "A": {"p_kw": 0.0, "i_a": 0.0},
+        "B": {"p_kw": 0.0, "i_a": 0.0},
+        "C": {"p_kw": 0.0, "i_a": 0.0}
+    }
+    
+    for b in balances:
+        if not b:
+            continue
+        for ph in ("A", "B", "C"):
+            totals[ph]["p_kw"] += b.get(ph, {}).get("p_kw", 0)
+            totals[ph]["i_a"] += b.get(ph, {}).get("i_a", 0)
+    
+    avg = (totals["A"]["i_a"] + totals["B"]["i_a"] + totals["C"]["i_a"]) / 3
+    imb_pct = ((max(totals[ph]["i_a"] for ph in "ABC") - 
+                min(totals[ph]["i_a"] for ph in "ABC")) / avg * 100) if avg > 0 else 0
+    imb_a = (max(totals[ph]["i_a"] for ph in "ABC") - 
+             min(totals[ph]["i_a"] for ph in "ABC"))
+    
+    return {
+        **totals,
+        "imbalance_pct": round(imb_pct, 1),
+        "imbalance_a": round(imb_a, 2)
+    }
+
 
 def calc_feeder(feeder: dict, building: dict | None = None, isc_ka: float = 10.0) -> dict:
     """Расчёт фидера: суммирует щиты."""
@@ -557,6 +588,7 @@ def calc_feeder(feeder: dict, building: dict | None = None, isc_ka: float = 10.0
         "cos_phi": round(cos_phi_f, 3),
         "ku": round(ku, 3),
         "i_calc_a": round(i_feeder, 2),
+        "phase_balance": _aggregate_phase_balance([p["phase_balance"] for p in panels_results]),
     }
 
 
@@ -627,6 +659,7 @@ def calc_vru(vru: dict, building: dict | None = None) -> dict:
         "i_calc_a": round(i_vru, 2),
         "incoming_cable": vru_cable_result,
         "breaker": vru_breaker,
+        "phase_balance": _aggregate_phase_balance([f["phase_balance"] for f in feeders_results]),
     }
 
 

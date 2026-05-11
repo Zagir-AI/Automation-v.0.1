@@ -981,6 +981,48 @@ def cmd_import(args):
     print(info(f"Запусти расчёт: python cli.py calc {args.path}"))
 
 
+def cmd_balance_phases(args):
+    """
+    Назначает фазы однофазным потребителям во всех щитах проекта.
+    Записывает поле "phase" в consumers в project.json.
+    Существующие назначения не перезаписываются (идемпотентно).
+    Выводит сводку: щит | IA | IB | IC | дисбаланс%
+    """
+    proj_dir = find_project_dir(args.path)
+    project = load_project(proj_dir)
+    
+    from panels.phase_balance import auto_assign_phases
+    from calc.engine import calculate_project
+    
+    changed = 0
+    for feeder in project["vru"].get("feeders", []):
+        for panel in feeder.get("panels", []):
+            old_consumers = panel.get("consumers", [])
+            new_consumers = auto_assign_phases(old_consumers)
+            # Записываем только изменившиеся phase
+            for old_c, new_c in zip(old_consumers, new_consumers):
+                if new_c.get("phase") and not old_c.get("phase"):
+                    old_c["phase"] = new_c["phase"]
+                    changed += 1
+    
+    save_project(project, proj_dir)
+    print(ok(f"Назначено фаз: {changed}"))
+    
+    # Пересчитать и вывести сводку phase_balance
+    calculate_project(project)   # обновляет project["_results"] in-place
+    
+    print(f"\n{'Щит':<12} {'IA,А':>7} {'IB,А':>7} {'IC,А':>7} {'Дисб,%':>8}")
+    print("-" * 50)
+    for feeder in project['_results']['vru']['feeders']:
+        for panel in feeder['panels']:
+            pb = panel.get('phase_balance', {})
+            print(f"{panel['id']:<12} "
+                  f"{pb.get('A',{}).get('i_a',0):>7.1f} "
+                  f"{pb.get('B',{}).get('i_a',0):>7.1f} "
+                  f"{pb.get('C',{}).get('i_a',0):>7.1f} "
+                  f"{pb.get('imbalance_pct',0):>7.1f}%")
+
+
 def cmd_compare_kp(args):
     """Сверка спецификации проекта с КП поставщика."""
     from parsers.compare_kp import compare_kp
@@ -1258,6 +1300,10 @@ def main():
                         choices=["cable","panel","load","general","calc","drawing"],
                         help="Категория изменения [general]")
 
+    # balance-phases
+    p_bal = sub.add_parser("balance-phases", help="Автобаланс фаз однофазных потребителей")
+    p_bal.add_argument("path", help="Путь к папке проекта или код")
+
     # compare-kp
     p_kp = sub.add_parser("compare-kp",
                           help="Сверка спецификации проекта с КП поставщика")
@@ -1286,6 +1332,7 @@ def main():
         "update-attribs":     cmd_update_attribs,
         "number-cables":      cmd_number_cables,
         "change":             cmd_change,
+        "balance-phases":     cmd_balance_phases,
         "compare-kp":         cmd_compare_kp,
     }
 
