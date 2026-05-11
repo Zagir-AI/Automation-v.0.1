@@ -701,6 +701,13 @@ def calculate_project(project: dict) -> dict:
         except Exception as e:
             result["_results"]["outdoor_error"] = str(e)
 
+    if project.get("rooms"):
+        try:
+            from lighting.calc_illumination import calc_all_illumination
+            calc_all_illumination(result)
+        except Exception as e:
+            result["_results"]["illumination_error"] = str(e)
+
     # Категорийность здания и схема ВРУ (ПУЭ гл.1.2)
     try:
         from rules.category_rules import update_building_meta

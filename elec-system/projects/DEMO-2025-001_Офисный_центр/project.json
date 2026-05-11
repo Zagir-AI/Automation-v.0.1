@@ -452,7 +452,7 @@
     "calc_done": true
   },
   "_results": {
-    "calculated_at": "2026-05-11T14:48:45.874310",
+    "calculated_at": "2026-05-11T14:56:30.984062",
     "vru": {
       "id": "ВРУ-1",
       "name": "ВРУ-1",
@@ -1761,23 +1761,44 @@
         ]
       }
     ],
-    "earthwork": [
+    "illumination": [
       {
-        "length_m": 80.0,
-        "n_cables": 1,
-        "width_m": 0.3,
-        "depth_m": 0.7,
-        "soil_type": "суглинок",
-        "protection": "кирпич",
-        "v_excavation_m3": 16.8,
-        "v_loose_m3": 20.16,
-        "v_sand_m3": 4.8,
-        "v_backfill_m3": 12.0,
-        "n_bricks": 240,
-        "n_slabs": 0,
-        "depth_min_pue_m": 0.7,
-        "network_id": "ОН-1",
-        "network_name": "Наружное освещение паркинга"
+        "id": "ПМ-101",
+        "name": "Переговорная 101",
+        "type": "переговорная",
+        "length_m": 8.0,
+        "width_m": 6.0,
+        "height_m": 3.0,
+        "s_m2": 48.0,
+        "room_index": 1.558,
+        "uf": 0.516,
+        "rho_corr": 1.0,
+        "n_luminaires": 18,
+        "flux_lm": 3200.0,
+        "e_fact_lx": 375.2,
+        "e_norm_lx": 300,
+        "ok": true,
+        "deficit_pct": 0,
+        "n_required": 15
+      },
+      {
+        "id": "КР-001",
+        "name": "Коридор 1 этаж",
+        "type": "коридор",
+        "length_m": 20.0,
+        "width_m": 2.5,
+        "height_m": 3.0,
+        "s_m2": 50.0,
+        "room_index": 0.741,
+        "uf": 0.349,
+        "rho_corr": 0.925,
+        "n_luminaires": 8,
+        "flux_lm": 1200.0,
+        "e_fact_lx": 37.6,
+        "e_norm_lx": 100,
+        "ok": false,
+        "deficit_pct": 62.4,
+        "n_required": 22
       }
     ]
   },
@@ -2248,5 +2269,37 @@
         ]
       }
     ]
-  }
+  },
+  "rooms": [
+    {
+      "id": "ПМ-101",
+      "name": "Переговорная 101",
+      "type": "переговорная",
+      "length_m": 8.0,
+      "width_m": 6.0,
+      "height_m": 3.0,
+      "h_work_m": 0.8,
+      "n_luminaires": 18,
+      "luminous_flux_lm": 3200,
+      "rho_ceil": 0.7,
+      "rho_wall": 0.5,
+      "kz": 1.5,
+      "z": 1.1
+    },
+    {
+      "id": "КР-001",
+      "name": "Коридор 1 этаж",
+      "type": "коридор",
+      "length_m": 20.0,
+      "width_m": 2.5,
+      "height_m": 3.0,
+      "h_work_m": 0.0,
+      "n_luminaires": 8,
+      "luminous_flux_lm": 1200,
+      "rho_ceil": 0.5,
+      "rho_wall": 0.3,
+      "kz": 1.5,
+      "z": 1.1
+    }
+  ]
 }

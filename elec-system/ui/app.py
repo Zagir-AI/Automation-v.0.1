@@ -896,31 +896,64 @@ with tab_results:
     if not calc_done or not results:
         st.warning("Нет результатов расчёта.")
     else:
-        vru_r = results.get("vru", {})
-        for feeder in vru_r.get("feeders", []):
-            with st.expander(f"{feeder['id']} — {feeder['name']} "
-                             f"| Pр={feeder['p_calc_kw']:.1f} кВт | Iр={feeder['i_calc_a']:.1f} А",
-                             expanded=True):
-                for panel in feeder.get("panels", []):
-                    st.markdown(f"**{panel['id']} {panel['name']}** "
-                                f"(Iр={panel['i_calc_a']:.1f} А, n={panel['n_consumers']} потр.)")
-                    data = []
-                    for c in panel.get("consumers", []):
-                        cc = c.get("cable", {})
-                        cb = c.get("breaker", {})
-                        du = cc.get("voltage_drop_pct", 0)
-                        data.append({
-                            "ID": c["id"],
-                            "Потребитель": c["name"],
-                            "Pн, кВт": c["power_kw"],
-                            "Кд": c["demand_factor"],
-                            "Iр, А": c["i_calc_a"],
-                            "Кабель": f"{cc.get('mark','')} {cc.get('cores','')}×{cc.get('section_mm2','')}",
-                            "L, м": cc.get("length_m",""),
-                            "ΔU, %": f"{'⚠️' if du>5 else ''}{du}",
-                            "Автомат": f"{cb.get('rating','')}А {cb.get('char','')}",
-                        })
-                    st.dataframe(data, width="stretch", hide_index=True)
+        sub_panels, sub_illum = st.tabs(["Щиты и потребители", "💡 Освещённость"])
+
+        with sub_panels:
+            vru_r = results.get("vru", {})
+            for feeder in vru_r.get("feeders", []):
+                with st.expander(f"{feeder['id']} — {feeder['name']} "
+                                 f"| Pр={feeder['p_calc_kw']:.1f} кВт | Iр={feeder['i_calc_a']:.1f} А",
+                                 expanded=True):
+                    for panel in feeder.get("panels", []):
+                        st.markdown(f"**{panel['id']} {panel['name']}** "
+                                    f"(Iр={panel['i_calc_a']:.1f} А, n={panel['n_consumers']} потр.)")
+                        data = []
+                        for c in panel.get("consumers", []):
+                            cc = c.get("cable", {})
+                            cb = c.get("breaker", {})
+                            du = cc.get("voltage_drop_pct", 0)
+                            data.append({
+                                "ID": c["id"],
+                                "Потребитель": c["name"],
+                                "Pн, кВт": c["power_kw"],
+                                "Кд": c["demand_factor"],
+                                "Iр, А": c["i_calc_a"],
+                                "Кабель": f"{cc.get('mark','')} {cc.get('cores','')}×{cc.get('section_mm2','')}",
+                                "L, м": cc.get("length_m",""),
+                                "ΔU, %": f"{'⚠️' if du>5 else ''}{du}",
+                                "Автомат": f"{cb.get('rating','')}А {cb.get('char','')}",
+                            })
+                        st.dataframe(data, width="stretch", hide_index=True)
+
+        with sub_illum:
+            illum = results.get("illumination", [])
+            if illum_err := results.get("illumination_error"):
+                st.error(f"Ошибка расчёта освещённости: {illum_err}")
+            elif not illum:
+                st.info("Нет данных об освещённости. Добавьте блок 'rooms' в project.json.")
+            else:
+                n_ok   = sum(1 for r in illum if r["ok"])
+                n_fail = len(illum) - n_ok
+                c1, c2, c3 = st.columns(3)
+                c1.metric("Помещений", len(illum))
+                c2.metric("Соответствует норме", n_ok)
+                c3.metric("Дефицит освещённости", n_fail, delta=f"-{n_fail}" if n_fail else None,
+                          delta_color="inverse")
+
+                rows = []
+                for r in illum:
+                    rows.append({
+                        "ID":          r["id"],
+                        "Помещение":   r["name"],
+                        "Тип":         r["type"],
+                        "S, м²":       r["s_m2"],
+                        "Индекс i":    r["room_index"],
+                        "КИ":          r["uf"],
+                        "Eфакт, лк":   r["e_fact_lx"],
+                        "Eнорм, лк":   r["e_norm_lx"],
+                        "Статус":      "OK" if r["ok"] else f"−{r['deficit_pct']:.0f}% (нужно {r['n_required']} св.)",
+                    })
+                st.dataframe(rows, hide_index=True, use_container_width=True)
 
 
 # ── Вкладка: Кабели ─────────────────────────────────────────────────

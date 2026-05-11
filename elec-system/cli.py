@@ -503,6 +503,43 @@ def cmd_earthwork(args):
     print(ok(f"Результаты сохранены в _results.earthwork"))
 
 
+def cmd_illumination(args):
+    """Расчёт освещённости помещений методом КИ (СП 52.13330.2016)."""
+    from lighting.calc_illumination import calc_all_illumination
+
+    proj_dir = find_project_dir(args.path)
+    project  = load_project(proj_dir)
+
+    rooms = project.get("rooms", [])
+    if not rooms:
+        print(warn("Нет блока 'rooms' в project.json"))
+        return
+
+    results = calc_all_illumination(project)
+    save_project(project, proj_dir)
+
+    print(hdr("Освещённость помещений (СП 52.13330.2016)"))
+    print(f"  {'ID':<10} {'Помещение':<25} {'S,м²':>6} {'i':>5} "
+          f"{'Eфакт,лк':>9} {'Eнорм,лк':>9} {'Статус':>10}")
+    print("  " + "─" * 82)
+
+    for r in results:
+        status = ok("OK") if r["ok"] else warn(f"−{r['deficit_pct']:.0f}%")
+        note   = "" if r["ok"] else f"  (нужно ≥{r['n_required']} св.)"
+        print(f"  {r['id']:<10} {r['name']:<25} {r['s_m2']:>6.1f} "
+              f"{r['room_index']:>5.2f} {r['e_fact_lx']:>9.1f} "
+              f"{r['e_norm_lx']:>9d} {status:>10}{note}")
+
+    total    = len(results)
+    n_ok     = sum(1 for r in results if r["ok"])
+    n_fail   = total - n_ok
+    print("  " + "─" * 82)
+    print(f"  Помещений: {total}  |  Соответствует норме: {n_ok}  "
+          f"|  Дефицит: {n_fail}")
+    print()
+    print(ok("Результаты сохранены в _results.illumination"))
+
+
 def cmd_summary(args):
     """Краткая сводка по рассчитанному проекту."""
     proj_dir = find_project_dir(args.path)
@@ -1290,6 +1327,11 @@ def main():
                            help="Расчёт земляных работ для кабельных траншей")
     p_ew.add_argument("path", help="Путь к папке проекта или код")
 
+    # illumination
+    p_illum = sub.add_parser("illumination",
+                              help="Расчёт освещённости помещений (СП 52.13330.2016)")
+    p_illum.add_argument("path", help="Путь к папке проекта или код")
+
     # summary
     p_sum = sub.add_parser("summary", help="Краткая сводка результатов")
     p_sum.add_argument("path", help="Путь к папке проекта или код")
@@ -1390,6 +1432,7 @@ def main():
         "calc":               cmd_calc,
         "calc-outdoor":       cmd_calc_outdoor,
         "earthwork":          cmd_earthwork,
+        "illumination":       cmd_illumination,
         "summary":            cmd_summary,
         "validate":           cmd_validate,
         "docs":               cmd_docs,
