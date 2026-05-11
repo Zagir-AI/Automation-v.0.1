@@ -571,22 +571,34 @@ def cmd_number_cables(args):
 
 
 def cmd_sld(args):
-    """Генерация однолинейной схемы в DXF."""
-    from dwg.create_test_sld import create_test_sld
+    """Генерация детальных однолинейных схем щитов (DXF, ГОСТ 21.608)."""
+    from dwg.gen_sld import generate_panel_sld, generate_all_sld
 
     proj_dir = find_project_dir(args.path)
     project  = load_project(proj_dir)
     project  = _ensure_calc(project, proj_dir)
 
     p_name = project.get("project", {}).get("name", "")
-    print(hdr(f"Однолинейная схема: {p_name}"))
+    print(hdr(f"Однолинейные схемы щитов: {p_name}"))
 
     dwg_dir = proj_dir / "dwg"
     dwg_dir.mkdir(exist_ok=True)
 
-    out = create_test_sld(project, dwg_dir)
-    print(ok(f"Однолинейка: {out.name}"))
-    print(info(f"Файл: {out}"))
+    if args.panel:
+        path = generate_panel_sld(project, args.panel, dwg_dir)
+        if path:
+            print(ok(f"Схема создана: {path.name}"))
+            print(info(f"Файл: {path}"))
+        else:
+            print(warn("ezdxf не установлен. Установи: pip install ezdxf"))
+    else:
+        paths = generate_all_sld(project, dwg_dir)
+        if paths:
+            for p in paths:
+                print(ok(f"  {p.name}"))
+            print(info(f"Всего схем: {len(paths)}"))
+        else:
+            print(warn("ezdxf не установлен. Установи: pip install ezdxf"))
 
 
 def cmd_update_attribs(args):
@@ -1278,8 +1290,9 @@ def main():
     p_stamp.add_argument("--value", help="Новое значение поля")
 
     # sld
-    p_sld = sub.add_parser("sld", help="Генерировать однолинейную схему (DXF)")
-    p_sld.add_argument("path", help="Путь к папке проекта или код")
+    p_sld = sub.add_parser("sld", help="Однолинейные схемы щитов (DXF, ГОСТ 21.608)")
+    p_sld.add_argument("path",    help="Путь к папке проекта или код")
+    p_sld.add_argument("--panel", default=None, help="ID щита (по умолчанию — все щиты)")
 
     # update-attribs
     p_ua = sub.add_parser("update-attribs", help="Синхронизировать атрибуты блоков DXF")

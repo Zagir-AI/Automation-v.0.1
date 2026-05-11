@@ -1022,6 +1022,33 @@ with tab_docs:
 
     st.divider()
 
+    # ── Однолинейные схемы щитов (DXF) ───────────────────────────────
+    st.subheader("📐 Однолинейные схемы щитов (DXF)")
+    col_sld1, col_sld2 = st.columns(2)
+    with col_sld1:
+        if st.button("📐 Сгенерировать все схемы (DXF)", key="sld_all"):
+            with st.spinner("Генерация DXF..."):
+                out, err_txt, rc = run_cli(["sld", str(proj_dir)])
+            if rc == 0:
+                st.success("Схемы созданы в папке dwg/")
+            else:
+                st.error(err_txt or out)
+    with col_sld2:
+        dwg_dir_ui = proj_dir / "dwg"
+        dxf_files = sorted(dwg_dir_ui.glob("*_sld.dxf")) if dwg_dir_ui.exists() else []
+        if dxf_files:
+            sel_name = st.selectbox("Скачать файл", [f.name for f in dxf_files],
+                                    key="sld_dl_sel")
+            chosen = next((f for f in dxf_files if f.name == sel_name), None)
+            if chosen:
+                st.download_button("⬇ Скачать DXF", chosen.read_bytes(),
+                                   file_name=chosen.name, mime="application/dxf",
+                                   key="sld_dl_btn")
+        else:
+            st.caption("Нажми кнопку генерации — затем здесь появятся файлы для скачивания.")
+
+    st.divider()
+
     # ── Листинг файлов ───────────────────────────────────────────────
     st.subheader("Сгенерированные документы")
 
