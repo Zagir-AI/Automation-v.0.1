@@ -105,8 +105,20 @@ python-docx · openpyxl · ezdxf
     - cli.py: команда earthwork <path> с табличным отчётом
     - Регрессия DEMO: Pуст=58.5кВт Iвру=68.66А ✅
 
+15. ✅ Расчёт освещённости помещений (метод КИ, СП 52.13330.2016)
+    - lighting/calc_illumination.py: SP52_NORMS (11 типов), UF_TABLE (10 точек, линейная интерполяция)
+    - Поправки на rho_ceil/rho_wall, коэф. запаса kz=1.5, z=1.1
+    - calc_room() → i, η, Eфакт, Eнорм, ok/under, deficit_pct, n_required
+    - calc_all_illumination() → _results.illumination
+    - calc/engine.py: интеграция после calc_outdoor, в try/except
+    - cli.py: команда illumination с табличным отчётом ✓/⚠
+    - ui/app.py: tab_results разбит на 2 суб-вкладки "Щиты и потребители" + "💡 Освещённость"
+    - DEMO: ПМ-101 Переговорная 375 лк ≥ 300 OK; КР-001 Коридор 38 лк < 100 (−62%, нужно 22 св.)
+    - Поле в JSON: luminous_flux_lm (отличается от промпта luminaire_flux_lm — внутренне согласовано)
+    - Регрессия DEMO: Pуст=58.5кВт Iвру=68.66А ✅
+
 ## В очереди
-15. (следующая задача — Расчёт освещённости — из ROADMAP.md)
+Все задачи из ROADMAP.md завершены (задачи #1–15). Проект в актуальном состоянии.
 
 ---
 
