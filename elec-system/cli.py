@@ -24,6 +24,12 @@ import argparse
 import copy
 from pathlib import Path
 
+# Windows cp1251 не умеет печатать Unicode-символы — переключаем stdout на utf-8
+if sys.platform == "win32":
+    import io
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", errors="replace")
+
 # ── пути ────────────────────────────────────────────────────────────
 ROOT = Path(__file__).parent
 PROJECTS_DIR = ROOT / "projects"
