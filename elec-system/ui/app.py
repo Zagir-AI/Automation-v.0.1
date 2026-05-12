@@ -337,8 +337,8 @@ with col_btns:
 
 
 # Вкладки
-tab_summary, tab_data, tab_results, tab_cables, tab_changes, tab_docs = st.tabs([
-    "📊 Сводка", "✏️ Данные", "🔢 Расчёт", "⚡ Кабели", "📝 Изменения", "📁 Документы"
+tab_summary, tab_data, tab_results, tab_cables, tab_changes, tab_docs, tab_settings = st.tabs([
+    "📊 Сводка", "✏️ Данные", "🔢 Расчёт", "⚡ Кабели", "📝 Изменения", "📁 Документы", "⚙️ Настройки"
 ])
 
 
@@ -1341,3 +1341,122 @@ with tab_docs:
             st.info("Документов пока нет. Нажми одну из кнопок генерации выше.")
     else:
         st.info("Папка docs/ не создана. Нажми одну из кнопок генерации выше.")
+
+
+# ── Вкладка: Настройки ──────────────────────────────────────────────
+
+with tab_settings:
+    st.subheader("⚙️ Настройки проекта")
+
+    _proj_cfg = project.setdefault("project", {})
+    _vru_cfg  = project.setdefault("vru", {})
+
+    with st.form("project_settings_form"):
+
+        # ── 1. Свойства проекта ──────────────────────────────────────
+        st.markdown("### 📋 Свойства проекта")
+        col1, col2 = st.columns(2)
+        with col1:
+            s_code = st.text_input(
+                "Код объекта",
+                value=_proj_cfg.get("code", ""),
+                disabled=True,
+                help="Код объекта менять нельзя — он входит в имя папки.",
+            )
+            s_name = st.text_input("Название объекта", value=_proj_cfg.get("name", ""))
+            s_address = st.text_input("Адрес", value=_proj_cfg.get("address", ""))
+            s_city = st.text_input("Город", value=_proj_cfg.get("city", ""))
+        with col2:
+            STAGES = ["Р", "П", "РД", "ЭП", "ТЭО"]
+            _cur_stage = _proj_cfg.get("stage", "Р")
+            s_stage = st.selectbox(
+                "Стадия проектирования",
+                STAGES,
+                index=STAGES.index(_cur_stage) if _cur_stage in STAGES else 0,
+            )
+            s_org = st.text_input("Организация", value=_proj_cfg.get("org", ""))
+            s_object_type = st.text_input(
+                "Тип объекта", value=_proj_cfg.get("object_type", "")
+            )
+            s_notes = st.text_area(
+                "Примечания", value=_proj_cfg.get("notes", ""), height=80
+            )
+
+        st.divider()
+
+        # ── 2. Исполнители ───────────────────────────────────────────
+        st.markdown("### 👤 Исполнители (для штампа)")
+        col3, col4 = st.columns(2)
+        with col3:
+            s_designer  = st.text_input("Разработал",  value=_proj_cfg.get("designer", ""))
+            s_checker   = st.text_input("Проверил",    value=_proj_cfg.get("checker", ""))
+            s_norm_head = st.text_input("Нормоконтроль", value=_proj_cfg.get("norm_head", ""))
+        with col4:
+            s_gip = st.text_input("ГИП", value=_proj_cfg.get("gip", ""))
+            s_gap = st.text_input("ГАП", value=_proj_cfg.get("gap", ""))
+
+        st.divider()
+
+        # ── 3. Технические параметры ─────────────────────────────────
+        st.markdown("### ⚡ Технические параметры")
+        col5, col6 = st.columns(2)
+        with col5:
+            BREAKER_SERIES = ["IEK", "Schneider", "ABB", "DEKraft", "TDM"]
+            _cur_bs = _proj_cfg.get("breaker_series", "IEK")
+            s_breaker_series = st.selectbox(
+                "Серия автоматических выключателей",
+                BREAKER_SERIES,
+                index=BREAKER_SERIES.index(_cur_bs) if _cur_bs in BREAKER_SERIES else 0,
+                help="Влияет на обозначение АВ в спецификации и документах.",
+            )
+            SYSTEMS = ["TN-S", "TN-C-S", "TN-C", "TT", "IT"]
+            _cur_sys = _proj_cfg.get("system", "TN-S")
+            s_system = st.selectbox(
+                "Система заземления",
+                SYSTEMS,
+                index=SYSTEMS.index(_cur_sys) if _cur_sys in SYSTEMS else 0,
+            )
+        with col6:
+            s_isc_ka = st.number_input(
+                "Ток КЗ на шинах ВРУ, кА",
+                value=float(_vru_cfg.get("isc_ka", 10.0)),
+                min_value=0.1, max_value=50.0, step=0.1, format="%.2f",
+                help="Используется для проверки термостойкости кабелей и чувствительности защит.",
+            )
+            s_voltage_kv = st.number_input(
+                "Номинальное напряжение, кВ",
+                value=float(_proj_cfg.get("voltage_kv", 0.4)),
+                min_value=0.1, max_value=35.0, step=0.1, format="%.1f",
+            )
+            s_frequency = st.number_input(
+                "Частота, Гц",
+                value=int(_proj_cfg.get("frequency", 50)),
+                min_value=50, max_value=60, step=10,
+            )
+
+        st.divider()
+        submitted = st.form_submit_button("💾 Сохранить настройки", type="primary")
+
+    if submitted:
+        _proj_cfg.update({
+            "name":          s_name.strip(),
+            "address":       s_address.strip(),
+            "city":          s_city.strip(),
+            "stage":         s_stage,
+            "org":           s_org.strip(),
+            "object_type":   s_object_type.strip(),
+            "notes":         s_notes.strip(),
+            "designer":      s_designer.strip(),
+            "checker":       s_checker.strip(),
+            "norm_head":     s_norm_head.strip(),
+            "gip":           s_gip.strip(),
+            "gap":           s_gap.strip(),
+            "breaker_series": s_breaker_series,
+            "system":        s_system,
+            "voltage_kv":    float(s_voltage_kv),
+            "frequency":     int(s_frequency),
+        })
+        _vru_cfg["isc_ka"] = float(s_isc_ka)
+        save_project(project, proj_dir)
+        st.success("Настройки сохранены. Пересчитай проект чтобы применить изменения.")
+        st.rerun()
