@@ -549,6 +549,97 @@ with tab_data:
                 key=f"consumer_editor_{fi}_{pi}",
             )
 
+            # ── Генератор розеточной сети ────────────────────────────────
+            with st.expander("🔌 Добавить розеточную сеть (авто-группировка)"):
+                st.caption(
+                    "Введи количество розеток — система разобьёт на группы по СП 256 "
+                    "(Кс=0.5, cos φ=0.8, 16А на группу, макс. 10 розеток/группу) "
+                    "и добавит потребителей в щит."
+                )
+                _rg_col1, _rg_col2, _rg_col3 = st.columns(3)
+                with _rg_col1:
+                    _rg_total = st.number_input(
+                        "Кол-во розеток", min_value=1, max_value=200,
+                        value=10, step=1, key=f"rg_total_{fi}_{pi}"
+                    )
+                    _rg_p_w = st.number_input(
+                        "Мощность розетки, Вт", min_value=50, max_value=4000,
+                        value=600, step=50, key=f"rg_p_{fi}_{pi}",
+                        help="Расчётная мощность одной розетки (СП 256: 0.06 кВт — офис, 0.6 кВт — мастерская)"
+                    )
+                with _rg_col2:
+                    _rg_i_max = st.number_input(
+                        "Макс. ток группы, А", min_value=6, max_value=32,
+                        value=16, step=2, key=f"rg_imax_{fi}_{pi}"
+                    )
+                    _rg_n_max = st.number_input(
+                        "Макс. розеток в группе", min_value=1, max_value=20,
+                        value=10, step=1, key=f"rg_nmax_{fi}_{pi}",
+                        help="СП 256 п.14.16: не более 10 розеток на одну группу"
+                    )
+                with _rg_col3:
+                    _rg_phases = st.selectbox(
+                        "Фазность групп", [1, 3],
+                        key=f"rg_phases_{fi}_{pi}"
+                    )
+                    _rg_prefix = st.text_input(
+                        "Префикс ID", value="ГР", key=f"rg_prefix_{fi}_{pi}",
+                        help="Группы получат ID: ГР-1, ГР-2, ..."
+                    )
+
+                # Расчёт групп
+                import math
+                _u = 220.0 if _rg_phases == 1 else 380.0
+                _cos = 0.80
+                _ks  = 0.50
+                _p_one_kw = _rg_p_w / 1000
+                _i_one = _p_one_kw * 1000 / (_u * _cos)
+                _n_by_current = max(1, int(_rg_i_max / _i_one)) if _i_one > 0 else _rg_n_max
+                _n_per_group  = min(_rg_n_max, _n_by_current)
+                _n_groups     = math.ceil(_rg_total / _n_per_group)
+                _p_group_kw   = round(_n_per_group * _p_one_kw * _ks, 3)
+
+                st.info(
+                    f"Итого групп: **{_n_groups}** × {_n_per_group} розеток — "
+                    f"Pгр = {_p_group_kw} кВт, Кс={_ks}, cos φ={_cos}"
+                )
+
+                # Список существующих ID в щите (чтобы не дублировать)
+                _existing_ids = {c.get("id", "") for c in consumers}
+
+                if st.button("➕ Добавить группы в щит", key=f"rg_add_{fi}_{pi}", type="primary"):
+                    _added = 0
+                    _last_n = _rg_total
+                    for _gi in range(1, _n_groups + 1):
+                        _n_this = min(_n_per_group, _last_n)
+                        _last_n -= _n_this
+                        _gid = f"{_rg_prefix}-{_gi}"
+                        # Не дублировать если уже есть
+                        while _gid in _existing_ids:
+                            _gi_suffix = _gi + _n_groups
+                            _gid = f"{_rg_prefix}-{_gi_suffix}"
+                        _p_this = round(_n_this * _p_one_kw * _ks, 3)
+                        consumers.append({
+                            "id":            _gid,
+                            "name":          f"Группа розеток {_gid}",
+                            "type":          "sockets",
+                            "power_kw":      _p_this,
+                            "demand_factor": _ks,
+                            "cos_phi":       _cos,
+                            "phases":        _rg_phases,
+                            "start_factor":  1.0,
+                            "cable": {
+                                "mark": "ВВГнг-LS", "cores": 3 if _rg_phases == 1 else 5,
+                                "section_mm2": None, "length_m": 20,
+                                "install": "лоток", "ambient_t": 25, "parallel": 1,
+                            },
+                        })
+                        _existing_ids.add(_gid)
+                        _added += 1
+                    save_project(project, proj_dir)
+                    st.success(f"Добавлено {_added} групп розеток. Нажми **Пересчитать всё**.")
+                    st.rerun()
+
             # ── Справочник СП 256 ────────────────────────────────────────
             with st.expander("📋 Нормативы СП 256.1325800.2016 — Кс и cos φ"):
                 _ref_rows = [
