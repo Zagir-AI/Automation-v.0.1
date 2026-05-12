@@ -909,7 +909,7 @@ with tab_data:
                 _label = f"{_feeder.get('id','?')} / {_panel.get('id','?')} — {_panel.get('name','')}"
                 panel_options_s.append((_label, _fi, _pi))
 
-        col_sel, col_add = st.columns([4, 1])
+        col_sel, col_add_p, col_add_f = st.columns([4, 1, 1])
         with col_sel:
             if not panel_options_s:
                 _hint_s = f" раздела «{active_section}»" if active_section != "Все" else ""
@@ -928,11 +928,52 @@ with tab_data:
                 fi_s, pi_s = _match[1], _match[2]
                 selected_panel_s = project["vru"]["feeders"][fi_s]["panels"][pi_s]
 
-        with col_add:
+        with col_add_p:
             st.write("")
             st.write("")
-            if st.button("➕ Добавить щит", key="add_panel_btn"):
+            if st.button("➕ Щит", key="add_panel_btn", use_container_width=True):
                 st.session_state["show_add_panel"] = True
+                st.session_state["show_add_feeder"] = False
+
+        with col_add_f:
+            st.write("")
+            st.write("")
+            if st.button("➕ Раздел", key="add_feeder_btn", use_container_width=True):
+                st.session_state["show_add_feeder"] = True
+                st.session_state["show_add_panel"] = False
+
+        # ── Форма добавления нового раздела (фидера) ────────────────────
+        if st.session_state.get("show_add_feeder"):
+            _SECTIONS_STD = ["ЭОМ", "ЭО", "ОВ", "ВК", "ТХ", "НО", "ЭН", "ДУ", "ПС", "КВ", "Другой"]
+            with st.form("new_feeder_form"):
+                st.markdown("**Новый раздел проекта**")
+                _nf_c1, _nf_c2 = st.columns(2)
+                with _nf_c1:
+                    _nf_id   = st.text_input("ID фидера (напр. ВВ-3)", key="nf_id")
+                    _nf_name = st.text_input("Название (напр. Отопление и вентиляция)", key="nf_name")
+                with _nf_c2:
+                    _nf_sec_opt = st.selectbox("Раздел", _SECTIONS_STD, key="nf_sec_opt")
+                    _nf_sec_custom = st.text_input("Своё значение (если «Другой»)", key="nf_sec_custom")
+                _nf_sub = st.form_submit_button("Создать раздел")
+                if _nf_sub:
+                    _nf_sec_val = _nf_sec_custom.strip() if _nf_sec_opt == "Другой" else _nf_sec_opt
+                    _existing_ids = [f.get("id") for f in vru.get("feeders", [])]
+                    if not _nf_id.strip():
+                        st.warning("Укажите ID фидера")
+                    elif _nf_id.strip() in _existing_ids:
+                        st.warning(f"Фидер «{_nf_id.strip()}» уже существует")
+                    else:
+                        vru.setdefault("feeders", []).append({
+                            "id":      _nf_id.strip(),
+                            "name":    _nf_name.strip() or _nf_sec_val,
+                            "section": _nf_sec_val,
+                            "panels":  [],
+                        })
+                        save_project(project, proj_dir)
+                        st.session_state["show_add_feeder"] = False
+                        st.session_state["active_section"] = _nf_sec_val
+                        st.success(f"Раздел «{_nf_id.strip()}» создан")
+                        st.rerun()
 
         # ── Форма добавления нового щита ────────────────────────────────
         if st.session_state.get("show_add_panel"):
@@ -1090,6 +1131,23 @@ with tab_data:
                 if st.button("Отмена", key=f"confirm_no_{fi_s}_{pi_s}"):
                     st.session_state.pop(f"confirm_del_{fi_s}_{pi_s}", None)
                     st.rerun()
+
+        # ── Удалить раздел целиком ──────────────────────────────────────
+        st.divider()
+        _feeder_s = vru["feeders"][fi_s]
+        _n_panels_f = len(_feeder_s.get("panels", []))
+        with st.expander(f"⚠️ Удалить раздел «{_feeder_s.get('id')}» целиком"):
+            st.warning(
+                f"Раздел **{_feeder_s.get('id')} — {_feeder_s.get('name','')}** "
+                f"содержит {_n_panels_f} щит(ов). "
+                f"Удаление необратимо."
+            )
+            if st.button("🗑 Удалить раздел", key=f"del_feeder_{fi_s}", type="secondary"):
+                vru["feeders"].pop(fi_s)
+                save_project(project, proj_dir)
+                st.session_state["active_section"] = "Все"
+                st.success("Раздел удалён")
+                st.rerun()
 
         # ── Потребители щита ────────────────────────────────────────────
         st.divider()
