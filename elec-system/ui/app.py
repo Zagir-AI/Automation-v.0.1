@@ -337,8 +337,8 @@ with col_btns:
 
 
 # Вкладки
-tab_summary, tab_data, tab_results, tab_cables, tab_outdoor, tab_changes, tab_docs, tab_settings = st.tabs([
-    "📊 Сводка", "✏️ Данные", "🔢 Расчёт", "⚡ Кабели", "🌃 НО / ЭН", "📝 Изменения", "📁 Документы", "⚙️ Настройки"
+tab_summary, tab_data, tab_results, tab_cables, tab_outdoor, tab_es, tab_changes, tab_docs, tab_settings = st.tabs([
+    "📊 Сводка", "✏️ Данные", "🔢 Расчёт", "⚡ Кабели", "🌃 НО / ЭН", "🏭 ЭС", "📝 Изменения", "📁 Документы", "⚙️ Настройки"
 ])
 
 
@@ -1839,6 +1839,268 @@ with tab_outdoor:
                             "Pр, кВт":  round(c["power_kw"] * c.get("n_units",1) * c.get("demand_factor",1), 3),
                         } for c in _no_cons_r]
                         st.dataframe(_no_tbl, hide_index=True, use_container_width=True)
+
+
+# ── Вкладка: ЭС (наружные сети электроснабжения) ────────────────────
+
+with tab_es:
+    _ps = project.setdefault("power_supply", {})
+    _ps_tr = _ps.setdefault("transformer", {})
+    _ps_cb = _ps.setdefault("supply_cable", {})
+
+    sub_es_data, sub_es_calc = st.tabs(["📋 Данные ТП", "📊 Расчёт ввода"])
+
+    # ── Данные ТП ────────────────────────────────────────────────────
+    with sub_es_data:
+        st.subheader("Источник питания (трансформаторная подстанция)")
+
+        _es_c1, _es_c2 = st.columns(2)
+
+        with _es_c1:
+            st.markdown("**🏭 Сведения о ТП**")
+            _es_tp_id   = st.text_input("Обозначение ТП", value=_ps.get("tp_id", "ТП-1"), key="es_tp_id")
+            _es_tp_addr = st.text_input("Адрес / описание", value=_ps.get("tp_address", ""), key="es_tp_addr")
+            _es_u_sup   = st.selectbox("Напряжение питания, кВ", [0.4, 6.0, 10.0, 35.0],
+                                       index=[0.4,6.0,10.0,35.0].index(float(_ps.get("u_supply_kv",0.4))),
+                                       key="es_u_sup")
+            _es_n_tr    = st.number_input("Число трансформаторов", 1, 4,
+                                          int(_ps.get("n_transformers", 1)), key="es_n_tr")
+
+            st.markdown("**🔧 Трансформатор**")
+            _es_tr_mark = st.text_input("Марка (напр. ТМГ-630/10)",
+                                        value=_ps_tr.get("mark", "ТМГ-630/10"), key="es_tr_mark")
+            _es_s_nom   = st.number_input("S_ном, кВА", 25.0, 10000.0,
+                                          float(_ps_tr.get("s_nom_kva", 630.0)), 25.0, key="es_s_nom")
+            _es_u_k     = st.number_input("u_к, %", 1.0, 10.0,
+                                          float(_ps_tr.get("u_k_pct", 5.5)), 0.1, key="es_u_k")
+            _es_u_lv    = st.number_input("U_вторич., кВ", 0.1, 1.0,
+                                          float(_ps_tr.get("u_lv_kv", 0.4)), 0.05, key="es_u_lv")
+            _TR_CONN = ["Д/Ун-11","Y/Ун-0","Yн/Ун-0","Д/Д-0"]
+            _es_conn = st.selectbox("Схема соединения",  _TR_CONN,
+                                    index=_TR_CONN.index(_ps_tr.get("connection","Д/Ун-11"))
+                                    if _ps_tr.get("connection","Д/Ун-11") in _TR_CONN else 0,
+                                    key="es_conn")
+
+        with _es_c2:
+            st.markdown("**🔌 Кабель ТП → ВРУ**")
+            _es_cb_mark  = st.text_input("Марка кабеля",
+                                         value=_ps_cb.get("mark", "ВВГнг-LS"), key="es_cb_mark")
+            _es_cb_cores = st.number_input("Жилы", 3, 5, int(_ps_cb.get("cores", 4)), key="es_cb_cores")
+            _es_cb_sec   = st.number_input("Сечение, мм²", 0.0, 1000.0,
+                                           float(_ps_cb.get("section_mm2") or 0.0), 5.0, key="es_cb_sec",
+                                           help="0 = не задано / авто-подбор по нагрузке ВРУ")
+            _es_cb_len   = st.number_input("Длина, м", 1.0, 5000.0,
+                                           float(_ps_cb.get("length_m", 50.0)), 1.0, key="es_cb_len")
+            _es_cb_inst  = st.selectbox("Прокладка",
+                                        ["земля","лоток","труба","открыто"],
+                                        index=["земля","лоток","труба","открыто"].index(
+                                            _ps_cb.get("install","земля")),
+                                        key="es_cb_inst")
+            _es_cb_par   = st.number_input("Параллельных кабелей", 1, 6,
+                                           int(_ps_cb.get("parallel", 1)), key="es_cb_par")
+            _es_cb_amb   = st.number_input("Темп. среды, °C", -40, 50,
+                                           int(_ps_cb.get("ambient_t", 15)), key="es_cb_amb")
+
+            st.markdown("**📋 Категория электроснабжения**")
+            _es_cat = st.selectbox("Требуемая кат. ПУЭ", [1, 2, 3],
+                                   index=[1,2,3].index(int(_ps.get("category_pue", 2))),
+                                   key="es_cat",
+                                   help="Определяется по ПУЭ гл.1.2 исходя из категории здания")
+            _es_avr = st.checkbox("Предусмотрено АВР / секционирование",
+                                  value=bool(_ps.get("has_avr", False)), key="es_avr")
+
+        if st.button("💾 Сохранить данные ТП", type="primary", key="save_ps"):
+            _ps.update({
+                "tp_id":          _es_tp_id.strip(),
+                "tp_address":     _es_tp_addr.strip(),
+                "u_supply_kv":    float(_es_u_sup),
+                "n_transformers": int(_es_n_tr),
+                "category_pue":   int(_es_cat),
+                "has_avr":        _es_avr,
+            })
+            _ps_tr.update({
+                "mark":       _es_tr_mark.strip(),
+                "s_nom_kva":  float(_es_s_nom),
+                "u_k_pct":    float(_es_u_k),
+                "u_lv_kv":    float(_es_u_lv),
+                "connection": _es_conn,
+            })
+            _ps_cb.update({
+                "mark":        _es_cb_mark.strip(),
+                "cores":       int(_es_cb_cores),
+                "section_mm2": float(_es_cb_sec) if _es_cb_sec > 0 else None,
+                "length_m":    float(_es_cb_len),
+                "install":     _es_cb_inst,
+                "parallel":    int(_es_cb_par),
+                "ambient_t":   int(_es_cb_amb),
+            })
+            save_project(project, proj_dir)
+            st.success("Данные ТП сохранены.")
+            st.rerun()
+
+    # ── Расчёт ввода ─────────────────────────────────────────────────
+    with sub_es_calc:
+        st.subheader("Расчёт кабеля ввода и тока КЗ")
+
+        _ps_now = project.get("power_supply", {})
+        _tr_now = _ps_now.get("transformer", {})
+        _cb_now = _ps_now.get("supply_cable", {})
+
+        _s_nom_c  = float(_tr_now.get("s_nom_kva", 630.0))
+        _u_k_c    = float(_tr_now.get("u_k_pct", 5.5))
+        _u_lv_c   = float(_tr_now.get("u_lv_kv", 0.4))
+        _cb_mark_c  = _cb_now.get("mark", "ВВГнг-LS")
+        _cb_sec_c   = float(_cb_now.get("section_mm2") or 0.0)
+        _cb_len_c   = float(_cb_now.get("length_m", 50.0))
+        _cb_par_c   = int(_cb_now.get("parallel", 1))
+        _cb_inst_c  = _cb_now.get("install", "земля")
+        _cb_amb_c   = float(_cb_now.get("ambient_t", 15))
+        _n_tr_c     = int(_ps_now.get("n_transformers", 1))
+
+        # Номинальный ток трансформатора
+        _i_tr_nom = round(_s_nom_c * _n_tr_c * 1000 / (math.sqrt(3) * _u_lv_c * 1000), 1)
+
+        # Ток нагрузки ВРУ из результатов расчёта
+        _i_vru_fact = 0.0
+        if calc_done and results:
+            _i_vru_fact = results.get("vru", {}).get("i_calc_a", 0.0)
+
+        # Ток КЗ
+        from calc.engine import calc_isc_from_tp
+        _kz_ok = False
+        _kz_res = {}
+        if _s_nom_c > 0 and _u_k_c > 0 and _cb_sec_c > 0 and _cb_len_c > 0:
+            try:
+                _kz_res = calc_isc_from_tp(
+                    _s_nom_c, _u_k_c, _u_lv_c,
+                    _cb_mark_c, _cb_sec_c, _cb_len_c, _cb_par_c,
+                )
+                _kz_ok = True
+            except Exception as _e:
+                st.error(f"Ошибка расчёта Iкз: {_e}")
+
+        # ── Кабель ввода — допустимый ток ──────────────────────────
+        from data.cables.pue_tables import (
+            get_ampacity_table, get_install_key, get_temp_correction,
+        )
+        _i_allow_cb = 0.0
+        _cb_ok_load = True
+        if _cb_sec_c > 0:
+            try:
+                _inst_key = get_install_key(_cb_inst_c, _cb_mark_c, category_pue=3)
+                _k_temp   = get_temp_correction(_inst_key, _cb_amb_c)
+                _amp_tab  = get_ampacity_table(_cb_mark_c)
+                _i_allow_cb = round(
+                    _amp_tab.get(_cb_sec_c, {}).get(_inst_key, 0) * _k_temp * _cb_par_c, 1
+                )
+                _cb_ok_load = (_i_allow_cb >= _i_vru_fact) if _i_vru_fact > 0 else True
+            except Exception:
+                pass
+
+        # ── Потеря напряжения на кабеле ввода ──────────────────────
+        _du_cb = 0.0
+        if _cb_sec_c > 0 and _i_vru_fact > 0:
+            try:
+                from data.cables.pue_tables import CABLE_RESISTANCE, get_conductor_material
+                _mat  = get_conductor_material(_cb_mark_c)
+                _r0, _x0 = CABLE_RESISTANCE.get((_mat, _cb_sec_c), (0.0, 0.0))
+                _cos_vru = results.get("vru", {}).get("cos_phi", 0.85) if (calc_done and results) else 0.85
+                _sin_vru = math.sqrt(max(0, 1 - _cos_vru**2))
+                _l_km = _cb_len_c / 1000 / _cb_par_c
+                _u_v  = _u_lv_c * 1000
+                _du_cb = round(
+                    math.sqrt(3) * _i_vru_fact * _l_km * (_r0 * _cos_vru + _x0 * _sin_vru) / _u_v * 100, 2
+                )
+            except Exception:
+                pass
+
+        # ── Отображение результатов ─────────────────────────────────
+        st.markdown(f"**ТП:** {_ps_now.get('tp_id','—')}  |  "
+                    f"Тр-р: {_tr_now.get('mark','—')}  {int(_s_nom_c)} кВА × {_n_tr_c} шт.  |  "
+                    f"Iном_тр = **{_i_tr_nom} А**")
+
+        if _i_vru_fact > 0:
+            _load_pct = round(_i_vru_fact / _i_tr_nom * 100, 1) if _i_tr_nom > 0 else 0
+            _load_col = "normal" if _load_pct <= 80 else "inverse"
+            _lc1, _lc2, _lc3, _lc4 = st.columns(4)
+            _lc1.metric("Iр ВРУ, А", f"{_i_vru_fact:.1f}")
+            _lc2.metric("Iном ТП, А", f"{_i_tr_nom}")
+            _lc3.metric("Загрузка ТП", f"{_load_pct}%",
+                        delta="OK" if _load_pct <= 80 else "⚠️ > 80%",
+                        delta_color=_load_col)
+            _lc4.metric("Iдоп кабеля, А", f"{_i_allow_cb}" if _i_allow_cb else "—",
+                        delta=("OK" if _cb_ok_load else "⚠️ мало"),
+                        delta_color="normal" if _cb_ok_load else "inverse")
+        else:
+            st.info("Нажми «Пересчитать всё» чтобы получить Iр ВРУ.")
+
+        if _du_cb > 0:
+            _du_ok = _du_cb <= 5.0
+            st.metric("ΔU кабель ТП→ВРУ, %", f"{_du_cb}",
+                      delta="OK" if _du_ok else "⚠️ > 5%",
+                      delta_color="normal" if _du_ok else "inverse")
+
+        st.divider()
+
+        if not _kz_ok:
+            st.warning("Для расчёта Iкз заполни данные трансформатора и кабеля ввода (сечение > 0).")
+        else:
+            _isc_vru = _kz_res["isc_at_vru_ka"]
+            _isc_tr  = _kz_res["isc_at_tr_ka"]
+            _color_kz = "🟢" if _isc_vru >= 3.0 else "🟡" if _isc_vru >= 1.0 else "🔴"
+            _k1, _k2, _k3 = st.columns(3)
+            _k1.metric("Zтр, мОм", f"{_kz_res['z_tr_ohm']*1000:.2f}")
+            _k2.metric("Zкаб, мОм", f"{_kz_res['z_cable_ohm']*1000:.2f}")
+            _k3.metric("Iкз на шинах ТП, кА", f"{_isc_tr:.2f}")
+
+            st.markdown(f"### {_color_kz} Iкз на шинах ВРУ: **{_isc_vru:.2f} кА**")
+            st.caption(f"Текущее значение в проекте: isc_ka = {project.get('vru',{}).get('isc_ka', '—')} кА")
+
+            if _kz_res.get("notes"):
+                st.warning(_kz_res["notes"])
+
+            if st.button("✅ Применить Iкз к проекту", key="es_apply_isc"):
+                _vru_es = project.setdefault("vru", {})
+                _vru_es["isc_ka"] = round(_isc_vru, 3)
+                _vru_es["tp_s_nom_kva"]       = _s_nom_c
+                _vru_es["tp_u_k_pct"]         = _u_k_c
+                _vru_es["tp_u_nom_lv_kv"]     = _u_lv_c
+                _vru_es["tp_cable_mark"]       = _cb_mark_c
+                _vru_es["tp_cable_section_mm2"]= _cb_sec_c
+                _vru_es["tp_cable_length_m"]   = _cb_len_c
+                _vru_es["tp_parallel_cables"]  = _cb_par_c
+                save_project(project, proj_dir)
+                st.success(f"isc_ka = {_isc_vru:.3f} кА применено. Пересчитай проект.")
+                st.rerun()
+
+        # ── Подбор сечения кабеля ввода по нагрузке ВРУ ─────────────
+        if _i_vru_fact > 0 and _cb_mark_c:
+            st.divider()
+            with st.expander("🔍 Подобрать сечение кабеля ввода по нагрузке ВРУ"):
+                from calc.engine import select_cable_for_current
+                _pick_cfg = {
+                    "mark": _cb_mark_c, "cores": int(_cb_now.get("cores", 4)),
+                    "section_mm2": None,
+                    "length_m": _cb_len_c, "install": _cb_inst_c,
+                    "ambient_t": _cb_amb_c, "parallel": _cb_par_c,
+                }
+                try:
+                    _pick = select_cable_for_current(_pick_cfg, _i_vru_fact)
+                    _pick_sec = _pick.get("section_mm2")
+                    if _pick_sec:
+                        st.info(
+                            f"Рекомендуемое сечение: **{_cb_mark_c} "
+                            f"{int(_cb_now.get('cores',4))}×{_pick_sec} мм²** "
+                            f"(Iдоп={_pick.get('i_allowed',0):.0f} А ≥ Iр={_i_vru_fact:.1f} А)"
+                        )
+                        if st.button("Применить сечение", key="es_apply_sec"):
+                            _ps_cb["section_mm2"] = _pick_sec
+                            save_project(project, proj_dir)
+                            st.rerun()
+                    else:
+                        st.warning("Не удалось подобрать сечение по таблицам ПУЭ.")
+                except Exception as _pe:
+                    st.warning(f"Ошибка подбора сечения: {_pe}")
 
 
 # ── Вкладка: Изменения ───────────────────────────────────────────────
