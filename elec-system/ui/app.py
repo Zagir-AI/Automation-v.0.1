@@ -104,20 +104,23 @@ if st.session_state.get("show_new_form"):
     with col2:
         new_name = st.text_input("Название", placeholder="Офисное здание по ул. Ленина")
 
-    if st.button("Создать", type="primary"):
-        if new_code and new_name:
-            out, err, rc = run_cli(["new", new_code, new_name])
-            if rc == 0:
-                st.success(f"Создан: {new_code}")
-                st.session_state["show_new_form"] = False
-                st.rerun()
+    btn_col1, btn_col2 = st.columns([1, 4])
+    with btn_col1:
+        if st.button("← Назад", use_container_width=True):
+            st.session_state["show_new_form"] = False
+            st.rerun()
+    with btn_col2:
+        if st.button("Создать", type="primary", use_container_width=True):
+            if new_code and new_name:
+                out, err, rc = run_cli(["new", new_code, new_name])
+                if rc == 0:
+                    st.success(f"Создан: {new_code}")
+                    st.session_state["show_new_form"] = False
+                    st.rerun()
+                else:
+                    st.error(f"Ошибка: {err}")
             else:
-                st.error(f"Ошибка: {err}")
-        else:
-            st.warning("Заполни код и название")
-    if st.button("Отмена"):
-        st.session_state["show_new_form"] = False
-        st.rerun()
+                st.warning("Заполни код и название")
     st.stop()
 
 
