@@ -87,26 +87,68 @@ def run_cli(command: list) -> tuple[str, str, int]:
 
 # ── Сайдбар ──────────────────────────────────────────────────────────
 
+projects = get_all_projects()
+
+
+def _filter_feeders(feeders: list, section: str | None) -> list:
+    """Фильтрует фидеры по разделу; None / 'Все' — возвращает все."""
+    if not section or section == "Все":
+        return feeders
+    return [f for f in feeders if f.get("section") == section]
+
+
 with st.sidebar:
     st.title("⚡ ЭлектроПроект")
-    st.caption("Система автоматизации")
     st.divider()
 
-    projects = get_all_projects()
-    st.subheader(f"Объекты ({len(projects)})")
+    _sb_active = st.session_state.get("active_project")
 
-    selected_dir = None
-    for d, p in projects:
-        proj_info = p.get("project", {})
-        calc_done = p.get("_meta", {}).get("calc_done", False)
-        icon = "✅" if calc_done else "🔲"
-        label = f"{icon} **{proj_info.get('code','?')}** {proj_info.get('name','')[:25]}"
-        if st.button(label, key=str(d), width="stretch"):
-            st.session_state["active_project"] = str(d)
+    if _sb_active:
+        # Проект открыт — навигация по разделам
+        _sb_proj = load_project(Path(_sb_active))
+        _sb_info = _sb_proj.get("project", {})
+        st.markdown(f"**{_sb_info.get('code', '')}**")
+        st.caption(_sb_info.get("name", "")[:45])
+        st.divider()
 
-    st.divider()
-    if st.button("➕ Новый объект", width="stretch"):
-        st.session_state["show_new_form"] = True
+        _sections = ["Все"]
+        for _f in _sb_proj.get("vru", {}).get("feeders", []):
+            _sec = _f.get("section", "")
+            if _sec and _sec not in _sections:
+                _sections.append(_sec)
+
+        _cur_sec = st.session_state.get("active_section", "Все")
+        if _cur_sec not in _sections:
+            _cur_sec = "Все"
+
+        st.caption("Раздел проекта")
+        for _sec_opt in _sections:
+            _is_active = _cur_sec == _sec_opt
+            if st.button(
+                f"{'▶ ' if _is_active else ''}{_sec_opt}",
+                key=f"sec_btn_{_sec_opt}",
+                type="primary" if _is_active else "secondary",
+                use_container_width=True,
+            ):
+                if not _is_active:
+                    st.session_state["active_section"] = _sec_opt
+                    st.rerun()
+    else:
+        # Дашборд — список проектов
+        st.subheader(f"Объекты ({len(projects)})")
+        for d, p in projects:
+            proj_info = p.get("project", {})
+            _calc = p.get("_meta", {}).get("calc_done", False)
+            icon = "✅" if _calc else "🔲"
+            label = f"{icon} **{proj_info.get('code','?')}** {proj_info.get('name','')[:25]}"
+            if st.button(label, key=str(d), use_container_width=True):
+                st.session_state["active_project"] = str(d)
+                st.session_state["active_section"] = "Все"
+                st.rerun()
+
+        st.divider()
+        if st.button("➕ Новый объект", use_container_width=True):
+            st.session_state["show_new_form"] = True
 
 
 # ── Новый проект ────────────────────────────────────────────────────
@@ -254,6 +296,7 @@ if not project:
 proj = project.get("project", {})
 results = project.get("_results")
 calc_done = project.get("_meta", {}).get("calc_done", False)
+active_section = st.session_state.get("active_section", "Все")
 
 # Шапка
 col_back, col_title, col_btns = st.columns([1, 3, 1])
@@ -261,11 +304,14 @@ with col_back:
     st.write("")
     if st.button("← К проектам", width="stretch"):
         st.session_state["active_project"] = None
+        st.session_state.pop("active_section", None)
         st.rerun()
 with col_title:
+    _sec_badge = f" — **{active_section}**" if active_section != "Все" else ""
     st.title(f"⚡ {proj.get('name','')}")
     st.caption(f"Код: {proj.get('code','')} | Стадия: {proj.get('stage','')} | "
-               f"Ред. {proj.get('revision',0)} | {proj.get('date','')}")
+               f"Ред. {proj.get('revision',0)} | {proj.get('date','')}"
+               + (f" | Раздел: {active_section}" if active_section != "Все" else ""))
 
 with col_btns:
     st.write("")
@@ -389,16 +435,22 @@ with tab_data:
         CONSUMER_TYPES  = ["lighting", "power", "hvac", "it", "other"]
         INSTALL_OPTIONS = ["лоток", "труба", "открыто", "земля"]
 
-        # Список всех щитов из vru.feeders[].panels[]
+        # Список щитов, отфильтрованных по разделу
+        _all_feeders = project.get("vru", {}).get("feeders", [])
         panel_options = []
-        for _fi, _feeder in enumerate(project.get("vru", {}).get("feeders", [])):
+        for _fi, _feeder in enumerate(_all_feeders):
+            if active_section != "Все" and _feeder.get("section") != active_section:
+                continue
             for _pi, _panel in enumerate(_feeder.get("panels", [])):
                 _label = (f"{_feeder.get('id','?')} / {_panel.get('id','?')}"
                           f" — {_panel.get('name','')}")
                 panel_options.append((_label, _fi, _pi))
 
         if not panel_options:
-            st.warning("Щиты не найдены. Заполни структуру проекта во вкладке «{ } JSON».")
+            _hint = (f" раздела «{active_section}»" if active_section != "Все" else "")
+            st.warning(f"Щиты{_hint} не найдены. "
+                       + ("Выбери другой раздел в сайдбаре или заполни JSON." if active_section != "Все"
+                          else "Заполни структуру проекта во вкладке «{ } JSON»."))
         else:
             selected_label = st.selectbox(
                 "Щит", [o[0] for o in panel_options], key="panel_sel"
@@ -561,9 +613,11 @@ with tab_data:
     with sub_settings:
         vru = project.get("vru", {})
         
-        # ── Выбор щита ──────────────────────────────────────────────────
+        # ── Выбор щита (с фильтром по разделу) ─────────────────────────
         panel_options_s = []
         for _fi, _feeder in enumerate(vru.get("feeders", [])):
+            if active_section != "Все" and _feeder.get("section") != active_section:
+                continue
             for _pi, _panel in enumerate(_feeder.get("panels", [])):
                 _label = f"{_feeder.get('id','?')} / {_panel.get('id','?')} — {_panel.get('name','')}"
                 panel_options_s.append((_label, _fi, _pi))
@@ -571,7 +625,8 @@ with tab_data:
         col_sel, col_add = st.columns([4, 1])
         with col_sel:
             if not panel_options_s:
-                st.info("Нет щитов. Добавьте через кнопку →")
+                _hint_s = f" раздела «{active_section}»" if active_section != "Все" else ""
+                st.info(f"Нет щитов{_hint_s}. Добавьте через кнопку →")
                 selected_panel_s = None
             else:
                 selected_label_s = st.selectbox(
@@ -964,9 +1019,12 @@ with tab_results:
 
         with sub_panels:
             vru_r = results.get("vru", {})
-            if not vru_r.get("feeders"):
-                st.info("Щиты не найдены в результатах расчёта. Нажми «Пересчитать всё».")
-            for feeder in vru_r.get("feeders", []):
+            _feeders_r = _filter_feeders(vru_r.get("feeders", []), active_section)
+            if not _feeders_r:
+                st.info("Щиты не найдены в результатах расчёта. "
+                        + (f"Раздел «{active_section}» пуст или не рассчитан." if active_section != "Все"
+                           else "Нажми «Пересчитать всё»."))
+            for feeder in _feeders_r:
                 with st.expander(f"{feeder['id']} — {feeder['name']} "
                                  f"| Pр={feeder['p_calc_kw']:.1f} кВт | Iр={feeder['i_calc_a']:.1f} А",
                                  expanded=True):
@@ -1048,7 +1106,7 @@ with tab_cables:
         vru_r = results.get("vru", {})
         du_err, kzt_err, kzs_err = [], [], []
 
-        for feeder in vru_r.get("feeders", []):
+        for feeder in _filter_feeders(vru_r.get("feeders", []), active_section):
             for panel in feeder.get("panels", []):
                 for obj_id, obj_name, cb in (
                     [(panel["id"], panel["name"], panel.get("cable", {}))]
