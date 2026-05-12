@@ -1365,7 +1365,8 @@ def main():
     # plan
     p_plan = sub.add_parser("plan", help="Сгенерировать DXF-план")
     p_plan.add_argument("path", help="Путь к папке проекта или код")
-    p_plan.add_argument("--section", help="Раздел: ОВ, ВК, ТХ, ДУ, ПС, ЭОМ, ЭН")
+    p_plan.add_argument("--section", help="Раздел: ОВ, ВК, ТХ, ДУ, ПС, ЭОМ, ЭН, ЭС "
+                                          "(ЭН=электроосвещение наружное, ЭС=электроснабжение наружное)")
 
     # check-cables
     p_cc = sub.add_parser("check-cables", help="Проверить кабели: ΔU, КЗ")
