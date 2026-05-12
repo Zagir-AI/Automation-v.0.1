@@ -13,6 +13,7 @@ ui/app.py — веб-интерфейс системы.
   - Загрузка и парсинг сметы / КП
 """
 
+import re
 import sys
 import json
 import subprocess
@@ -112,13 +113,16 @@ if st.session_state.get("show_new_form"):
     with btn_col2:
         if st.button("Создать", type="primary", use_container_width=True):
             if new_code and new_name:
-                out, err, rc = run_cli(["new", new_code, new_name])
-                if rc == 0:
-                    st.success(f"Создан: {new_code}")
-                    st.session_state["show_new_form"] = False
-                    st.rerun()
+                if not re.match(r'^[А-ЯA-Z0-9\-]{3,20}$', new_code.strip()):
+                    st.error("Код объекта: только буквы (А-Я, A-Z), цифры и «-», от 3 до 20 символов.")
                 else:
-                    st.error(f"Ошибка: {err}")
+                    out, err, rc = run_cli(["new", new_code.strip(), new_name.strip()])
+                    if rc == 0:
+                        st.success(f"Создан: {new_code}")
+                        st.session_state["show_new_form"] = False
+                        st.rerun()
+                    else:
+                        st.error(f"Ошибка: {err}")
             else:
                 st.warning("Заполни код и название")
     st.stop()
@@ -144,9 +148,12 @@ if not active_path:
         p.get("_results", {}).get("summary", {}).get("p_installed_kw", 0)
         for _, p in projects if p.get("_results")
     )
+    def _safe_len(val) -> int:
+        return len(val) if isinstance(val, list) else 0
+
     warns = sum(
-        len(p.get("_results", {}).get("cable_checks", {}).get("du_violations", [])) +
-        len(p.get("_results", {}).get("cable_checks", {}).get("kz_thermal_violations", []))
+        _safe_len(p.get("_results", {}).get("cable_checks", {}).get("du_violations")) +
+        _safe_len(p.get("_results", {}).get("cable_checks", {}).get("kz_thermal_violations"))
         for _, p in projects if p.get("_results")
     )
 
@@ -164,10 +171,16 @@ if not active_path:
     st.subheader("Объекты")
 
     # ── Карточки по 2 в строку ───────────────────────────────────────────
+    from itertools import zip_longest
     pairs = [projects[i:i + 2] for i in range(0, len(projects), 2)]
     for pair in pairs:
         cols = st.columns(2)
-        for col, (d, p) in zip(cols, pair):
+        for col, item in zip_longest(cols, pair):
+            if item is None:
+                continue
+            d, p = item
+            if col is None:
+                continue
             with col:
                 with st.container(border=True):
                     proj    = p.get("project", {})
@@ -229,7 +242,12 @@ results = project.get("_results")
 calc_done = project.get("_meta", {}).get("calc_done", False)
 
 # Шапка
-col_title, col_btns = st.columns([3, 1])
+col_back, col_title, col_btns = st.columns([1, 3, 1])
+with col_back:
+    st.write("")
+    if st.button("← К проектам", width="stretch"):
+        st.session_state["active_project"] = None
+        st.rerun()
 with col_title:
     st.title(f"⚡ {proj.get('name','')}")
     st.caption(f"Код: {proj.get('code','')} | Стадия: {proj.get('stage','')} | "
@@ -439,6 +457,8 @@ with tab_data:
                     None
                 )
                 cable = consumers[c_idx].get("cable", {}) if c_idx is not None else {}
+            else:
+                st.caption("Добавь потребителей в таблицу выше, затем сохрани — и здесь появится редактор кабеля.")
                 col1, col2, col3 = st.columns(3)
                 with col1:
                     new_mark  = st.text_input(
@@ -469,32 +489,43 @@ with tab_data:
             if st.button("💾 Сохранить потребителей", type="primary",
                          key=f"save_cons_{fi}_{pi}"):
                 new_consumers = []
+                save_error = False
                 for _, row in edited_df.iterrows():
                     cid = str(row.get("id", "")).strip()
                     if not cid or cid == "nan":
                         continue
                     old = next((c for c in consumers if c.get("id") == cid), {})
-                    new_consumers.append({
-                        "id":            cid,
-                        "name":          str(row.get("name", "")),
-                        "type":          str(row.get("type", "power")),
-                        "power_kw":      float(row.get("power_kw", 0.0)),
-                        "demand_factor": float(row.get("demand_factor", 0.85)),
-                        "cos_phi":       float(row.get("cos_phi", 0.85)),
-                        "phases":        int(row.get("phases", 3)),
-                        "start_factor":  float(row.get("start_factor", 1.0)),
+                    try:
+                        new_consumers.append({
+                            "id":            cid,
+                            "name":          str(row.get("name", "")),
+                            "type":          str(row.get("type", "power")),
+                            "power_kw":      float(row.get("power_kw", 0.0)),
+                            "demand_factor": float(row.get("demand_factor", 0.85)),
+                            "cos_phi":       float(row.get("cos_phi", 0.85)),
+                            "phases":        int(row.get("phases", 3)),
+                            "start_factor":  float(row.get("start_factor", 1.0)),
                         "cable":         old.get("cable", {
                             "mark": "ВВГнг-LS", "cores": 3, "section_mm2": None,
                             "length_m": 10, "install": "лоток",
                             "ambient_t": 25, "parallel": 1,
                         }),
-                    })
+                        })
+                    except (ValueError, TypeError) as _e:
+                        st.error(f"Ошибка в строке потребителя «{cid}»: {_e}")
+                        save_error = True
+                        break
+                if save_error:
+                    st.stop()
                 # Обновить cable выбранного потребителя
                 if c_idx is not None and new_mark is not None:
                     target_id = consumers[c_idx].get("id")
                     target = next(
                         (nc for nc in new_consumers if nc["id"] == target_id), None
                     )
+                    if target is None:
+                        st.error(f"Потребитель «{target_id}» не найден в списке — cable не обновлён. "
+                                 "Убедись, что ID не был изменён при редактировании таблицы.")
                     if target is not None:
                         target["cable"] = {
                             "mark":        new_mark,
@@ -533,7 +564,11 @@ with tab_data:
                     [o[0] for o in panel_options_s],
                     key="settings_panel_select",
                 )
-                fi_s, pi_s = next((o[1], o[2]) for o in panel_options_s if o[0] == selected_label_s)
+                _match = next((o for o in panel_options_s if o[0] == selected_label_s), None)
+                if _match is None:
+                    st.error("Щит не найден. Обнови страницу.")
+                    st.stop()
+                fi_s, pi_s = _match[1], _match[2]
                 selected_panel_s = project["vru"]["feeders"][fi_s]["panels"][pi_s]
 
         with col_add:
@@ -555,7 +590,13 @@ with tab_data:
                 if np_submitted:
                     if np_id:
                         new_panel = make_blank_panel(np_id, np_type)
-                        fi_new = next(i for i, f in enumerate(vru["feeders"]) if f.get("id") == np_feeder)
+                        fi_new = next(
+                            (i for i, f in enumerate(vru.get("feeders", [])) if f.get("id") == np_feeder),
+                            None,
+                        )
+                        if fi_new is None:
+                            st.error(f"Фидер «{np_feeder}» не найден. Обнови страницу.")
+                            st.stop()
                         vru["feeders"][fi_new].setdefault("panels", []).append(new_panel)
                         save_project(project, proj_dir)
                         st.session_state["show_add_panel"] = False
@@ -828,12 +869,15 @@ with tab_data:
                 key="tp_parallel"
             )
 
-        # Расчёт происходит при каждом изменении поля (Streamlit реактивен)
         from calc.engine import calc_isc_from_tp
-        kz_result = calc_isc_from_tp(
-            tp_s_nom, tp_u_k, tp_u_nom_lv,
-            tp_cable_mark, tp_cable_section, tp_cable_length, tp_parallel
-        )
+        try:
+            kz_result = calc_isc_from_tp(
+                tp_s_nom, tp_u_k, tp_u_nom_lv,
+                tp_cable_mark, tp_cable_section, tp_cable_length, tp_parallel
+            )
+        except Exception as _e:
+            st.error(f"Ошибка расчёта тока КЗ: {_e}")
+            st.stop()
 
         st.divider()
         m1, m2, m3 = st.columns(3)
@@ -903,6 +947,8 @@ with tab_results:
 
         with sub_panels:
             vru_r = results.get("vru", {})
+            if not vru_r.get("feeders"):
+                st.info("Щиты не найдены в результатах расчёта. Нажми «Пересчитать всё».")
             for feeder in vru_r.get("feeders", []):
                 with st.expander(f"{feeder['id']} — {feeder['name']} "
                                  f"| Pр={feeder['p_calc_kw']:.1f} кВт | Iр={feeder['i_calc_a']:.1f} А",
@@ -986,9 +1032,9 @@ with tab_cables:
                     if not cb.get("kz_thermal_ok", True):
                         kzt_err.append({
                             "ID": obj_id, "Наименование": obj_name,
-                            "Sфакт, мм²": cb.get("section_mm2"),
-                            "Sмин, мм²": cb.get("kz_thermal_s_min_mm2"),
-                            "Iкз_ист, кА": cb.get("isc_ka_source"),
+                            "Sфакт, мм²": cb.get("section_mm2", "—"),
+                            "Sмин, мм²": cb.get("kz_thermal_s_min_mm2", "—"),
+                            "Iкз_ист, кА": cb.get("isc_ka_source", "—"),
                         })
                     if not cb.get("kz_sens_ok", True):
                         kzs_err.append({
@@ -1062,20 +1108,26 @@ with tab_docs:
     uploaded = st.file_uploader("Excel-файл сметы или КП", type=["xlsx","xls","csv"])
     if uploaded:
         import tempfile
-        with tempfile.NamedTemporaryFile(delete=False, suffix=Path(uploaded.name).suffix) as tmp:
-            tmp.write(uploaded.read())
-            tmp_path = Path(tmp.name)
+        tmp_path = None
+        try:
+            with tempfile.NamedTemporaryFile(delete=False, suffix=Path(uploaded.name).suffix) as tmp:
+                tmp.write(uploaded.read())
+                tmp_path = Path(tmp.name)
 
-        from parsers.parse_estimate import parse_file, print_parsed_items
-        import io
-        items = parse_file(str(tmp_path))
+            from parsers.parse_estimate import parse_file
+            items = parse_file(str(tmp_path))
 
-        if items:
-            st.success(f"Найдено позиций: {len(items)}")
-            st.dataframe(items, width="stretch", hide_index=True)
-            st.caption("Данные распарсены. Используй их для заполнения спецификации.")
-        else:
-            st.warning("Позиции не найдены. Проверь формат файла.")
+            if items:
+                st.success(f"Найдено позиций: {len(items)}")
+                st.dataframe(items, use_container_width=True, hide_index=True)
+                st.caption("Данные распарсены. Используй их для заполнения спецификации.")
+            else:
+                st.warning("Позиции не найдены. Проверь формат файла.")
+        except Exception as _e:
+            st.error(f"Ошибка при чтении файла: {_e}")
+        finally:
+            if tmp_path and tmp_path.exists():
+                tmp_path.unlink(missing_ok=True)
 
     st.divider()
 
