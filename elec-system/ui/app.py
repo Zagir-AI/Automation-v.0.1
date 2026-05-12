@@ -337,8 +337,8 @@ with col_btns:
 
 
 # Вкладки
-tab_summary, tab_data, tab_results, tab_cables, tab_changes, tab_docs, tab_settings = st.tabs([
-    "📊 Сводка", "✏️ Данные", "🔢 Расчёт", "⚡ Кабели", "📝 Изменения", "📁 Документы", "⚙️ Настройки"
+tab_summary, tab_data, tab_results, tab_cables, tab_outdoor, tab_changes, tab_docs, tab_settings = st.tabs([
+    "📊 Сводка", "✏️ Данные", "🔢 Расчёт", "⚡ Кабели", "🌃 НО", "📝 Изменения", "📁 Документы", "⚙️ Настройки"
 ])
 
 
@@ -1636,6 +1636,207 @@ with tab_cables:
             st.dataframe(kzs_err, width="stretch", hide_index=True)
         if not du_err and not kzt_err and not kzs_err:
             st.success("Нарушений нет")
+
+
+# ── Вкладка: НО (наружные сети) ─────────────────────────────────────
+
+with tab_outdoor:
+    import pandas as pd
+
+    outdoor_nets = project.setdefault("outdoor_networks", [])
+
+    sub_no_data, sub_no_results = st.tabs(["📋 Сети", "📊 Результаты"])
+
+    # ── Данные наружных сетей ────────────────────────────────────────
+    with sub_no_data:
+        col_no_sel, col_no_add = st.columns([5, 1])
+
+        with col_no_add:
+            st.write("")
+            st.write("")
+            if st.button("➕ Добавить сеть", key="add_outdoor_btn"):
+                st.session_state["show_add_outdoor"] = True
+
+        # Форма добавления новой сети
+        if st.session_state.get("show_add_outdoor"):
+            with st.form("new_outdoor_form"):
+                st.markdown("**Новая наружная сеть**")
+                _no_id   = st.text_input("ID (напр. ОН-2)", key="no_new_id")
+                _no_name = st.text_input("Название", value="Наружное освещение", key="no_new_name")
+                _no_ph   = st.selectbox("Фазность", [3, 1], key="no_new_ph")
+                if st.form_submit_button("Создать"):
+                    if _no_id and _no_id not in [n["id"] for n in outdoor_nets]:
+                        outdoor_nets.append({
+                            "id": _no_id, "name": _no_name,
+                            "voltage_kv": 0.4, "phases": _no_ph,
+                            "cable": {"mark": "ВВГнг-LS", "cores": 4 if _no_ph == 3 else 2,
+                                      "length_m": 50, "section_mm2": None,
+                                      "install": "земля", "ambient_t": 15},
+                            "consumers": [],
+                        })
+                        save_project(project, proj_dir)
+                        st.session_state["show_add_outdoor"] = False
+                        st.success(f"Сеть {_no_id} создана")
+                        st.rerun()
+                    else:
+                        st.warning("ID уже существует или не заполнен")
+
+        if not outdoor_nets:
+            st.info("Нет наружных сетей. Нажми «➕ Добавить сеть».")
+        else:
+            # Выбор сети
+            _no_ids = [f"{n['id']} — {n['name']}" for n in outdoor_nets]
+            with col_no_sel:
+                _no_sel_lbl = st.selectbox("Сеть", _no_ids, key="outdoor_sel")
+            _no_idx = next(i for i, lbl in enumerate(_no_ids) if lbl == _no_sel_lbl)
+            _no_net = outdoor_nets[_no_idx]
+
+            st.divider()
+            _no_c1, _no_c2 = st.columns(2)
+
+            with _no_c1:
+                st.markdown("**Параметры кабельной линии**")
+                _no_mark    = st.text_input("Марка кабеля", value=_no_net["cable"].get("mark","ВВГнг-LS"), key="no_mark")
+                _no_cores   = st.number_input("Жилы", 2, 5, int(_no_net["cable"].get("cores",4)), key="no_cores")
+                _no_sec_val = _no_net["cable"].get("section_mm2") or 0.0
+                _no_sec     = st.number_input("Сечение, мм² (0 = авто)", 0.0, 240.0,
+                                               float(_no_sec_val), 1.0, key="no_sec")
+                _no_len     = st.number_input("Длина, м", 1.0, 5000.0,
+                                               float(_no_net["cable"].get("length_m",50)), 1.0, key="no_len")
+
+            with _no_c2:
+                st.markdown("**Параметры сети**")
+                _no_inst    = st.selectbox("Прокладка",
+                                           ["земля","лоток","труба","открыто"],
+                                           index=["земля","лоток","труба","открыто"].index(
+                                               _no_net["cable"].get("install","земля")),
+                                           key="no_inst")
+                _no_amb     = st.number_input("Темп. среды, °C", -40, 50,
+                                              int(_no_net["cable"].get("ambient_t",15)), key="no_amb")
+                _no_phases  = st.selectbox("Фазность", [3, 1],
+                                           index=0 if _no_net.get("phases",3)==3 else 1,
+                                           key="no_phases")
+
+            # ── Потребители (светильники) ────────────────────────────
+            st.divider()
+            st.markdown("**Светильники / потребители**")
+            st.caption("Нажми + внизу таблицы чтобы добавить светильник.")
+
+            _no_cons = _no_net.setdefault("consumers", [])
+            _no_rows = []
+            for _nc in _no_cons:
+                _no_rows.append({
+                    "id":            _nc.get("id",""),
+                    "name":          _nc.get("name",""),
+                    "power_kw":      float(_nc.get("power_kw",0.15)),
+                    "cos_phi":       float(_nc.get("cos_phi",0.95)),
+                    "n_units":       int(_nc.get("n_units",1)),
+                    "demand_factor": float(_nc.get("demand_factor",1.0)),
+                    "category_pue":  int(_nc.get("category_pue",3)),
+                })
+
+            _no_df = pd.DataFrame(
+                _no_rows or [],
+                columns=["id","name","power_kw","cos_phi","n_units","demand_factor","category_pue"],
+            )
+            _no_edited = st.data_editor(
+                _no_df,
+                num_rows="dynamic",
+                use_container_width=True,
+                column_config={
+                    "id":            st.column_config.TextColumn("ID"),
+                    "name":          st.column_config.TextColumn("Наименование"),
+                    "power_kw":      st.column_config.NumberColumn("P, кВт", min_value=0.0, step=0.01, format="%.3f"),
+                    "cos_phi":       st.column_config.NumberColumn("cos φ", min_value=0.1, max_value=1.0, step=0.01, format="%.2f"),
+                    "n_units":       st.column_config.NumberColumn("Кол-во", min_value=1, step=1),
+                    "demand_factor": st.column_config.NumberColumn("Кс", min_value=0.0, max_value=1.0, step=0.05, format="%.2f"),
+                    "category_pue":  st.column_config.SelectboxColumn("Кат. ПУЭ", options=[1,2,3]),
+                },
+                hide_index=True,
+                key=f"no_editor_{_no_idx}",
+            )
+
+            _col_save_no, _col_del_no = st.columns([3, 1])
+            with _col_save_no:
+                if st.button("💾 Сохранить сеть", type="primary", key=f"save_no_{_no_idx}"):
+                    _new_no_cons = []
+                    for _, _nr in _no_edited.iterrows():
+                        if not str(_nr.get("id","")).strip():
+                            continue
+                        try:
+                            _new_no_cons.append({
+                                "id":            str(_nr["id"]).strip(),
+                                "name":          str(_nr.get("name","")).strip(),
+                                "power_kw":      float(_nr["power_kw"]),
+                                "cos_phi":       float(_nr["cos_phi"]),
+                                "n_units":       int(_nr["n_units"]),
+                                "demand_factor": float(_nr["demand_factor"]),
+                                "category_pue":  int(_nr["category_pue"]),
+                            })
+                        except (ValueError, TypeError):
+                            st.warning(f"Строка {_nr.get('id','?')}: некорректные значения, пропущена.")
+                    outdoor_nets[_no_idx].update({
+                        "phases": _no_phases,
+                        "cable": {
+                            "mark":        _no_mark,
+                            "cores":       int(_no_cores),
+                            "section_mm2": float(_no_sec) if _no_sec > 0 else None,
+                            "length_m":    float(_no_len),
+                            "install":     _no_inst,
+                            "ambient_t":   int(_no_amb),
+                        },
+                        "consumers": _new_no_cons,
+                    })
+                    save_project(project, proj_dir)
+                    st.success("Сохранено. Нажми «Пересчитать всё».")
+                    st.rerun()
+
+            with _col_del_no:
+                if st.button("🗑 Удалить сеть", key=f"del_no_{_no_idx}"):
+                    outdoor_nets.pop(_no_idx)
+                    save_project(project, proj_dir)
+                    st.rerun()
+
+    # ── Результаты наружных сетей ────────────────────────────────────
+    with sub_no_results:
+        _no_res = results.get("outdoor_networks", []) if calc_done and results else []
+        if not _no_res:
+            st.info("Нет результатов. Нажми «Пересчитать всё».")
+        else:
+            for _nr in _no_res:
+                with st.expander(
+                    f"{_nr['id']} — {_nr['name']} | "
+                    f"Pр={_nr.get('p_calc_kw',0):.2f} кВт | "
+                    f"Iр={_nr.get('i_calc_a',0):.1f} А",
+                    expanded=True,
+                ):
+                    _cb_r = _nr.get("cable", {})
+                    _br_r = _nr.get("breaker", {})
+                    _r1, _r2, _r3, _r4 = st.columns(4)
+                    _r1.metric("Pр, кВт",  f"{_nr.get('p_calc_kw',0):.2f}")
+                    _r2.metric("Iр, А",    f"{_nr.get('i_calc_a',0):.1f}")
+                    _r3.metric("ΔU, %",    f"{_cb_r.get('voltage_drop_pct',0):.2f}",
+                               delta=("OK" if _cb_r.get("du_ok", True) else "⚠️ > лимита"),
+                               delta_color="normal" if _cb_r.get("du_ok", True) else "inverse")
+                    _r4.metric("АВ",
+                               f"{_br_r.get('rating','—')}А {_br_r.get('char','')}"
+                               if _br_r else "—")
+
+                    _no_cable_str = (f"{_cb_r.get('mark','')} "
+                                     f"{_cb_r.get('cores','')}×{_cb_r.get('section_mm2','')} мм², "
+                                     f"L={_cb_r.get('length_m_calc', _cb_r.get('length_m',''))} м")
+                    st.caption(f"Кабель: {_no_cable_str}")
+
+                    _no_cons_r = _nr.get("consumers", [])
+                    if _no_cons_r:
+                        _no_tbl = [{
+                            "ID":        c["id"],
+                            "Светильник":c["name"],
+                            "P, кВт":   c["power_kw"],
+                            "Кол-во":   c["n_units"],
+                            "Pр, кВт":  round(c["power_kw"] * c.get("n_units",1) * c.get("demand_factor",1), 3),
+                        } for c in _no_cons_r]
+                        st.dataframe(_no_tbl, hide_index=True, use_container_width=True)
 
 
 # ── Вкладка: Изменения ───────────────────────────────────────────────
