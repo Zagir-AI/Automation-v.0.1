@@ -448,11 +448,11 @@
   "_meta": {
     "schema_version": "1.1",
     "created": "2025-04-18",
-    "last_modified": "2026-05-11",
+    "last_modified": "2026-05-12",
     "calc_done": true
   },
   "_results": {
-    "calculated_at": "2026-05-11T15:06:59.730689",
+    "calculated_at": "2026-05-12T17:45:09.914285",
     "vru": {
       "id": "ВРУ-1",
       "name": "ВРУ-1",
@@ -1863,7 +1863,7 @@
     "has_avr": true,
     "compliance_ok": true,
     "violations": 0,
-    "last_check": "2026-05-11"
+    "last_check": "2026-05-12"
   },
   "_vru_snapshot": {
     "id": "ВРУ-1",
