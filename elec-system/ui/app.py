@@ -13,6 +13,7 @@ ui/app.py — веб-интерфейс системы.
   - Загрузка и парсинг сметы / КП
 """
 
+import re
 import sys
 import json
 import subprocess
@@ -112,13 +113,16 @@ if st.session_state.get("show_new_form"):
     with btn_col2:
         if st.button("Создать", type="primary", use_container_width=True):
             if new_code and new_name:
-                out, err, rc = run_cli(["new", new_code, new_name])
-                if rc == 0:
-                    st.success(f"Создан: {new_code}")
-                    st.session_state["show_new_form"] = False
-                    st.rerun()
+                if not re.match(r'^[А-ЯA-Z0-9\-]{3,20}$', new_code.strip()):
+                    st.error("Код объекта: только буквы (А-Я, A-Z), цифры и «-», от 3 до 20 символов.")
                 else:
-                    st.error(f"Ошибка: {err}")
+                    out, err, rc = run_cli(["new", new_code.strip(), new_name.strip()])
+                    if rc == 0:
+                        st.success(f"Создан: {new_code}")
+                        st.session_state["show_new_form"] = False
+                        st.rerun()
+                    else:
+                        st.error(f"Ошибка: {err}")
             else:
                 st.warning("Заполни код и название")
     st.stop()
@@ -144,9 +148,12 @@ if not active_path:
         p.get("_results", {}).get("summary", {}).get("p_installed_kw", 0)
         for _, p in projects if p.get("_results")
     )
+    def _safe_len(val) -> int:
+        return len(val) if isinstance(val, list) else 0
+
     warns = sum(
-        len(p.get("_results", {}).get("cable_checks", {}).get("du_violations", [])) +
-        len(p.get("_results", {}).get("cable_checks", {}).get("kz_thermal_violations", []))
+        _safe_len(p.get("_results", {}).get("cable_checks", {}).get("du_violations")) +
+        _safe_len(p.get("_results", {}).get("cable_checks", {}).get("kz_thermal_violations"))
         for _, p in projects if p.get("_results")
     )
 
@@ -516,6 +523,9 @@ with tab_data:
                     target = next(
                         (nc for nc in new_consumers if nc["id"] == target_id), None
                     )
+                    if target is None:
+                        st.error(f"Потребитель «{target_id}» не найден в списке — cable не обновлён. "
+                                 "Убедись, что ID не был изменён при редактировании таблицы.")
                     if target is not None:
                         target["cable"] = {
                             "mark":        new_mark,
@@ -580,7 +590,13 @@ with tab_data:
                 if np_submitted:
                     if np_id:
                         new_panel = make_blank_panel(np_id, np_type)
-                        fi_new = next(i for i, f in enumerate(vru["feeders"]) if f.get("id") == np_feeder)
+                        fi_new = next(
+                            (i for i, f in enumerate(vru.get("feeders", [])) if f.get("id") == np_feeder),
+                            None,
+                        )
+                        if fi_new is None:
+                            st.error(f"Фидер «{np_feeder}» не найден. Обнови страницу.")
+                            st.stop()
                         vru["feeders"][fi_new].setdefault("panels", []).append(new_panel)
                         save_project(project, proj_dir)
                         st.session_state["show_add_panel"] = False
@@ -931,6 +947,8 @@ with tab_results:
 
         with sub_panels:
             vru_r = results.get("vru", {})
+            if not vru_r.get("feeders"):
+                st.info("Щиты не найдены в результатах расчёта. Нажми «Пересчитать всё».")
             for feeder in vru_r.get("feeders", []):
                 with st.expander(f"{feeder['id']} — {feeder['name']} "
                                  f"| Pр={feeder['p_calc_kw']:.1f} кВт | Iр={feeder['i_calc_a']:.1f} А",
@@ -1014,9 +1032,9 @@ with tab_cables:
                     if not cb.get("kz_thermal_ok", True):
                         kzt_err.append({
                             "ID": obj_id, "Наименование": obj_name,
-                            "Sфакт, мм²": cb.get("section_mm2"),
-                            "Sмин, мм²": cb.get("kz_thermal_s_min_mm2"),
-                            "Iкз_ист, кА": cb.get("isc_ka_source"),
+                            "Sфакт, мм²": cb.get("section_mm2", "—"),
+                            "Sмин, мм²": cb.get("kz_thermal_s_min_mm2", "—"),
+                            "Iкз_ист, кА": cb.get("isc_ka_source", "—"),
                         })
                     if not cb.get("kz_sens_ok", True):
                         kzs_err.append({
