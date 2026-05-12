@@ -482,26 +482,34 @@ with tab_data:
             if st.button("💾 Сохранить потребителей", type="primary",
                          key=f"save_cons_{fi}_{pi}"):
                 new_consumers = []
+                save_error = False
                 for _, row in edited_df.iterrows():
                     cid = str(row.get("id", "")).strip()
                     if not cid or cid == "nan":
                         continue
                     old = next((c for c in consumers if c.get("id") == cid), {})
-                    new_consumers.append({
-                        "id":            cid,
-                        "name":          str(row.get("name", "")),
-                        "type":          str(row.get("type", "power")),
-                        "power_kw":      float(row.get("power_kw", 0.0)),
-                        "demand_factor": float(row.get("demand_factor", 0.85)),
-                        "cos_phi":       float(row.get("cos_phi", 0.85)),
-                        "phases":        int(row.get("phases", 3)),
-                        "start_factor":  float(row.get("start_factor", 1.0)),
+                    try:
+                        new_consumers.append({
+                            "id":            cid,
+                            "name":          str(row.get("name", "")),
+                            "type":          str(row.get("type", "power")),
+                            "power_kw":      float(row.get("power_kw", 0.0)),
+                            "demand_factor": float(row.get("demand_factor", 0.85)),
+                            "cos_phi":       float(row.get("cos_phi", 0.85)),
+                            "phases":        int(row.get("phases", 3)),
+                            "start_factor":  float(row.get("start_factor", 1.0)),
                         "cable":         old.get("cable", {
                             "mark": "ВВГнг-LS", "cores": 3, "section_mm2": None,
                             "length_m": 10, "install": "лоток",
                             "ambient_t": 25, "parallel": 1,
                         }),
-                    })
+                        })
+                    except (ValueError, TypeError) as _e:
+                        st.error(f"Ошибка в строке потребителя «{cid}»: {_e}")
+                        save_error = True
+                        break
+                if save_error:
+                    st.stop()
                 # Обновить cable выбранного потребителя
                 if c_idx is not None and new_mark is not None:
                     target_id = consumers[c_idx].get("id")
@@ -546,7 +554,11 @@ with tab_data:
                     [o[0] for o in panel_options_s],
                     key="settings_panel_select",
                 )
-                fi_s, pi_s = next((o[1], o[2]) for o in panel_options_s if o[0] == selected_label_s)
+                _match = next((o for o in panel_options_s if o[0] == selected_label_s), None)
+                if _match is None:
+                    st.error("Щит не найден. Обнови страницу.")
+                    st.stop()
+                fi_s, pi_s = _match[1], _match[2]
                 selected_panel_s = project["vru"]["feeders"][fi_s]["panels"][pi_s]
 
         with col_add:
@@ -841,12 +853,15 @@ with tab_data:
                 key="tp_parallel"
             )
 
-        # Расчёт происходит при каждом изменении поля (Streamlit реактивен)
         from calc.engine import calc_isc_from_tp
-        kz_result = calc_isc_from_tp(
-            tp_s_nom, tp_u_k, tp_u_nom_lv,
-            tp_cable_mark, tp_cable_section, tp_cable_length, tp_parallel
-        )
+        try:
+            kz_result = calc_isc_from_tp(
+                tp_s_nom, tp_u_k, tp_u_nom_lv,
+                tp_cable_mark, tp_cable_section, tp_cable_length, tp_parallel
+            )
+        except Exception as _e:
+            st.error(f"Ошибка расчёта тока КЗ: {_e}")
+            st.stop()
 
         st.divider()
         m1, m2, m3 = st.columns(3)
@@ -1075,20 +1090,26 @@ with tab_docs:
     uploaded = st.file_uploader("Excel-файл сметы или КП", type=["xlsx","xls","csv"])
     if uploaded:
         import tempfile
-        with tempfile.NamedTemporaryFile(delete=False, suffix=Path(uploaded.name).suffix) as tmp:
-            tmp.write(uploaded.read())
-            tmp_path = Path(tmp.name)
+        tmp_path = None
+        try:
+            with tempfile.NamedTemporaryFile(delete=False, suffix=Path(uploaded.name).suffix) as tmp:
+                tmp.write(uploaded.read())
+                tmp_path = Path(tmp.name)
 
-        from parsers.parse_estimate import parse_file, print_parsed_items
-        import io
-        items = parse_file(str(tmp_path))
+            from parsers.parse_estimate import parse_file
+            items = parse_file(str(tmp_path))
 
-        if items:
-            st.success(f"Найдено позиций: {len(items)}")
-            st.dataframe(items, width="stretch", hide_index=True)
-            st.caption("Данные распарсены. Используй их для заполнения спецификации.")
-        else:
-            st.warning("Позиции не найдены. Проверь формат файла.")
+            if items:
+                st.success(f"Найдено позиций: {len(items)}")
+                st.dataframe(items, use_container_width=True, hide_index=True)
+                st.caption("Данные распарсены. Используй их для заполнения спецификации.")
+            else:
+                st.warning("Позиции не найдены. Проверь формат файла.")
+        except Exception as _e:
+            st.error(f"Ошибка при чтении файла: {_e}")
+        finally:
+            if tmp_path and tmp_path.exists():
+                tmp_path.unlink(missing_ok=True)
 
     st.divider()
 
