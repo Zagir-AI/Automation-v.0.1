@@ -450,8 +450,8 @@ with tab_summary:
 # ── Вкладка: Данные ──────────────────────────────────────────────────
 
 with tab_data:
-    sub_consumers, sub_settings, sub_kz, sub_json = st.tabs([
-        "👥 Потребители", "⚙️ Настройки щитов", "⚡ Ток КЗ", "{ } JSON"
+    sub_consumers, sub_settings, sub_rooms, sub_kz, sub_json = st.tabs([
+        "👥 Потребители", "⚙️ Настройки щитов", "💡 Помещения", "⚡ Ток КЗ", "{ } JSON"
     ])
 
     # ── Суб-вкладка: Потребители ──────────────────────────────────────
@@ -1264,6 +1264,192 @@ with tab_data:
             save_project(project, proj_dir)
             st.success(f"isc_ka = {vru['isc_ka']} кА сохранено в проект")
             st.rerun()
+
+    # ── Суб-вкладка: Помещения ───────────────────────────────────────
+    with sub_rooms:
+        import pandas as pd
+        from lighting.calc_illumination import SP52_NORMS
+
+        _ROOM_TYPES = sorted(SP52_NORMS.keys()) + ["другое"]
+
+        rooms_list = project.setdefault("rooms", [])
+
+        st.caption("Помещения используются для проверки освещённости по СП 52.13330.2016 (метод КИ).")
+        st.caption("Нажми + внизу таблицы чтобы добавить помещение.")
+
+        _rm_rows = []
+        for _r in rooms_list:
+            _rm_rows.append({
+                "id":               _r.get("id", ""),
+                "name":             _r.get("name", ""),
+                "type":             _r.get("type", "офис"),
+                "length_m":         float(_r.get("length_m", 5.0)),
+                "width_m":          float(_r.get("width_m", 4.0)),
+                "height_m":         float(_r.get("height_m", 3.0)),
+                "h_work_m":         float(_r.get("h_work_m", 0.8)),
+                "n_luminaires":     int(_r.get("n_luminaires", 0)),
+                "luminous_flux_lm": int(_r.get("luminous_flux_lm", 3200)),
+                "kz":               float(_r.get("kz", 1.5)),
+            })
+
+        _rm_df = pd.DataFrame(
+            _rm_rows or [],
+            columns=["id","name","type","length_m","width_m","height_m",
+                     "h_work_m","n_luminaires","luminous_flux_lm","kz"],
+        )
+
+        _rm_edited = st.data_editor(
+            _rm_df,
+            num_rows="dynamic",
+            use_container_width=True,
+            column_config={
+                "id":               st.column_config.TextColumn("ID"),
+                "name":             st.column_config.TextColumn("Помещение"),
+                "type":             st.column_config.SelectboxColumn(
+                                        "Тип", options=_ROOM_TYPES, required=True),
+                "length_m":         st.column_config.NumberColumn("Длина, м", min_value=0.5, step=0.5, format="%.1f"),
+                "width_m":          st.column_config.NumberColumn("Ширина, м", min_value=0.5, step=0.5, format="%.1f"),
+                "height_m":         st.column_config.NumberColumn("Высота, м", min_value=2.0, max_value=15.0, step=0.1, format="%.1f"),
+                "h_work_m":         st.column_config.NumberColumn("Hрп, м", min_value=0.0, step=0.1, format="%.1f"),
+                "n_luminaires":     st.column_config.NumberColumn("Светильников", min_value=0, step=1),
+                "luminous_flux_lm": st.column_config.NumberColumn("Поток, лм", min_value=100, step=100),
+                "kz":               st.column_config.NumberColumn("Кз", min_value=1.0, max_value=2.5, step=0.05, format="%.2f"),
+            },
+            hide_index=True,
+            key="rooms_data_editor",
+        )
+
+        if st.button("💾 Сохранить помещения", type="primary", key="save_rooms"):
+            _new_rooms = []
+            for _, _rrow in _rm_edited.iterrows():
+                if not str(_rrow.get("id","")).strip():
+                    continue
+                try:
+                    _new_rooms.append({
+                        "id":               str(_rrow["id"]).strip(),
+                        "name":             str(_rrow.get("name","")).strip(),
+                        "type":             str(_rrow.get("type","офис")),
+                        "length_m":         float(_rrow["length_m"]),
+                        "width_m":          float(_rrow["width_m"]),
+                        "height_m":         float(_rrow["height_m"]),
+                        "h_work_m":         float(_rrow["h_work_m"]),
+                        "n_luminaires":     int(_rrow["n_luminaires"]),
+                        "luminous_flux_lm": int(_rrow["luminous_flux_lm"]),
+                        "rho_ceil":         0.7,
+                        "rho_wall":         0.5,
+                        "kz":               float(_rrow["kz"]),
+                        "z":                1.1,
+                    })
+                except (ValueError, TypeError):
+                    st.warning(f"Строка {_rrow.get('id','?')}: некорректные числовые значения, пропущена.")
+            project["rooms"] = _new_rooms
+            save_project(project, proj_dir)
+            st.success(f"Сохранено {len(_new_rooms)} помещений. Нажми «Пересчитать всё».")
+            st.rerun()
+
+        # ── Генератор осветительных групп ───────────────────────────
+        st.divider()
+        with st.expander("💡 Создать осветительные группы в щите"):
+            _lg_panel_options = []
+            for _lg_fi, _lg_f in enumerate(vru.get("feeders", [])):
+                for _lg_pi, _lg_p in enumerate(_lg_f.get("panels", [])):
+                    _lg_panel_options.append((
+                        f"{_lg_f['id']} / {_lg_p['id']} — {_lg_p['name']}",
+                        _lg_fi, _lg_pi,
+                    ))
+
+            if not _lg_panel_options:
+                st.warning("Нет щитов в проекте.")
+            else:
+                _lg_sel = st.selectbox("Целевой щит", [o[0] for o in _lg_panel_options], key="lg_panel_sel")
+                _lg_fi_t, _lg_pi_t = next((o[1], o[2]) for o in _lg_panel_options if o[0] == _lg_sel)
+
+                _lg_c1, _lg_c2, _lg_c3 = st.columns(3)
+                with _lg_c1:
+                    _lg_p_w      = st.number_input("Мощность светильника, Вт", 10, 500, 36, 1, key="lg_pw")
+                    _lg_flux     = st.number_input("Световой поток, лм", 100, 20000, 3200, 100, key="lg_flux")
+                with _lg_c2:
+                    _lg_n_max    = st.number_input("Макс. светильников в группе", 5, 50, 20, 1, key="lg_nmax")
+                    _lg_phases   = st.selectbox("Фазность", [1, 3], key="lg_phases_gen")
+                with _lg_c3:
+                    _lg_prefix   = st.text_input("Префикс ID", "ОС", key="lg_prefix")
+                    _lg_cable_s  = st.number_input("Сечение кабеля, мм²", 0.0, 10.0, 1.5, 0.5, key="lg_sec",
+                                                   help="0 = авто-подбор")
+
+                # Считаем общее число светильников из rooms[]
+                _lg_total_auto = 0
+                if rooms_list:
+                    try:
+                        from lighting.calc_illumination import _uf as _lg_uf
+                        for _rm in rooms_list:
+                            _L = float(_rm.get("length_m", 0))
+                            _W = float(_rm.get("width_m", 0))
+                            _H = float(_rm.get("height_m", 3.0)) - float(_rm.get("h_work_m", 0.8))
+                            _S = _L * _W
+                            if _S > 0 and _H > 0:
+                                _i_rm = _S / (_H * (_L + _W))
+                                _uf_rm = _lg_uf(_i_rm)
+                                _E_norm = SP52_NORMS.get(_rm.get("type","офис"), 300)
+                                _kz_rm = float(_rm.get("kz", 1.5))
+                                _z_rm  = float(_rm.get("z", 1.1))
+                                _flux_rm = int(_rm.get("luminous_flux_lm", _lg_flux))
+                                _n_req = math.ceil(_E_norm * _S * _kz_rm * _z_rm / (_flux_rm * _uf_rm))
+                                _n_use = _rm.get("n_luminaires") or _n_req
+                                _lg_total_auto += int(_n_use)
+                    except Exception:
+                        _lg_total_auto = 0
+
+                if _lg_total_auto > 0:
+                    st.info(f"По помещениям: {_lg_total_auto} светильников → "
+                            f"{math.ceil(_lg_total_auto / _lg_n_max)} групп.")
+                    _lg_total = _lg_total_auto
+                else:
+                    _lg_total = st.number_input("Всего светильников (нет данных по помещениям)",
+                                                1, 1000, 20, 1, key="lg_total_manual")
+
+                if st.button("➕ Добавить осветительные группы в щит",
+                             key=f"add_lg_{_lg_fi_t}_{_lg_pi_t}"):
+                    _ks_l  = 0.90
+                    _cos_l = 0.95
+                    _n_groups_l = math.ceil(_lg_total / _lg_n_max)
+                    _tgt_panel  = vru["feeders"][_lg_fi_t]["panels"][_lg_pi_t]
+                    _tgt_cons   = _tgt_panel.setdefault("consumers", [])
+                    _existing_ids = {c["id"] for c in _tgt_cons}
+                    _added_l = 0
+                    for _gi in range(1, _n_groups_l + 1):
+                        _n_this = (_lg_total - (_n_groups_l - 1) * _lg_n_max
+                                   if _gi == _n_groups_l else _lg_n_max)
+                        _p_this = round(_n_this * _lg_p_w / 1000 * _ks_l, 3)
+                        _gid    = f"{_lg_prefix}-{_gi:02d}"
+                        _counter = _gi
+                        while _gid in _existing_ids:
+                            _counter += 1
+                            _gid = f"{_lg_prefix}-{_counter:02d}"
+                        _existing_ids.add(_gid)
+                        _sec_val = float(_lg_cable_s) if _lg_cable_s > 0 else None
+                        _tgt_cons.append({
+                            "id":            _gid,
+                            "name":          f"Группа освещения {_gid}",
+                            "type":          "lighting",
+                            "power_kw":      _p_this,
+                            "demand_factor": _ks_l,
+                            "cos_phi":       _cos_l,
+                            "phases":        _lg_phases,
+                            "start_factor":  1.0,
+                            "cable": {
+                                "mark":        "ВВГнг-LS",
+                                "cores":       3 if _lg_phases == 1 else 5,
+                                "section_mm2": _sec_val,
+                                "length_m":    20,
+                                "install":     "лоток",
+                                "ambient_t":   25,
+                                "parallel":    1,
+                            },
+                        })
+                        _added_l += 1
+                    save_project(project, proj_dir)
+                    st.success(f"Добавлено {_added_l} осветительных групп в щит {_tgt_panel['id']}.")
+                    st.rerun()
 
     # ── Суб-вкладка: JSON ─────────────────────────────────────────────
     with sub_json:
