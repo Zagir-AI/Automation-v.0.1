@@ -409,6 +409,18 @@ def calc_panel(panel: dict, building: dict | None = None, isc_ka: float = 10.0) 
         i_start = i_calc * c.get("start_factor", 1.0)
 
         breaker_result = select_breaker_for_consumer(c, i_calc)
+        _br_ov = c.get("breaker_override")
+        if _br_ov and _br_ov.get("rating"):
+            breaker_result = {
+                **breaker_result,
+                "rating": _br_ov["rating"],
+                "char":   _br_ov.get("char",  breaker_result["char"]),
+                "poles":  _br_ov.get("poles", breaker_result["poles"]),
+                "type":   (f"АВ {_br_ov['rating']}А хар."
+                           f"{_br_ov.get('char', breaker_result['char'])} "
+                           f"{_br_ov.get('poles', breaker_result['poles'])}П"),
+                "manual": True,
+            }
 
         cable_cfg = dict(c.get("cable", {}))
         cable_cfg["cos_phi"] = c.get("cos_phi", 0.85)
