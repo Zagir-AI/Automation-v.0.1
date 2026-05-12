@@ -346,47 +346,71 @@ tab_summary, tab_data, tab_results, tab_cables, tab_changes, tab_docs, tab_setti
 
 with tab_summary:
     if calc_done and results:
-        s = results.get("summary", {})
-        c1, c2, c3, c4 = st.columns(4)
-        c1.metric("Pустан, кВт", f"{s.get('p_installed_kw', 0):.1f}")
-        c2.metric("Pрасч, кВт",  f"{s.get('p_calc_kw', 0):.1f}")
-        c3.metric("cos φ",        f"{s.get('cos_phi', 0):.3f}")
-        c4.metric("Iвру, А",      f"{s.get('i_vru_a', 0):.1f}")
+        s     = results.get("summary", {})
+        vru_r = results.get("vru", {})
+
+        # Метрики: для раздела — агрегируем из фидеров; для «Все» — из summary
+        _feeders_s = _filter_feeders(vru_r.get("feeders", []), active_section)
+        if active_section != "Все" and _feeders_s:
+            _p_inst  = sum(
+                panel.get("p_installed_kw", 0)
+                for f in _feeders_s for panel in f.get("panels", [])
+            )
+            _p_calc  = sum(f.get("p_calc_kw", 0) for f in _feeders_s)
+            _s_calc  = sum(f.get("s_calc_kva", 0) for f in _feeders_s)
+            _cos_phi = round(_p_calc / _s_calc, 3) if _s_calc > 0 else 0.0
+            _i_sum   = sum(f.get("i_calc_a", 0) for f in _feeders_s)
+            st.caption(f"Показаны данные раздела «{active_section}»")
+            c1, c2, c3, c4 = st.columns(4)
+            c1.metric("Pустан, кВт", f"{_p_inst:.1f}")
+            c2.metric("Pрасч, кВт",  f"{_p_calc:.1f}")
+            c3.metric("cos φ",        f"{_cos_phi:.3f}")
+            c4.metric("Iраздела, А",  f"{_i_sum:.1f}")
+        else:
+            c1, c2, c3, c4 = st.columns(4)
+            c1.metric("Pустан, кВт", f"{s.get('p_installed_kw', 0):.1f}")
+            c2.metric("Pрасч, кВт",  f"{s.get('p_calc_kw', 0):.1f}")
+            c3.metric("cos φ",        f"{s.get('cos_phi', 0):.3f}")
+            c4.metric("Iвру, А",      f"{s.get('i_vru_a', 0):.1f}")
 
         st.divider()
+
+        # Вводной кабель и автомат ВРУ — всегда общие
         cable = s.get("incoming_cable", {})
-        vru_r = results.get("vru", {})
-        br = vru_r.get("breaker", {})
+        br    = vru_r.get("breaker", {})
         col_a, col_b = st.columns(2)
         with col_a:
             if cable.get("section_mm2"):
-                st.info(f"**Вводной кабель:** {cable['mark']} "
+                st.info(f"**Вводной кабель ВРУ:** {cable['mark']} "
                         f"{cable['cores']}×{cable['section_mm2']} мм² · "
                         f"L={cable.get('length_m',0)} м · "
                         f"ΔU={cable.get('voltage_drop_pct',0)}%")
         with col_b:
             if br.get("rating"):
-                st.info(f"**Вводной автомат:** АВ {br['rating']}А хар.{br.get('char','C')} "
+                st.info(f"**Вводной автомат ВРУ:** АВ {br['rating']}А хар.{br.get('char','C')} "
                         f"({br.get('type','')})")
 
-        # Категория здания (ПУЭ гл.1.2)
-        bld = project.get("_building", {})
-        if bld:
-            cat = bld.get("category_pue", "?")
-            vru_desc = bld.get("vru_description", "—")
-            compliance = bld.get("compliance_ok", True)
-            n_viol = bld.get("violations", 0)
-            c_cat, c_scheme, c_comp = st.columns(3)
-            c_cat.metric("Категория здания (ПУЭ)", cat)
-            c_scheme.metric("Схема ВРУ", vru_desc)
-            if compliance:
-                c_comp.success("✓ Категорийность OK")
-            else:
-                c_comp.error(f"⚠ Нарушений кат.: {n_viol}")
+        # Категория здания (ПУЭ гл.1.2) — только для «Все»
+        if active_section == "Все":
+            bld = project.get("_building", {})
+            if bld:
+                cat = bld.get("category_pue", "?")
+                vru_desc = bld.get("vru_description", "—")
+                compliance = bld.get("compliance_ok", True)
+                n_viol = bld.get("violations", 0)
+                c_cat, c_scheme, c_comp = st.columns(3)
+                c_cat.metric("Категория здания (ПУЭ)", cat)
+                c_scheme.metric("Схема ВРУ", vru_desc)
+                if compliance:
+                    c_comp.success("✓ Категорийность OK")
+                else:
+                    c_comp.error(f"⚠ Нарушений кат.: {n_viol}")
 
-        # Таблица щитов
-        st.subheader("Щиты")
-        for feeder in vru_r.get("feeders", []):
+        # Таблица щитов (фильтруется по разделу)
+        st.subheader("Щиты" + (f" — {active_section}" if active_section != "Все" else ""))
+        if not _feeders_s:
+            st.info(f"Раздел «{active_section}» не содержит фидеров.")
+        for feeder in _feeders_s:
             st.markdown(f"**{feeder['id']} — {feeder['name']}** "
                         f"(Pр={feeder['p_calc_kw']:.1f} кВт, Iр={feeder['i_calc_a']:.1f} А)")
             data = []
@@ -398,6 +422,8 @@ with tab_summary:
                     "ID": panel["id"],
                     "Наименование": panel["name"],
                     "Этаж": panel.get("floor", ""),
+                    "Pуст, кВт": f"{panel.get('p_installed_kw', 0):.1f}",
+                    "Pр, кВт": f"{panel.get('p_calc_kw', 0):.1f}",
                     "Iр, А": f"{panel['i_calc_a']:.1f}",
                     "Кабель": f"{pc.get('mark','')} {pc.get('cores','')}×{pc.get('section_mm2','')}",
                     "L, м": pc.get("length_m", ""),
@@ -405,16 +431,16 @@ with tab_summary:
                     "Автомат": f"{pb.get('rating','')}А {pb.get('char','')}",
                 })
             st.dataframe(data, width="stretch", hide_index=True)
-            
+
             # Фазовый баланс фидера
-            pb = feeder.get("phase_balance")
-            if pb:
+            _pb = feeder.get("phase_balance")
+            if _pb:
                 with st.expander("⚖️ Фазовый баланс", expanded=False):
-                    imb = pb.get("imbalance_pct", 0)
+                    imb = _pb.get("imbalance_pct", 0)
                     col_a, col_b, col_c, col_d = st.columns(4)
-                    col_a.metric("Iа, А", f"{pb['A']['i_a']:.1f}")
-                    col_b.metric("Iб, А", f"{pb['B']['i_a']:.1f}")
-                    col_c.metric("Iс, А", f"{pb['C']['i_a']:.1f}")
+                    col_a.metric("Iа, А", f"{_pb['A']['i_a']:.1f}")
+                    col_b.metric("Iб, А", f"{_pb['B']['i_a']:.1f}")
+                    col_c.metric("Iс, А", f"{_pb['C']['i_a']:.1f}")
                     color = "🟢" if imb < 10 else ("🟡" if imb < 20 else "🔴")
                     col_d.metric(f"{color} Дисбаланс", f"{imb:.1f}%")
     else:
