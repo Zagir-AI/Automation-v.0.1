@@ -645,6 +645,59 @@ with tab_data:
                         "Темп. среды, °C", value=int(cable.get("ambient_t", 25)),
                         min_value=-40, max_value=50, key=f"ca_{fi}_{pi}_{c_idx}")
 
+                # ── Автоподбор сечения по расчётному току ────────────
+                if c_idx is not None and results:
+                    from calc.engine import select_cable_for_current
+                    _cr = next(
+                        (c for f in results.get("vru", {}).get("feeders", [])
+                         for p in f.get("panels", [])
+                         for c in p.get("consumers", [])
+                         if c.get("id") == selected_consumer_id),
+                        None,
+                    )
+                    if _cr and _cr.get("i_calc_a", 0) > 0:
+                        _i_r = _cr["i_calc_a"]
+                        _pick_cfg = {
+                            "mark":       new_mark or cable.get("mark", "ВВГнг-LS"),
+                            "install":    new_install or cable.get("install", "лоток"),
+                            "ambient_t":  int(new_amb) if new_amb is not None else int(cable.get("ambient_t", 25)),
+                            "parallel":   cable.get("parallel", 1),
+                            "section_mm2": None,
+                        }
+                        _pick = select_cable_for_current(_pick_cfg, _i_r)
+                        _pick_sec  = _pick.get("section_mm2")
+                        _pick_i_ok = _pick.get("i_allowed", 0)
+                        _cur_sec   = cable.get("section_mm2") or 0
+
+                        st.caption(f"Iр = **{_i_r:.1f} А** (из последнего расчёта)")
+                        if _pick_sec and float(_cur_sec) != float(_pick_sec):
+                            _pc1, _pc2 = st.columns([4, 1])
+                            with _pc1:
+                                st.info(
+                                    f"Рекомендуемое сечение: **{_pick_sec} мм²** "
+                                    f"(Iдоп = {_pick_i_ok:.0f} А ≥ {_i_r:.1f} А, "
+                                    f"{_pick_cfg['mark']}, {_pick_cfg['install']})"
+                                )
+                            with _pc2:
+                                if st.button("Применить", key=f"apply_sec_{fi}_{pi}_{c_idx}",
+                                             help="Записать рекомендуемое сечение в cable"):
+                                    consumers[c_idx].setdefault("cable", {})["section_mm2"] = _pick_sec
+                                    save_project(project, proj_dir)
+                                    st.rerun()
+                        elif _pick_sec:
+                            st.success(
+                                f"Сечение {_cur_sec} мм² соответствует Iр={_i_r:.1f} А "
+                                f"(Iдоп = {_pick_i_ok:.0f} А)"
+                            )
+                        else:
+                            st.error(
+                                f"Не удалось подобрать сечение для Iр={_i_r:.1f} А "
+                                f"({_pick_cfg['mark']}, {_pick_cfg['install']}). "
+                                "Проверь марку кабеля."
+                            )
+                    else:
+                        st.caption("Пересчитай проект — и здесь появится рекомендация по сечению.")
+
             # Сохранение
             if st.button("💾 Сохранить потребителей", type="primary",
                          key=f"save_cons_{fi}_{pi}"):
