@@ -44,11 +44,11 @@
   Строки 493–508: если потребитель не найден в new_consumers, его cable не обновится, ошибка молчит.
   _Фикс: добавить `st.error()` когда `target is None`._
 
-- [ ] **ValueError при конвертации типов в data_editor**
+- [x] **ValueError при конвертации типов в data_editor**
   Строки 471–491: `float(row.get(...))` без try-except. Если пользователь введёт текст — crash.
   _Фикс: обернуть в try-except, показать ошибку._
 
-- [ ] **IndexError / StopIteration при выборе щита**
+- [x] **IndexError / StopIteration при выборе щита**
   Строки 531–568: `next(...)` без дефолта — если selectbox вернёт значение вне panel_options → crash.
   _Фикс: `next(..., (None, None))` с проверкой на None._
 
@@ -56,7 +56,7 @@
   Строка 558: `next(i for i, f in enumerate(vru["feeders"]) if ...)` без дефолта.
   _Фикс: `next(..., None)` с проверкой._
 
-- [ ] **Нет try-except при расчёте тока КЗ**
+- [x] **Нет try-except при расчёте тока КЗ**
   Строки 832–836: `calc_isc_from_tp(...)` — если tp_s_nom=0 → ZeroDivisionError → crash.
   _Фикс: обернуть в try-except с `st.error()`._
 
@@ -73,11 +73,11 @@
   Строка 991: `cb.get("isc_ka_source")` может быть None → таблица неинформативна.
   _Фикс: `cb.get("isc_ka_source", "—")`._
 
-- [ ] **Нет try-except при парсинге файла сметы**
+- [x] **Нет try-except при парсинге файла сметы**
   Строки 1069–1072: повреждённый файл → необработанное исключение → crash UI.
   _Фикс: `try...except Exception as e: st.error(...)`._
 
-- [ ] **Накопление временных файлов при загрузке сметы**
+- [x] **Накопление временных файлов при загрузке сметы**
   Строки 1064–1067: `NamedTemporaryFile(delete=False)` — файлы остаются на диске.
   _Фикс: использовать `delete=True` или `finally: tmp_path.unlink()`._
 
