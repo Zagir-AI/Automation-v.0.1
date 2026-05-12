@@ -458,8 +458,28 @@ with tab_data:
     with sub_consumers:
         import pandas as pd
 
-        CONSUMER_TYPES  = ["lighting", "power", "hvac", "it", "other"]
+        CONSUMER_TYPES = [
+            "lighting", "sockets", "power", "hvac",
+            "motor", "pump", "elevator",
+            "ventilation_unit", "ahu",
+            "smoke_fan", "smoke_exhaust", "fire_pump",
+            "emergency_lighting", "heating",
+            "it_equipment", "it", "kitchen", "welding", "other",
+        ]
+        TYPE_LABELS = {
+            "lighting": "Освещение", "sockets": "Розетки",
+            "power": "Силовое", "hvac": "ОВиК",
+            "motor": "Двигатель", "pump": "Насос", "elevator": "Лифт",
+            "ventilation_unit": "Вентагрегат", "ahu": "Приточный агрегат",
+            "smoke_fan": "Дымовой вент.", "smoke_exhaust": "Дымоудаление",
+            "fire_pump": "Пожарный насос", "emergency_lighting": "Аварийное освещение",
+            "heating": "Электрообогрев", "it_equipment": "ИТ-оборудование",
+            "it": "ИТ", "kitchen": "Кухня/буфет", "welding": "Сварка",
+            "other": "Прочее",
+        }
         INSTALL_OPTIONS = ["лоток", "труба", "открыто", "земля"]
+
+        from data.demand_factors.sp256_factors import _CONSUMER_FACTORS as _SP256
 
         # Список щитов, отфильтрованных по разделу
         _all_feeders = project.get("vru", {}).get("feeders", [])
@@ -529,7 +549,20 @@ with tab_data:
                 key=f"consumer_editor_{fi}_{pi}",
             )
 
-            # Редактор кабеля выбранного потребителя
+            # ── Справочник СП 256 ────────────────────────────────────────
+            with st.expander("📋 Нормативы СП 256.1325800.2016 — Кс и cos φ"):
+                _ref_rows = [
+                    {
+                        "Тип": t,
+                        "Наименование": TYPE_LABELS.get(t, t),
+                        "Кс (СП 256)": v["ks"],
+                        "cos φ (СП 256)": v["cos_phi"],
+                    }
+                    for t, v in _SP256.items() if t != "default"
+                ]
+                st.dataframe(_ref_rows, hide_index=True, use_container_width=True)
+
+            # ── Редактор кабеля выбранного потребителя ───────────────────
             st.divider()
             st.caption("Кабель потребителя")
 
@@ -540,7 +573,9 @@ with tab_data:
             c_idx    = None
             new_mark = new_cores = new_sec = new_len = new_install = new_amb = None
 
-            if consumer_ids:
+            if not consumer_ids:
+                st.caption("Добавь потребителей в таблицу выше, сохрани — и здесь появится редактор кабеля.")
+            else:
                 selected_consumer_id = st.selectbox(
                     "Потребитель", consumer_ids, key=f"cable_sel_{fi}_{pi}"
                 )
@@ -550,8 +585,40 @@ with tab_data:
                     None
                 )
                 cable = consumers[c_idx].get("cable", {}) if c_idx is not None else {}
-            else:
-                st.caption("Добавь потребителей в таблицу выше, затем сохрани — и здесь появится редактор кабеля.")
+
+                # ── Подсказка СП 256 для выбранного потребителя ──────────
+                if c_idx is not None:
+                    _ctype = consumers[c_idx].get("type", "other")
+                    _norm  = _SP256.get(_ctype, _SP256["default"])
+                    _cur_kc  = consumers[c_idx].get("demand_factor")
+                    _cur_cos = consumers[c_idx].get("cos_phi")
+                    _kc_diff  = _cur_kc  is not None and abs(_cur_kc  - _norm["ks"])       > 0.001
+                    _cos_diff = _cur_cos is not None and abs(_cur_cos - _norm["cos_phi"])  > 0.001
+                    _type_ru = TYPE_LABELS.get(_ctype, _ctype)
+
+                    if _kc_diff or _cos_diff:
+                        _diff_txt = []
+                        if _kc_diff:
+                            _diff_txt.append(f"Кс: факт {_cur_kc} → норма **{_norm['ks']}**")
+                        if _cos_diff:
+                            _diff_txt.append(f"cos φ: факт {_cur_cos} → норма **{_norm['cos_phi']}**")
+                        _col_hint, _col_btn = st.columns([4, 1])
+                        with _col_hint:
+                            st.warning(
+                                f"СП 256 для «{_type_ru}»: {', '.join(_diff_txt)}"
+                            )
+                        with _col_btn:
+                            if st.button("Применить", key=f"apply_sp256_{fi}_{pi}_{c_idx}",
+                                         help="Применить нормативные Кс и cos φ из СП 256"):
+                                consumers[c_idx]["demand_factor"] = _norm["ks"]
+                                consumers[c_idx]["cos_phi"]       = _norm["cos_phi"]
+                                save_project(project, proj_dir)
+                                st.rerun()
+                    else:
+                        st.success(
+                            f"Кс={_cur_kc}, cos φ={_cur_cos} — соответствуют СП 256 ({_type_ru})"
+                        )
+
                 col1, col2, col3 = st.columns(3)
                 with col1:
                     new_mark  = st.text_input(
