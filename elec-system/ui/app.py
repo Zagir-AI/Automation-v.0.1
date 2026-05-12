@@ -62,7 +62,7 @@ def run_cli(command: list) -> tuple[str, str, int]:
     """Запустить CLI-команду, вернуть stdout, stderr, returncode."""
     proc = subprocess.run(
         [sys.executable, str(ROOT / "cli.py")] + command,
-        capture_output=True, text=True, cwd=str(ROOT)
+        capture_output=True, text=True, encoding="utf-8", errors="replace", cwd=str(ROOT)
     )
     # Убираем ANSI-коды
     import re
