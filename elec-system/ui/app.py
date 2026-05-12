@@ -164,10 +164,16 @@ if not active_path:
     st.subheader("Объекты")
 
     # ── Карточки по 2 в строку ───────────────────────────────────────────
+    from itertools import zip_longest
     pairs = [projects[i:i + 2] for i in range(0, len(projects), 2)]
     for pair in pairs:
         cols = st.columns(2)
-        for col, (d, p) in zip(cols, pair):
+        for col, item in zip_longest(cols, pair):
+            if item is None:
+                continue
+            d, p = item
+            if col is None:
+                continue
             with col:
                 with st.container(border=True):
                     proj    = p.get("project", {})
@@ -229,7 +235,12 @@ results = project.get("_results")
 calc_done = project.get("_meta", {}).get("calc_done", False)
 
 # Шапка
-col_title, col_btns = st.columns([3, 1])
+col_back, col_title, col_btns = st.columns([1, 3, 1])
+with col_back:
+    st.write("")
+    if st.button("← К проектам", width="stretch"):
+        st.session_state["active_project"] = None
+        st.rerun()
 with col_title:
     st.title(f"⚡ {proj.get('name','')}")
     st.caption(f"Код: {proj.get('code','')} | Стадия: {proj.get('stage','')} | "
@@ -439,6 +450,8 @@ with tab_data:
                     None
                 )
                 cable = consumers[c_idx].get("cable", {}) if c_idx is not None else {}
+            else:
+                st.caption("Добавь потребителей в таблицу выше, затем сохрани — и здесь появится редактор кабеля.")
                 col1, col2, col3 = st.columns(3)
                 with col1:
                     new_mark  = st.text_input(
