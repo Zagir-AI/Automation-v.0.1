@@ -35,6 +35,20 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
+# Проверяем доступность папки проектов сразу при старте
+try:
+    PROJECTS_DIR.mkdir(parents=True, exist_ok=True)
+    _test_file = PROJECTS_DIR / ".write_test"
+    _test_file.touch()
+    _test_file.unlink()
+except Exception as _dir_err:
+    st.error(
+        f"Нет доступа к папке проектов: `{PROJECTS_DIR}`\n\n"
+        f"Ошибка: {_dir_err}\n\n"
+        "Убедись, что у текущего пользователя есть права на запись в эту папку."
+    )
+    st.stop()
+
 # ── Вспомогательные функции ──────────────────────────────────────────
 
 def load_project(proj_dir: Path) -> dict:
@@ -411,6 +425,7 @@ with tab_data:
                          "demand_factor","cos_phi","phases","start_factor"]
             )
 
+            st.caption("Нажми + внизу таблицы чтобы добавить потребителя; выдели строку и Del — чтобы удалить.")
             edited_df = st.data_editor(
                 df,
                 num_rows="dynamic",
@@ -718,7 +733,9 @@ with tab_data:
                 st.error(err)
 
         if st.session_state.get(f"confirm_del_{fi_s}_{pi_s}"):
-            st.warning(f"Удалить щит **{panel_s.get('id')}** со всеми потребителями?")
+            _n_cons = len(panel_s.get("consumers", []))
+            _cons_info = f" и {_n_cons} потребител{'ем' if _n_cons == 1 else 'ями' if 2 <= _n_cons <= 4 else 'ями'}" if _n_cons else ""
+            st.warning(f"Удалить щит **{panel_s.get('id')}**{_cons_info}? Это действие необратимо.")
             c1, c2 = st.columns(2)
             with c1:
                 if st.button("Да, удалить", key=f"confirm_yes_{fi_s}_{pi_s}"):
@@ -978,6 +995,23 @@ with tab_results:
             illum = results.get("illumination", [])
             if illum_err := results.get("illumination_error"):
                 st.error(f"Ошибка расчёта освещённости: {illum_err}")
+                with st.expander("Пример структуры rooms[] в project.json"):
+                    st.code(
+                        '{\n'
+                        '  "rooms": [\n'
+                        '    {\n'
+                        '      "id": "П-01",\n'
+                        '      "name": "Офис 101",\n'
+                        '      "type": "office",\n'
+                        '      "s_m2": 40.0,\n'
+                        '      "height_m": 3.0,\n'
+                        '      "n_luminaires": 8,\n'
+                        '      "luminous_flux_lm": 3200\n'
+                        '    }\n'
+                        '  ]\n'
+                        '}',
+                        language="json",
+                    )
             elif not illum:
                 st.info("Нет данных об освещённости. Добавьте блок 'rooms' в project.json.")
             else:
@@ -1047,6 +1081,17 @@ with tab_cables:
         c1.metric("Нарушения ΔU",        len(du_err))
         c2.metric("Термо-КЗ",            len(kzt_err))
         c3.metric("Чувствит. защиты",    len(kzs_err))
+
+        with st.expander("Что это значит?"):
+            st.markdown(
+                "**Нарушения ΔU** — падение напряжения на линии превышает допустимое (обычно 5%). "
+                "Решение: увеличить сечение кабеля или уменьшить длину.\n\n"
+                "**Термо-КЗ** — сечение кабеля меньше минимального, рассчитанного по термической "
+                "стойкости при токе КЗ. Решение: увеличить сечение или проверить isc_ka проекта.\n\n"
+                "**Чувствительность защиты** — ток КЗ в конце линии недостаточен для срабатывания "
+                "автоматического выключателя. Решение: уменьшить длину линии, увеличить сечение "
+                "или выбрать АВ с меньшим током отсечки."
+            )
         st.divider()
 
         if du_err:
