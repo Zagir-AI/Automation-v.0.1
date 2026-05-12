@@ -1,0 +1,9 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Generated documents (build artifacts)
+elec-system/projects/*/docs/*.xlsx
+elec-system/projects/*/docs/*.docx
+elec-system/projects/*/docs/*.txt
