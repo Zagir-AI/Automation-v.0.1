@@ -698,6 +698,56 @@ with tab_data:
                     else:
                         st.caption("Пересчитай проект — и здесь появится рекомендация по сечению.")
 
+                # ── Автоподбор автоматического выключателя ───────────
+                if c_idx is not None and results:
+                    from data.breakers.breaker_tables import select_breaker_for_consumer
+                    _cr_b = next(
+                        (c for f in results.get("vru", {}).get("feeders", [])
+                         for p in f.get("panels", [])
+                         for c in p.get("consumers", [])
+                         if c.get("id") == selected_consumer_id),
+                        None,
+                    )
+                    if _cr_b and _cr_b.get("i_calc_a", 0) > 0:
+                        _pick_br = select_breaker_for_consumer(
+                            consumers[c_idx], _cr_b["i_calc_a"]
+                        )
+                        _cur_br    = _cr_b.get("breaker", {})
+                        _cur_rat   = _cur_br.get("rating")
+                        _cur_char  = _cur_br.get("char", "C")
+                        _cur_poles = _cur_br.get("poles")
+                        _br_match  = (
+                            _cur_rat   == _pick_br["rating"] and
+                            _cur_char  == _pick_br["char"]   and
+                            _cur_poles == _pick_br["poles"]
+                        )
+                        if not _br_match:
+                            _bc1, _bc2 = st.columns([4, 1])
+                            with _bc1:
+                                _cur_txt = (f"АВ {_cur_rat}А хар.{_cur_char} {_cur_poles}П"
+                                            if _cur_rat else "не задан")
+                                st.info(
+                                    f"Рекомендуемый автомат: **{_pick_br['type']}** "
+                                    f"(Iр={_cr_b['i_calc_a']:.1f} А × 1.1 ≥ "
+                                    f"{_cr_b['i_calc_a']*1.1:.1f} А) — текущий: {_cur_txt}"
+                                )
+                            with _bc2:
+                                if st.button("Применить", key=f"apply_br_{fi}_{pi}_{c_idx}",
+                                             help="Записать рекомендуемый АВ в потребителя"):
+                                    consumers[c_idx]["breaker_override"] = {
+                                        "rating": _pick_br["rating"],
+                                        "char":   _pick_br["char"],
+                                        "poles":  _pick_br["poles"],
+                                    }
+                                    save_project(project, proj_dir)
+                                    st.rerun()
+                        else:
+                            st.success(
+                                f"АВ {_cur_rat}А хар.{_cur_char} {_cur_poles}П — соответствует расчёту"
+                            )
+                    else:
+                        st.caption("Пересчитай проект — и здесь появится рекомендация по автомату.")
+
             # Сохранение
             if st.button("💾 Сохранить потребителей", type="primary",
                          key=f"save_cons_{fi}_{pi}"):
